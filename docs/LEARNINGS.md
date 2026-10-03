@@ -18,7 +18,7 @@ Append after every stage/level: what worked, what didn't, numbers worth remember
 **Fidelity**
 - Title rubric (gpt-5.5 judge) scored 8.8/10 (gate 8). Palette similarity went from 0.68 to 0.73 after darkening the menu panel. Composition similarity is 0.85.
 - The judge keeps flagging the mute button as "not in the reference". That's intentional UX, so ignore it.
-- Pixelify Sans has a narrow space glyph; `word-spacing: 0.6em` matches the reference's airy menu text.
+- Pixelify Sans has a narrow space glyph; `word-spacing: 0.25em` opens it up (0.6em overflowed, see below).
 
 **QA agent pass (found 11 issues; all fixed, each with a regression test)**
 - A visual tweak suggested by the fidelity judge (`word-spacing: 0.6em`) made the 2P label overflow its box. Keep the overflow e2e check, and re-screenshot after any judge-driven change.
