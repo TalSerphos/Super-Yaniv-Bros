@@ -13,35 +13,55 @@ const muteBtn = $<HTMLButtonElement>('#mute');
 const items = [...document.querySelectorAll<HTMLButtonElement>('.menu-item')];
 const menu = new MenuState(items.length);
 
+const COMING_SOON_HASH = '#coming-soon';
+/** Taps on the Coming Soon backdrop are ignored this long after it opens (double-tap guard). */
+const BACKDROP_GUARD_MS = 350;
+
 type Screen = 'title' | 'coming-soon';
 let screen: Screen = 'title';
+let openedAt = 0;
+/** True while a history.back() we issued is in flight, so a double BACK can't leave the site. */
+let leaving = false;
 
+/** Cursor, roving tabindex and aria-current all follow menu.current. */
 function render(): void {
-  items.forEach((el, i) => el.setAttribute('aria-current', String(i === menu.current)));
+  items.forEach((el, i) => {
+    const on = i === menu.current;
+    el.setAttribute('aria-current', String(on));
+    el.tabIndex = on ? 0 : -1;
+  });
 }
 
-function showComingSoon(push = true): void {
+function focusCurrent(): void {
+  (screen === 'title' ? items[menu.current] : backBtn).focus({ preventScroll: true });
+}
+
+function showScreen(next: Screen): void {
+  if (screen === next) return;
+  screen = next;
+  title.hidden = next !== 'title';
+  comingSoon.hidden = next !== 'coming-soon';
+  if (next === 'coming-soon') openedAt = performance.now();
+  focusCurrent();
+}
+
+function openComingSoon(): void {
   if (screen === 'coming-soon') return;
-  screen = 'coming-soon';
-  title.hidden = true;
-  comingSoon.hidden = false;
-  backBtn.focus({ preventScroll: true });
-  // A history entry lets the Android back button / browser back close the overlay.
-  if (push) history.pushState({ screen }, '', '#coming-soon');
-}
-
-function showTitle(): void {
-  if (screen === 'title') return;
-  screen = 'title';
-  comingSoon.hidden = true;
-  title.hidden = false;
-  items[menu.current].focus({ preventScroll: true });
+  // The entry below is always our title (marked), so BACK can safely use history.back().
+  history.pushState({ screen: 'coming-soon', fromTitle: true }, '', COMING_SOON_HASH);
+  showScreen('coming-soon');
 }
 
 function goBack(): void {
+  if (screen !== 'coming-soon' || leaving) return;
   play('back');
-  if (history.state?.screen === 'coming-soon') history.back();
-  else showTitle();
+  if (history.state?.fromTitle) {
+    leaving = true;
+    history.back(); // popstate shows the title
+  } else {
+    history.replaceState({ screen: 'title' }, '', location.pathname + location.search);
+    showScreen('title');
+  }
 }
 
 function activate(i: number): void {
@@ -49,7 +69,7 @@ function activate(i: number): void {
   render();
   play('ding');
   // Every menu option leads to Coming Soon in Stage 1; Stage 2 routes "1p" into the game.
-  showComingSoon();
+  openComingSoon();
 }
 
 function handle(action: MenuAction): void {
@@ -61,13 +81,14 @@ function handle(action: MenuAction): void {
   if (action === 'up' || action === 'down') {
     if (menu.move(action === 'up' ? -1 : 1)) play('move');
     render();
-    items[menu.current].focus({ preventScroll: true });
+    focusCurrent();
   } else if (action === 'confirm') {
     activate(menu.current);
   }
 }
 
 document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey || e.metaKey || e.altKey) return; // leave browser shortcuts alone
   if (e.target === muteBtn && (e.code === 'Enter' || e.code === 'Space')) return;
   const action = keyToAction(e.code);
   if (!action || e.repeat) return;
@@ -76,11 +97,15 @@ document.addEventListener('keydown', (e) => {
 });
 
 items.forEach((el, i) => {
+  // Keep the cursor wherever focus goes (Tab, screen readers), so Enter activates what is focused.
+  el.addEventListener('focus', () => {
+    if (menu.set(i)) render();
+  });
   el.addEventListener('pointerenter', (e) => {
-    if (e.pointerType === 'mouse' && menu.set(i)) {
-      play('move');
-      render();
-    }
+    if (e.pointerType !== 'mouse' || screen !== 'title') return;
+    if (menu.set(i)) play('move');
+    render();
+    el.focus({ preventScroll: true });
   });
   el.addEventListener('click', (e) => {
     e.preventDefault();
@@ -93,31 +118,35 @@ backBtn.addEventListener('click', (e) => {
   e.stopPropagation();
   goBack();
 });
-comingSoon.addEventListener('click', () => goBack());
+comingSoon.addEventListener('click', () => {
+  if (performance.now() - openedAt > BACKDROP_GUARD_MS) goBack();
+});
 
-muteBtn.addEventListener('click', () => {
+muteBtn.addEventListener('click', (e) => {
   unlockAudio();
   setMuted(!isMuted());
   syncMute();
+  // After a pointer click, hand focus back so Enter/Space drive the menu again.
+  if (e.detail > 0) focusCurrent();
 });
 function syncMute(): void {
   muteBtn.setAttribute('aria-pressed', String(isMuted()));
-  muteBtn.setAttribute('aria-label', isMuted() ? 'Unmute sound' : 'Mute sound');
 }
 
+// Decide from the URL, not history.state: a hash typed by hand fires popstate with null state.
 window.addEventListener('popstate', () => {
-  if (history.state?.screen === 'coming-soon') showComingSoon(false);
-  else showTitle();
+  leaving = false;
+  showScreen(location.hash === COMING_SOON_HASH ? 'coming-soon' : 'title');
 });
 
 watchGamepads(handle);
 syncMute();
 render();
 
-// Deep link / reload on #coming-soon keeps the overlay.
-if (location.hash === '#coming-soon') {
-  history.replaceState({ screen: 'coming-soon' }, '', '#coming-soon');
-  showComingSoon(false);
+// Deep link / reload on #coming-soon: put the title underneath so BACK never leaves the site.
+if (location.hash === COMING_SOON_HASH) {
+  history.replaceState({ screen: 'title' }, '', location.pathname + location.search);
+  openComingSoon();
 }
 
 // Warm the Coming Soon image after the title has fully loaded, so it never competes with the LCP image.

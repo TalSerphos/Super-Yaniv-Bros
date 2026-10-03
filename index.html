@@ -24,13 +24,12 @@
           <img src="/src/assets/title.logo.webp" alt="Super Yaniv Bros. — Flight 1073" width="900" height="440" />
         </h1>
         <nav class="menu" aria-label="Main menu">
-          <ul role="menu">
-            <li role="none"><button role="menuitem" class="menu-item" data-action="1p" aria-current="true">1 PLAYER</button></li>
-            <li role="none"><button role="menuitem" class="menu-item" data-action="2p">2 PLAYERS: SIT NEXT TO AN ISRAELI</button></li>
+          <ul>
+            <li><button class="menu-item" data-action="1p" aria-current="true" tabindex="0">1 PLAYER</button></li>
+            <li><button class="menu-item" data-action="2p" aria-current="false" tabindex="-1">2 PLAYERS: SIT NEXT TO AN ISRAELI</button></li>
           </ul>
         </nav>
         <footer class="copyright">(C) 2026 NES ZIONA ENTERTAINMENT SYSTEM</footer>
-        <button class="mute" id="mute" aria-label="Mute sound" aria-pressed="false">♪</button>
       </section>
 
       <section class="screen coming-soon" id="coming-soon" aria-label="Coming soon" hidden>
@@ -39,7 +38,9 @@
         <p class="coming-soon-sub" data-testid="coming-soon-sub">This lavatory is occupied. Please return to your seat.</p>
         <button class="back" id="back">◀ BACK</button>
       </section>
+      <button class="mute" id="mute" aria-label="Mute sound" aria-pressed="false">♪</button>
     </main>
+    <p class="rotate-hint">Turn your phone sideways to board</p>
     <noscript><p class="noscript">Super Yaniv Bros. needs JavaScript to play.</p></noscript>
     <script type="module" src="/src/main.ts"></script>
   </body>

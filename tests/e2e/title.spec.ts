@@ -18,7 +18,7 @@ test('title screen renders with no errors', async ({ page }) => {
   const errors = trackErrors(page);
   await page.reload();
   await expect(page.getByRole('heading', { name: /Super Yaniv Bros/ })).toBeVisible();
-  await expect(page.getByRole('menuitem')).toHaveText(MENU);
+  await expect(page.locator('.menu-item')).toHaveText(MENU);
   await expect(page.getByText('(C) 2026 NES ZIONA ENTERTAINMENT SYSTEM')).toBeVisible();
   await expect(page.getByTestId('score')).toHaveText('1P 000000');
   // Images actually decoded (not just requested).
@@ -40,37 +40,37 @@ for (const [i, label] of MENU.entries()) {
   test(`keyboard: "${label}" opens Coming Soon and Escape returns`, async ({ page, isMobile }) => {
     test.skip(!!isMobile, 'keyboard flow is desktop-only');
     for (let k = 0; k < i; k++) await page.keyboard.press('ArrowDown');
-    await expect(page.getByRole('menuitem', { name: label })).toHaveAttribute('aria-current', 'true');
+    await expect(page.getByRole('button', { name: label, exact: true })).toHaveAttribute('aria-current', 'true');
     await page.keyboard.press('Enter');
     await expect(page.getByRole('heading', { name: 'COMING SOON!' })).toBeVisible();
     await expect(page).toHaveURL(/#coming-soon$/);
     await page.keyboard.press('Escape');
-    await expect(page.getByRole('menuitem', { name: label })).toBeVisible();
+    await expect(page.getByRole('button', { name: label, exact: true })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'COMING SOON!' })).toBeHidden();
   });
 
   test(`pointer: tapping "${label}" opens Coming Soon and BACK returns`, async ({ page }) => {
-    await page.getByRole('menuitem', { name: label }).click();
+    await page.getByRole('button', { name: label, exact: true }).click();
     await expect(page.getByRole('heading', { name: 'COMING SOON!' })).toBeVisible();
     await expect(page.locator('.coming-soon-bg')).toHaveJSProperty('complete', true);
     await page.getByRole('button', { name: /BACK/ }).click();
-    await expect(page.getByRole('menuitem', { name: label })).toBeVisible();
+    await expect(page.getByRole('button', { name: label, exact: true })).toBeVisible();
   });
 }
 
 test('arrow keys wrap around the menu', async ({ page, isMobile }) => {
   test.skip(!!isMobile, 'keyboard flow is desktop-only');
   await page.keyboard.press('ArrowUp');
-  await expect(page.getByRole('menuitem', { name: MENU[1] })).toHaveAttribute('aria-current', 'true');
+  await expect(page.getByRole('button', { name: MENU[1], exact: true })).toHaveAttribute('aria-current', 'true');
   await page.keyboard.press('ArrowDown');
-  await expect(page.getByRole('menuitem', { name: MENU[0] })).toHaveAttribute('aria-current', 'true');
+  await expect(page.getByRole('button', { name: MENU[0], exact: true })).toHaveAttribute('aria-current', 'true');
 });
 
 test('browser back closes Coming Soon', async ({ page }) => {
-  await page.getByRole('menuitem', { name: MENU[0] }).click();
+  await page.getByRole('button', { name: MENU[0], exact: true }).click();
   await expect(page.getByRole('heading', { name: 'COMING SOON!' })).toBeVisible();
   await page.goBack();
-  await expect(page.getByRole('menuitem', { name: MENU[0] })).toBeVisible();
+  await expect(page.getByRole('button', { name: MENU[0], exact: true })).toBeVisible();
 });
 
 test('mute toggle persists across reloads', async ({ page }) => {
@@ -80,4 +80,71 @@ test('mute toggle persists across reloads', async ({ page }) => {
   await expect(mute).toHaveAttribute('aria-pressed', 'true');
   await page.reload();
   await expect(page.locator('#mute')).toHaveAttribute('aria-pressed', 'true');
+});
+
+// Regression tests from the Stage 1 QA pass.
+test.describe('QA regressions', () => {
+  const item = (page: Page, i: number) => page.getByRole('button', { name: MENU[i], exact: true });
+  const heading = (page: Page) => page.getByRole('heading', { name: 'COMING SOON!' });
+
+  test('menu labels fit inside the menu box', async ({ page }) => {
+    const overflow = await page.locator('.menu-item').evaluateAll((els) => els.map((e) => e.scrollWidth - e.clientWidth));
+    expect(overflow.every((d) => d <= 1)).toBe(true);
+    const menu = (await page.locator('.menu').boundingBox())!;
+    for (const el of await page.locator('.menu-item').all()) {
+      const r = await el.evaluate((e) => {
+        const range = document.createRange();
+        range.selectNodeContents(e);
+        return range.getBoundingClientRect().right;
+      });
+      expect(r).toBeLessThanOrEqual(menu.x + menu.width);
+    }
+  });
+
+  test('deep link to #coming-soon: BACK stays on the site', async ({ page }) => {
+    await page.goto('/#coming-soon');
+    await expect(heading(page)).toBeVisible();
+    await page.getByRole('button', { name: /BACK/ }).click();
+    await expect(item(page, 0)).toBeVisible();
+    expect(new URL(page.url()).hash).toBe('');
+  });
+
+  test('double BACK does not leave the site', async ({ page }) => {
+    await item(page, 0).click();
+    await expect(heading(page)).toBeVisible();
+    await page.getByRole('button', { name: /BACK/ }).dblclick();
+    await expect(item(page, 0)).toBeVisible();
+    expect(page.url()).toContain('localhost');
+  });
+
+  test('double tap on a menu item leaves Coming Soon open', async ({ page }) => {
+    await item(page, 1).dblclick();
+    await expect(heading(page)).toBeVisible();
+  });
+
+  test('Tab focus moves the cursor, so Enter activates the focused item', async ({ page, isMobile }) => {
+    test.skip(!!isMobile, 'keyboard flow is desktop-only');
+    await item(page, 1).focus();
+    await expect(item(page, 1)).toHaveAttribute('aria-current', 'true');
+    await expect(item(page, 0)).toHaveAttribute('aria-current', 'false');
+  });
+
+  test('after clicking mute, Enter drives the menu again', async ({ page, isMobile }) => {
+    test.skip(!!isMobile, 'keyboard flow is desktop-only');
+    await page.locator('#mute').click();
+    await page.keyboard.press('Enter');
+    await expect(heading(page)).toBeVisible();
+    await expect(page.locator('#mute')).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  test('browser shortcuts with Ctrl are not hijacked', async ({ page, isMobile }) => {
+    test.skip(!!isMobile, 'keyboard flow is desktop-only');
+    await page.keyboard.press('Control+KeyS');
+    await expect(item(page, 0)).toHaveAttribute('aria-current', 'true');
+  });
+
+  test('setting the hash by hand shows Coming Soon', async ({ page }) => {
+    await page.evaluate(() => (location.hash = '#coming-soon'));
+    await expect(heading(page)).toBeVisible();
+  });
 });

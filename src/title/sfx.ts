@@ -53,7 +53,18 @@ function tone(freq: number, start: number, dur: number, type: OscillatorType, ga
 export type Sfx = 'move' | 'ding' | 'back';
 
 export function play(sfx: Sfx): void {
-  if (muted || !ctx || ctx.state !== 'running') return;
+  if (muted || !ctx) return;
+  // iOS starts the context suspended and resume() settles asynchronously: play once it runs,
+  // otherwise the very first ding (on the unlocking tap) would be dropped.
+  if (ctx.state !== 'running') {
+    void ctx.resume().then(() => synth(sfx));
+    return;
+  }
+  synth(sfx);
+}
+
+function synth(sfx: Sfx): void {
+  if (!ctx) return;
   const t = ctx.currentTime;
   switch (sfx) {
     case 'move':

@@ -26,12 +26,15 @@ html, body {
 body {
   display: grid;
   place-items: center;
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  align-content: center;
+  gap: 4vh;
+  --safe-w: calc(100vw - env(safe-area-inset-left) - env(safe-area-inset-right));
+  --safe-h: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
 }
 
 .stage {
   position: relative;
-  width: min(100vw, calc(100dvh * 16 / 9));
+  width: min(var(--safe-w), calc(var(--safe-h) * 16 / 9));
   aspect-ratio: 16 / 9;
   container-type: size;
   overflow: hidden;
@@ -93,20 +96,21 @@ body {
   border-radius: 1.2cqw;
   box-shadow: inset 0 0 0 0.25cqw #000, 0 0.4cqw 0 #000;
 }
-.menu ul { list-style: none; margin: 0; padding: 0 0 0 1.6cqw; width: 100%; }
+.menu ul { list-style: none; margin: 0; padding: 0 0 0 1.6cqw; width: 100%; height: 100%; display: flex; flex-direction: column; }
+.menu li { flex: 1; display: flex; }
 .menu li + li { border-top: 0.12cqw solid rgba(255, 255, 255, 0.035); }
 
 .menu-item {
   display: block;
   width: 100%;
-  padding: 1.5cqh 0 1.5cqh 2.4cqw;
+  padding: 0 0 0 2.4cqw; /* items fill the panel height so tap targets stay as large as possible */
   position: relative;
   border: 0;
   background: none;
   color: var(--ink);
   font: 700 2.15cqw/1.1 var(--font-menu);
   letter-spacing: 0.05cqw;
-  word-spacing: 0.6em; /* Pixelify's space glyph is narrow; match the reference's airy spacing */
+  word-spacing: 0.25em; /* Pixelify's space glyph is narrow; 0.6em overflowed the panel */
   text-align: left;
   cursor: pointer;
   white-space: nowrap;
@@ -114,12 +118,12 @@ body {
 .menu-item[aria-current='true'] { color: var(--gold); }
 .menu-item[aria-current='true']::before {
   content: '>';
+  content: '>' / ''; /* decorative: keep it out of the accessible name where supported */
   position: absolute;
   left: 0.2cqw;
   animation: blink 0.9s steps(1) infinite;
 }
-.menu-item:focus { outline: none; }
-.menu-item:focus-visible { outline: 0.2cqw dashed var(--gold); outline-offset: 0.3cqw; }
+.menu-item:focus { outline: none; } /* the gold > cursor is the focus indicator (roving tabindex) */
 @keyframes blink { 50% { opacity: 0; } }
 
 .copyright {
@@ -128,9 +132,7 @@ body {
   width: 100%;
   margin: 0;
   text-align: center;
-  font: 700 1.55cqw/1 var(--font-menu);
-  letter-spacing: 0.08cqw;
-  word-spacing: 0.5em;
+  font: 1.3cqw/1 var(--font-hud); /* Pixelify's Z and 2 look alike ("NES 2IONA") */
 }
 
 .mute {
@@ -149,6 +151,18 @@ body {
   opacity: 0.55;
 }
 .mute:hover, .mute:focus-visible { opacity: 1; }
+.mute { z-index: 2; }
+
+/* Invisible 44px hit areas for small controls on phones. */
+.mute::after, .back::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+}
 .mute[aria-pressed='true'] { color: #777; text-decoration: line-through; }
 
 /* Coming Soon */
@@ -160,7 +174,7 @@ body {
   margin: 0;
   text-align: center;
   color: var(--gold);
-  font: 5.2cqw/1 var(--font-hud);
+  font: 4.6cqw/1 var(--font-hud);
   text-shadow: 0.4cqw 0.4cqw 0 #8a1d0a, 0.7cqw 0.7cqw 0 #000;
   animation: pop 0.35s cubic-bezier(0.3, 1.6, 0.6, 1) both;
 }
@@ -186,10 +200,25 @@ body {
   font: 700 2.2cqw/1 var(--font-menu);
   cursor: pointer;
 }
+
+/* Phones held upright: the 16:9 stage is a thin strip, so ask for landscape below it. */
+.rotate-hint { display: none; }
+@media (orientation: portrait) and (pointer: coarse) {
+  .rotate-hint {
+    display: block;
+    margin: 0;
+    padding: 0 1rem;
+    text-align: center;
+    color: var(--gold);
+    font: 14px/1.6 var(--font-hud);
+  }
+  .rotate-hint::before { content: '⟲'; display: block; font-size: 40px; margin-bottom: 0.5rem; animation: tilt 2s ease-in-out infinite; }
+}
+@keyframes tilt { 50% { transform: rotate(-90deg); } }
 .back:focus-visible { outline: 0.2cqw dashed var(--gold); outline-offset: 0.3cqw; }
 
 .noscript { position: fixed; bottom: 1rem; width: 100%; text-align: center; font-family: sans-serif; }
 
 @media (prefers-reduced-motion: reduce) {
-  .title-bg, .logo, .menu-item[aria-current='true']::before, .coming-soon-title { animation: none; }
+  .title-bg, .logo, .menu-item[aria-current='true']::before, .coming-soon-title, .rotate-hint::before { animation: none; }
 }
