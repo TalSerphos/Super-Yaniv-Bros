@@ -7,3 +7,5 @@ playwright-report/
 tests/fidelity/out/
 *.log
 .DS_Store
+.qa-*.mjs
+.shot.tmp.mjs
