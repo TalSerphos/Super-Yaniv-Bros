@@ -19,3 +19,11 @@ Append after every stage/level: what worked, what didn't, numbers worth remember
 - Title rubric (gpt-5.5 judge) scored 8.8/10 (gate 8). Palette similarity went from 0.68 to 0.73 after darkening the menu panel. Composition similarity is 0.85.
 - The judge keeps flagging the mute button as "not in the reference". That's intentional UX, so ignore it.
 - Pixelify Sans has a narrow space glyph; `word-spacing: 0.6em` matches the reference's airy menu text.
+
+**QA agent pass (found 11 issues; all fixed, each with a regression test)**
+- A visual tweak suggested by the fidelity judge (`word-spacing: 0.6em`) made the 2P label overflow its box. Keep the overflow e2e check, and re-screenshot after any judge-driven change.
+- History: only call `history.back()` on an entry we pushed ourselves (`fromTitle` marker). Guard against double activation while `popstate` is pending, and route by `location.hash`, not `history.state`.
+- Roving tabindex keeps focus and the visual cursor in sync. Mouse hover must move focus too.
+- CSS `::before` text becomes part of the accessible name. Use `content: '>' / ''` for decorative glyphs. This also broke `getByRole(..., { exact: true })` in tests.
+- Ignore keydowns with Ctrl/Cmd/Alt. Give small controls 44px hit areas. Phones in portrait get a rotate hint.
+- QA agent recipe that worked: a read-only general-purpose agent, about 9 viewports, scripted edge cases (double tap, deep link, back/forward, Tab vs hover), reporting file:line plus a suggested fix. It took about 5 min.
