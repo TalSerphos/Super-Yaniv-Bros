@@ -1,0 +1,9 @@
+node_modules/
+dist/
+art/raw/
+test-results/
+playwright-report/
+.lighthouseci/
+tests/fidelity/out/
+*.log
+.DS_Store

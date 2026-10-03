@@ -1,0 +1,373 @@
+# Super Yaniv Bros. — Development & Deployment Plan
+
+## Context
+
+The repo `TalSerphos/Super-Yaniv-Bros` is empty; there are no commits yet. The game is specified in `Super_Yaniv_Bros._Game_Spec.md`: a 16-bit platformer with 8 worlds × 4 levels, the signature tilt and altitude systems, and a 3-phase boss. There are three reference images: the title screen, a 5-2 "Aisle" concept and a World 7 cockpit concept. More concept images will arrive later as a PDF, with several images per level. We use them for two things: as the source and style reference for generated assets, and as the yardstick for judging how close each built level looks.
+
+What we're building: a static HTML5 SPA deployed by GitHub Actions to GitHub Pages at **superyanivbros.com**. It's built in stages: title screen, then a short World 5 slice, then the full World 5, then the rest of the levels one at a time in story-critical order. Each stage is developed, tested and visually judged by a set of agents before it ships.
+
+Decisions already made with the user:
+- "Level 5" means **all of World 5**. Stage 2 is a short, basic slice of it; Stage 3 is the full World 5 (5-1 to 5-4).
+- Level order after World 5 is **story-critical first**: W7 boss, then W6 dive, then W4, then W1–3, then W8.
+- Assets are generated **locally**, after the user allowlists `api.openai.com` in the environment's network settings (it's denied today, and the CONNECT returns 403). There's also a **GitHub Actions fallback** workflow that uses an `OPENAI_API_KEY` repo secret.
+
+---
+
+## 1. Architecture (decided once, used by every stage)
+
+**Stack:** Vite + TypeScript + **Phaser 3** (Arcade physics), Vitest and Playwright. No backend; everything is static files.
+
+**Title and menus are DOM/CSS, not Phaser.** The title screen paints from HTML, CSS and one WebP before any game JS loads. Phaser is then pulled in with a dynamic `import()` while the player sits on the title. This gives the fastest first paint, accessible buttons, and a useful page even on slow phones.
+
+**Rendering:**
+- Canvas is 1280×720 logical with `Scale.FIT` and letterboxing.
+- Gameplay cameras use `zoom=2`, so the world works in 640×360 units with `pixelArt: true` and `roundPixels`.
+- Characters are about 48px tall (small) or 64px (big) in world units.
+
+**Tilt system:**
+- Physics runs in *cabin space*, where tiles stay axis-aligned.
+- Tilt is applied by rotating the **gravity vector** in cabin space (`g·(sinθ, cosθ)`, which Arcade supports through gravity x/y) and rotating the **game camera** by θ.
+- The HUD is a separate unrotated scene, so HUD text never tilts.
+- Oxygen-mask vines follow the gravity vector, so they hang straight down on screen, as the spec requires.
+- None of this needs Matter.js.
+
+**Determinism, so tests and replays work:**
+- Fixed 60 Hz timestep and a seeded RNG.
+- All input goes through one `InputSource` interface with keyboard, gamepad, touch and **replay** implementations.
+- Debug URL params: `?scene=level&level=5-2&x=1200&seed=1&freeze=1&debug=1&replay=…`.
+
+**Data-driven levels:**
+- Each level is `src/levels/w5/5-2.json`: an ASCII tile grid, an entity list, a tilt timeline, ALT start/rate, music and a palette.
+- A loader compiles that JSON into a Phaser tilemap.
+- This format is easy for agents to write, diff and validate.
+
+**Proposed repo layout:**
+```
+index.html                 DOM title screen + #game mount
+src/title/                 title menu, coming-soon view (DOM/CSS)
+src/game/boot.ts           lazy Phaser entry
+src/game/scenes/           Preload, Level, Hud, Pause, Intro card, Boss phases
+src/game/systems/          tilt, altitude, powerups, scoring, save, input/
+src/game/entities/         Yaniv, TrolleyTroll, SuitcaseShell, BinBiter, ...
+src/levels/wN/*.json       level data
+src/audio/                 ZzFX SFX defs, ZzFXM songs (code-as-data, ~0 KB assets)
+public/CNAME               superyanivbros.com
+public/assets/             built, content-hashed WebP atlases + asset-manifest.json
+art/reference/             concept images (3 now, PDF extracts later) + index.json
+art/manifest/*.yaml        every asset: id, prompt, refs, size, frames, target px, palette
+art/prompts/style.md       style canon (palette, character bible, do/don't)
+art/masters/               chosen high-res source images (committed, WebP)
+art/raw/                   candidates (gitignored; CI uploads them as artifacts)
+tools/assets/              generate.ts, process.ts, pack.ts, judge.ts
+tools/refs/extract-pdf.ts  PDF → per-level reference images
+tools/levels/validate.ts   reachability / lint for level JSON
+tests/unit, tests/e2e, tests/replays, tests/fidelity
+.github/workflows/         ci.yml, deploy.yml, assets.yml
+CLAUDE.md                  conventions every agent loads
+docs/LEARNINGS.md          running log of what worked (prompts, bugs, fixes)
+```
+
+---
+
+## 2. Deployment (GitHub Pages via Actions)
+
+**`.github/workflows/ci.yml`** runs on PRs and on pushes to non-main branches:
+- `npm ci`, eslint, `tsc --noEmit`, Vitest, and level validation.
+- `vite build`, then Playwright against `vite preview` on Chromium, WebKit and Firefox, plus mobile emulation.
+- Lighthouse CI budgets.
+- Fidelity screenshots uploaded as a build artifact.
+
+**`.github/workflows/deploy.yml`** runs on push to `main`:
+- Runs the same checks and build.
+- `actions/upload-pages-artifact` with `dist/`, then `actions/deploy-pages`.
+- Permissions `pages: write` and `id-token: write`; `concurrency: pages`.
+- After deploy, a smoke job runs Playwright against `https://superyanivbros.com`. It checks that the title renders, there are no console errors, and the assets return 200.
+- `public/CNAME` keeps the domain explicit. It's harmless next to the custom domain that's already configured.
+
+**`.github/workflows/assets.yml`** is the `workflow_dispatch` fallback:
+- Inputs are asset ids (or `all-missing`).
+- Runs `tools/assets/generate.ts` with `secrets.OPENAI_API_KEY`, then post-processing.
+- Opens a PR with the new masters and atlases; raw candidates go up as an artifact.
+
+**Branching:**
+- Work happens on `claude/serene-faraday-pe1dlg`.
+- Each stage or level is a PR into `main`, and merging deploys it.
+- There is no `main` yet. At execution time I'll ask the user to either create `main` or authorize me to push the initial scaffold commit to it.
+
+**Cloud sessions:** a SessionStart hook runs `npm ci`, so new agent sessions can test right away.
+
+---
+
+## 3. Load time & device compatibility
+
+**Budgets, enforced in CI by Lighthouse CI and a `dist` size check:**
+- First load for the title: ≤ 350 KB transferred.
+- Title background is a WebP of ≤ 180 KB at 1280×720.
+- Logo is DOM/CSS or a small WebP.
+- The title's JS bundle (not Phaser) is ≤ 15 KB gzip.
+- Phaser chunk is about 300 KB gzip, loaded in the background.
+- Each world pack is ≤ 1.5 MB, made of lossless WebP atlases built from palette-quantized pixel art (which compresses very well).
+- Lighthouse mobile performance ≥ 90 and LCP < 2.5 s on simulated Slow 4G.
+
+**Lazy loading:**
+- Each world has its own asset pack and a code-split scene chunk.
+- While the player is in world N, world N+1 preloads.
+- Filenames are content-hashed, which beats GitHub Pages' 10-minute cache.
+- A service worker (`vite-plugin-pwa`/Workbox, Stage 10) caches packs offline and makes the game installable.
+
+**Audio:**
+- Sound effects use ZzFX, with parameters stored as code.
+- Music uses ZzFXM songs, also stored as data, so there are almost no audio bytes and no codec issues across Safari and Chrome.
+- The AudioContext unlocks on the first user gesture, which iOS needs.
+
+**Fonts:** Press Start 2P (OFL), self-hosted as a subsetted woff2 for the DOM, and converted to a Phaser bitmap font for the HUD.
+
+**Inputs:**
+- Keyboard: arrows/WASD plus Z/X (or Space/Shift).
+- Gamepad API.
+- On-screen touch controls (d-pad plus JUMP/GRAB, matching concept image 2), shown automatically on `pointer: coarse`.
+- Safe-area insets, and a "rotate to landscape" prompt on portrait phones.
+- Fullscreen API where supported; on iOS, PWA standalone mode instead.
+
+**Test matrix:**
+- Playwright projects for Desktop Chrome, Firefox, WebKit, Pixel 7, iPhone 14 and iPad.
+- A CPU throttle at 4× (via CDP) to measure FPS, with the target ≥ 55 fps average on the World 5 slice.
+- Phaser's `AUTO` renderer falls back to Canvas when WebGL is missing.
+
+---
+
+## 4. Asset generation pipeline (OpenAI)
+
+**Manifest-driven and idempotent:** `art/manifest/*.yaml` entries look like this:
+```yaml
+- id: yaniv.small.run
+  kind: spritesheet        # spritesheet | background | parallax | tileset | prop | ui | portrait | screen
+  refs: [char/yaniv.sheet, ref/title.webp]   # images fed to images/edits as references
+  prompt: "Yaniv running, 6-frame cycle, side view facing right, ..."
+  grid: {cols: 6, rows: 1}
+  target: {h: 48}          # final pixel height in world units
+  transparent: true
+  palette: yaniv           # palette file in art/prompts/palettes/
+  candidates: 3
+```
+
+**`tools/assets/generate.ts`:**
+- Uses the Images API: `images/edits` when `refs` are set, so style and characters stay consistent, and `images/generations` otherwise.
+- Model is configurable, defaulting to the newest `gpt-image-*` that `/v1/models` lists.
+- Uses `background: "transparent"` for sprites and props.
+- Picks the size that fits: 1024², 1536×1024 or 1024×1536.
+- Caches by a hash of model + prompt + refs + params, so an unchanged entry is never paid for twice.
+- Runs with bounded concurrency (about 4) and exponential backoff.
+- Appends a cost ledger to `art/cost-log.csv` and stops at a `--max-spend` cap.
+- Uses the Batch API if it supports the image endpoint at execution time.
+
+**Two-pass quality to keep costs down:**
+1. *Explore*: `quality: low`, 3 candidates per asset (about $0.01 each).
+2. A judge agent picks the best candidate, or edits the prompt and reruns.
+3. *Finalize*: rerun only the winner at `quality: high`.
+4. Expected total for the full game is about 300 final images, so very roughly $60–120. I'll check current pricing when we start.
+
+**Consistency strategy, in order:**
+1. **Style canon** (`art/prompts/style.md`): the 16-bit SNES look, the cabin palette (teal seats, cream walls, amber lights, purple-orange sky), and the rule that navy, brown and red stay reserved for Yaniv. Every prompt is prefixed with it.
+2. **Character bible sheets** come first: Yaniv, Assaf, Zvika, Shota, Captain, Jacuzzam, Rubber Ducky and each enemy, as front/side/back turnarounds. Each is an edit of the title reference image or a crop of it. Every later sprite request then uses its bible sheet as a reference image.
+3. **Pose sheets, not single frames:** each sheet is one request with a grid prompt ("6 cells, same character, same scale, transparent bg, feet on a common baseline").
+
+**`tools/assets/process.ts`** (sharp + image-q) turns a sheet into frames:
+- Slice the grid, trim, and align the feet baseline and anchor.
+- Downscale with nearest-neighbor to `target.h`.
+- Quantize to the asset's palette (16–32 colors), clean outlines (1px dark outline), and check frame-to-frame size and position drift.
+- Frames that fail are flagged for regeneration.
+- The engine adds squash/stretch and bob tweening, so 4–6 frames per action are enough.
+
+**`tools/assets/pack.ts`:**
+- Packs one atlas per world with maxrects into lossless WebP.
+- Writes Phaser atlas JSON and `asset-manifest.json` with hashed names.
+
+**Placeholders so code never waits on art:** each manifest id gets an auto-generated colored box with its label until the real art lands. Code and art agents work in parallel against the manifest ids.
+
+**Backgrounds and tiles:**
+- Parallax layers (the window strip with sky, the cabin wall, foreground seats) are generated at 1536×1024 with a "seamless horizontal tile" prompt, then given a seam-fix pass (offset and inpaint through `images/edits` with a mask).
+- Tilesets are generated as one sheet per material (floor, seats, bins, galley), then sliced to a 16px or 32px grid.
+
+**Reference intake (when the PDF arrives):**
+- `tools/refs/extract-pdf.ts` uses `pdfimages`/`pdftoppm`, or the pdf skill.
+- Output goes to `art/reference/w5/5-2/01.webp`, and so on.
+- `art/reference/index.json` maps each image to its level id, the camera position it depicts, and notes from a vision agent that lists every visible element.
+
+---
+
+## 5. Fidelity assessment (does the level look like what Tal imagined?)
+
+Each reference image gets a **shot spec**: `{level, cameraX, cameraY, tilt, seed, frame}`. Playwright opens the debug URL with `freeze=1` and captures matching screenshots.
+
+**Objective metrics (`tests/fidelity/`, cheap, run in CI):**
+- Palette distance: an LAB histogram earth-mover distance between the screenshot and the reference.
+- Composition: SSIM on 64×36 blurred grayscale versions.
+- Both are trend metrics with soft thresholds; a big regression fails CI.
+
+**Rubric judge:**
+- Claude vision subagents score 1–10 on palette and lighting, composition and camera, character readability, presence of each listed element, mood, and HUD layout.
+- An optional OpenAI vision call runs the same rubric in CI.
+- Each rubric comes with a prioritized "make it closer" list ("windows too square", "seats too saturated", "add amber floor lights").
+
+**Output:**
+- `docs/fidelity/<level>.md` with side-by-side composites made with ImageMagick `montage`, and the score history.
+
+**Gates:** reference images are richer than a playable level, so the passing rubric average rises over time:
+- Title ≥ 8 (it's nearly the reference itself).
+- Stage 2 slice ≥ 5.
+- Full levels ≥ 7.
+- Final polish ≥ 8.
+
+---
+
+## 6. Agent workflow (repeated per stage and per level)
+
+I act as **orchestrator**. Agents are spawned with the Agent tool; parallel ones run with `isolation: "worktree"`. Every agent loads `CLAUDE.md`, the style canon and `docs/LEARNINGS.md`.
+
+| Role | Does | Output |
+|---|---|---|
+| Brief writer | Reads the spec and the level's reference images, writes `docs/levels/<id>.md`: beat chart (intro → teach → test → twist → finale), element list, new mechanics, new assets | Brief + manifest delta |
+| Art agents (×2–3, parallel) | Run generate → judge candidates against references → finalize → process → pack | Masters, atlases, cost log |
+| Engine agent | Implements new mechanics and entities with unit tests | Code + Vitest |
+| Level designer | Writes level JSON, runs `validate.ts` (jump-envelope BFS under each tilt angle, so the level is provably completable) | Level JSON |
+| QA / playtest agent | Runs Playwright suites. Records a completion **replay** (frame-indexed inputs). Runs a "dumb bot" (hold right + spam jump) that must *not* win easily. Does an exploratory playthrough step by step with screenshots, reporting softlocks, unclear moments and difficulty spikes | Bug list, replay file, video |
+| Art director / fidelity judge | Section 5 rubric against reference shots | Scores + fix list |
+| Reviewer | `/code-review` on the diff, plus the perf budget check | Findings |
+
+**Loop:**
+1. Build.
+2. Test, judge and review, in parallel.
+3. Fix the top issues.
+4. Repeat until the gates pass, at most 3 rounds per stage before I escalate to the user with screenshots.
+5. Open a PR; CI must be green.
+6. Merge, deploy, run the prod smoke test.
+7. Write a retro in `docs/LEARNINGS.md`: prompt patterns that worked, recurring bugs, tuning values.
+
+**Definition of done for every level:**
+- The validator passes and the replay completes the level.
+- There are no console errors on any matrix device.
+- FPS and size budgets hold.
+- Fidelity meets the stage gate.
+- The code review is clean, and the user has approved a screenshot set.
+
+---
+
+## 7. Stages
+
+### Stage 1: Scaffold + title screen
+1. **Scaffold:**
+   - Vite + TypeScript, ESLint, Vitest and Playwright (local runs use `executablePath: /opt/pw-browsers/chromium`).
+   - `CLAUDE.md`, the three workflows, `public/CNAME`, and the SessionStart hook.
+   - Copy the 3 reference images into `art/reference/`.
+2. **Asset pipeline skeleton:** `generate`, `process` and `pack`, plus a manifest with the title entries.
+3. **Title assets**, generated with `images/edits` on the title reference:
+   - `title.bg`: the same scene with **all text, HUD and the menu box removed** and the sky extended, at 1536×1024 (cropped and resized to 1280×720 WebP).
+   - `title.logo`: transparent "SUPER YANIV BROS." plus the "FLIGHT 1073" ribbon. If the AI lettering garbles, the fallback is typeset CSS: the pixel font with gradient fill and stroke on a generated ribbon plate.
+   - `screen.coming-soon`: Yaniv with his plunger in front of a lavatory door showing "OCCUPIED", with the "COMING SOON!" text drawn in DOM.
+4. **Title UI (DOM):**
+   - Top HUD reads `1P` · `1P 000000` · `TOP 174000`.
+   - Menu items are `1 PLAYER` and `2 PLAYERS: SIT NEXT TO AN ISRAELI`, with a blinking `>` cursor. Navigation works with ↑↓/Enter, mouse, touch and gamepad.
+   - Footer reads `(C) 2026 NES ZIONA ENTERTAINMENT SYSTEM`.
+   - A ding SFX plays on select.
+   - **Every option opens the Coming Soon screen**, which closes with Esc, B or a tap.
+   - Clouds and plane get a subtle CSS parallax, which is disabled under `prefers-reduced-motion`.
+5. **Fallback if OpenAI is still blocked:** ship with the reference image as the background and the DOM menu laid exactly over its baked-in box. Replace it once the assets are generated.
+6. **Tests:**
+   - The menu works with keyboard, mouse and touch.
+   - Each option shows Coming Soon and Back returns to the title.
+   - No console errors, across all Playwright device projects.
+   - Lighthouse budgets pass.
+   - Title fidelity is ≥ 8 against the reference.
+7. **Deploy** to superyanivbros.com and run the prod smoke test.
+
+### Stage 2: World 5 slice (short & basic, about 60–90 s of play)
+- **Phaser boot and lazy load.** `1 PLAYER` now opens an intro card ("WORLD 5 · THE ATTACK") and then the slice. The 2P option still shows Coming Soon.
+- **Mechanics:**
+  - Run, variable-height jump, coyote time and jump buffering.
+  - Stomp, death and retry, and hearts.
+  - Brass nuts, and a call-button block (ding plus a nut).
+  - One enemy: the Trolley Troll, which slides downhill from *behind* because of the tilt.
+  - **Static 12° tilt**, using the gravity-rotation technique.
+  - ALT countdown as the timer.
+  - The level ends at a galley curtain.
+- **HUD (unrotated scene):** SUPER YANIV logo, hearts, nut counter, BANK gauge, level label. Layout matches concept image 2.
+- **Touch controls:** d-pad plus JUMP and GRAB.
+- **Assets:**
+  - Yaniv bible sheet, then sprites for small idle, run, jump, fall and hurt.
+  - Trolley Troll (roll, flattened), nut (spin), call-button block (idle, used).
+  - Cabin tileset, plus three parallax layers: window sky, wall with bins, foreground seats.
+  - Passenger background props (static).
+- **Tests:**
+  - Unit tests for tilt gravity math, the ALT timer and the level loader.
+  - The validator proves the level is completable, and the e2e replay completes it.
+  - FPS ≥ 55 at 4× throttle.
+  - Fidelity ≥ 5 against concept image 2.
+
+### Stage 3: Full World 5 (5-1 → 5-4)
+- **Systems:**
+  - Power-up states: Small/Big Yaniv (Hummus), Golden Plunger (throw, stick, one-shot platform), Bamba Rush (8 s), Sabich 1-UP.
+  - Plunger stun, plus suction-climbing walls and ceilings.
+  - **Dynamic tilt timeline** with a 2-second warning flash.
+  - Lives, score, and the 100-nut 1-UP.
+  - Pause menu, and save progress in localStorage.
+  - Level select for the unlocked levels, and the seatbelt-sign pole end with a height bonus.
+- **Levels:**
+  - **5-1 The Scream**: a scripted intro, a camera shake when the scream hits, and teaching the basics.
+  - **5-2 The Aisle**: tilt goes from 0° to 15°, with Suitcase Shell, Baby Bomber and mask vines.
+  - **5-3 Bin Avalanche**: overhead-bin panels Big Yaniv can smash, Bin Biters and luggage rain.
+  - **5-4 Cockpit Door**: the castle level, ending with the wounded Captain opening the door (escort NPC), then the "Thank you Yaniv!" card.
+- **Audio:** World 5 tense theme (ZzFXM), plus the full SFX set (ding, seatbelt chime, stomp, plunger "thwop").
+- **Fidelity:** each level is judged against its PDF concept images, with a gate of ≥ 7.
+- **Ship** each level as its own PR, in order 5-1, 5-2, 5-3, 5-4, so the site grows one level at a time.
+
+### Stage 4: World 7, the boss, the "first playable story" milestone
+- **7-1 Phase A: Fight.** Jacuzzam throws QRH binders, fires bubble jets and leans on the yoke to tilt the arena; Rubber Duckies waddle in. Win by plunging the jet nozzles, then 5 hits, then a GRAB quick-time event from behind.
+- **7-2 Phase B: Fight + Fly.** Hold ▼ to pull the yoke; the attitude indicator goes from −35° to 0° with a green HOLD STEADY band and a CONTROL % bar. This matches concept image 3's CONTAIN/LEVEL/HANDOFF tracker.
+- **7-3 Phase C: Keep Him Tied.** A 30× clock, a knot-strength meter, Zvika's cables with the zip-tie upgrade, and Shota stabilizing the Captain. If a knot fully slips, the player goes back to Phase B at half HP.
+- **7-4 Tabuk Approach.**
+- **Single-player assists** for Assaf (shield / pin arms), Zvika (lasso) and Shota (heal).
+- After Stage 4, the main menu offers "World 5 → World 7".
+
+### Stages 5–8: remaining worlds, one level per PR (same Section 6 loop each time)
+- **Stage 5, World 6 The Dive:** 6-1 vertical freefall (14,000 ft in 29 s), 6-2 Mask Vines, 6-3 Zero-G Galley, 6-4 Down to the Flight Deck.
+- **Stage 6, World 4 Cruise:** Boarding (bin wars), Meal Service, Wing Dream (a sky level), The Lav (a water level). Also adds **Lav Warps** and bonus rooms.
+- **Stage 7, Worlds 1–3 (ground, no tilt):** these use the TIME HUD instead of ALT. Fake-boss castles (the Clog, the Hot-Tub Salesman), Duty-Free Bills, and travelators.
+- **Stage 8, World 8 Coming Home:** ending sequence, "your next client is waiting in Nes Ziona!", credits. Also adds the world map screen.
+
+### Stage 9: Co-op "Sit next to an Israeli"
+- P2 picks Assaf, Zvika or Shota, on a shared screen (keyboard split or two gamepads).
+- In Phase B, P2 can hold the yoke while P1 fights.
+- This is the point where the 2P menu item stops showing Coming Soon.
+
+### Stage 10: Polish & launch
+- PWA: offline play and installable.
+- Mobile touch tuning and haptics (`navigator.vibrate`).
+- Accessibility: control remapping, a reduced-tilt mode, colorblind-safe HUD.
+- Full fidelity pass with a gate of ≥ 8.
+- Full-game replay regression suite.
+- Launch checklist, including the spec's open question: **get permission from the four heroes to use their names and likenesses before public promotion.**
+
+---
+
+## 8. Critical files (created in Stage 1 and extended afterwards)
+- `index.html`, `src/title/menu.ts`, `src/title/title.css`: the title and Coming Soon screens.
+- `src/game/boot.ts`, `src/game/systems/tilt.ts`, `src/game/systems/input/*`, `src/game/scenes/Level.ts`: the engine core.
+- `tools/assets/generate.ts`, `process.ts`, `pack.ts` and `art/manifest/*.yaml`: the asset pipeline.
+- `tests/fidelity/shots.json`, `tests/fidelity/judge.ts`: the fidelity system.
+- `.github/workflows/ci.yml`, `deploy.yml`, `assets.yml`, and `public/CNAME`.
+- `CLAUDE.md` and `docs/LEARNINGS.md`: agent context and the self-improvement log.
+
+## 9. Verification (each stage)
+1. Run `npm run lint && npm run typecheck && npm test && npm run validate:levels && npm run build` locally.
+2. Run `npm run e2e`: Playwright on the built preview, across the device matrix and replays.
+3. Run `npm run perf`: Lighthouse CI and the throttled FPS probe.
+4. Run `npm run fidelity`: screenshots against references, plus the judge report written to `docs/fidelity/`.
+5. Open a PR, get CI green, merge to `main`, then check that `deploy.yml` succeeds and the prod smoke test passes on https://superyanivbros.com.
+6. Send the user a screenshot and composite set (side by side with the references) for sign-off before the next stage starts.
+
+## 10. Prerequisites from the user
+- Allowlist `api.openai.com` in the cloud environment's network settings: environment menu → Edit → Network access → Custom, keeping the package-manager defaults.
+- Add the `OPENAI_API_KEY` repository secret for the Actions fallback.
+- Create `main`, or authorize the first scaffold push to it. Confirm Pages → Source is set to "GitHub Actions".
+- Upload the concept-image PDF before Stage 3. Stage 2 only needs the existing 5-2 concept image.

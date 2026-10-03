@@ -1,0 +1,44 @@
+# Stage 1 — title screen assets. See tools/assets/README.md for the schema.
+- id: title.bg
+  kind: background
+  refs: [art/reference/title.webp]
+  size: 1536x1024
+  candidates: 2
+  prompt: >
+    Recreate this exact title-screen illustration as a clean background plate with ALL text removed:
+    remove the "SUPER YANIV BROS." logo, the "FLIGHT 1073" ribbon, the menu box, the score line at the top
+    and the copyright line at the bottom, and paint the sunset sky and pink-purple clouds where they were.
+    Keep the four heroes standing on top of the white airliner exactly as they are (Yaniv with the raised red
+    plunger and tool belt, the man in the white shirt, the banker with glasses, red tie and headphone cable coil,
+    the dentist in a green polo with a first-aid kit), keep the airliner, the purple-to-orange sunset and the clouds.
+    Wide 3:2 composition: heroes and plane on the right half, open sky on the left half for a logo and a menu.
+    No text, no letters, no logos anywhere.
+  out: {width: 1280, height: 720, fit: cover, position: right, quality: 82}
+
+- id: title.logo
+  kind: ui
+  refs: [art/reference/title.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  prompt: >
+    Redraw only the game logo from this image as 16-bit pixel art, centered on a perfectly flat, solid,
+    uniform magenta (#FF00FF) background with no gradient, no shadow on the background and no other objects.
+    Line 1: chunky bevelled gold letters "SUPER". Line 2: big red-orange letters "YANIV BROS." with thick dark
+    outlines. Under them a blue ribbon banner with forked ends reading "FLIGHT 1073" in cream letters.
+    Spell exactly and only: SUPER / YANIV BROS. / FLIGHT 1073. No characters, no plane, no sky.
+  out: {width: 900, trim: true, quality: 80}
+
+- id: screen.coming-soon
+  kind: screen
+  refs: [art/reference/title.webp, art/reference/w5-aisle.webp]
+  size: 1536x1024
+  candidates: 2
+  prompt: >
+    Same pixel-art style and the same hero Yaniv (short dark hair, short beard, navy polo with wrench logo,
+    brown tool belt, jeans, boots, red plunger). Inside an airplane cabin aisle at sunset, Yaniv stands next to a
+    closed airplane lavatory door with a red "occupied" indicator light, shrugging with a friendly grin and holding
+    his red plunger, a little "out of order" bucket and wet-floor cone beside him. Teal seats, cream walls, amber
+    lights, purple-orange sunset in the round windows. Leave calm empty space in the upper third for a title.
+    No text, no letters anywhere.
+  out: {width: 1280, height: 720, fit: cover, position: centre, quality: 80}

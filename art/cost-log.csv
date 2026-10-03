@@ -1,0 +1,7 @@
+timestamp,id,model,quality,n,est_usd,usage
+2026-10-03T21:46:36.518Z,screen.coming-soon,gpt-image-2,low,2,0.040,"{'input_tokens':6402,'input_tokens_details':{'image_tokens':6032,'text_tokens':370},'output_tokens':315,'output_tokens_details':{'image_tokens':315,'text_tokens':0},'total_tokens':6717}"
+2026-10-03T21:46:37.132Z,title.bg,gpt-image-2,low,2,0.040,"{'input_tokens':3494,'input_tokens_details':{'image_tokens':3016,'text_tokens':478},'output_tokens':315,'output_tokens_details':{'image_tokens':315,'text_tokens':0},'total_tokens':3809}"
+2026-10-03T21:47:32.690Z,title.logo,gpt-image-1.5,low,2,0.040,"{'input_tokens':998,'input_tokens_details':{'image_tokens':646,'text_tokens':352},'output_tokens':1297,'output_tokens_details':{'image_tokens':800,'text_tokens':497},'total_tokens':2295}"
+2026-10-03T21:48:54.243Z,title.bg,gpt-image-2,high,2,0.500,"{'input_tokens':3494,'input_tokens_details':{'image_tokens':3016,'text_tokens':478},'output_tokens':10976,'output_tokens_details':{'image_tokens':10976,'text_tokens':0},'total_tokens':14470}"
+2026-10-03T21:49:10.371Z,screen.coming-soon,gpt-image-2,high,2,0.500,"{'input_tokens':6402,'input_tokens_details':{'image_tokens':6032,'text_tokens':370},'output_tokens':10976,'output_tokens_details':{'image_tokens':10976,'text_tokens':0},'total_tokens':17378}"
+2026-10-03T21:49:59.651Z,title.logo,gpt-image-2,medium,2,0.140,"{'input_tokens':3386,'input_tokens_details':{'image_tokens':3016,'text_tokens':370},'output_tokens':2744,'output_tokens_details':{'image_tokens':2744,'text_tokens':0},'total_tokens':6130}"

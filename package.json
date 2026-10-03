@@ -1,0 +1,40 @@
+{
+  "name": "super-yaniv-bros",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build && node tools/check-budget.mjs",
+    "preview": "vite preview --port 4173 --strictPort",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "e2e": "playwright test",
+    "fidelity": "NODE_USE_ENV_PROXY=1 tsx tests/fidelity/run.ts",
+    "assets:generate": "NODE_USE_ENV_PROXY=1 tsx tools/assets/generate.ts",
+    "assets:process": "tsx tools/assets/process.ts"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@playwright/test": "^1.56.1",
+    "@types/node": "^26.6.4",
+    "eslint": "^9.39.5",
+    "globals": "^17.13.0",
+    "jsdom": "^29.1.1",
+    "sharp": "^0.35.5",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.71.0",
+    "vite": "^7.3.6",
+    "vitest": "^5.0.3",
+    "yaml": "^2.9.1"
+  },
+  "dependencies": {
+    "@fontsource/pixelify-sans": "^5.3.0",
+    "@fontsource/press-start-2p": "^5.3.0"
+  }
+}

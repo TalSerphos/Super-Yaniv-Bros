@@ -1,0 +1,195 @@
+/* Title + Coming Soon screens. Everything is sized in container units of the 16:9 stage,
+   so the layout matches the reference at any resolution. */
+:root {
+  --ink: #fff8e7;
+  --gold: #ffd23f;
+  --panel: rgba(10, 8, 20, 0.92);
+  --panel-edge: #4a3424;
+  --font-hud: 'Press Start 2P', ui-monospace, monospace;
+  --font-menu: 'Pixelify Sans', 'Press Start 2P', ui-monospace, monospace;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: #0d0b1a;
+  color: var(--ink);
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+body {
+  display: grid;
+  place-items: center;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+.stage {
+  position: relative;
+  width: min(100vw, calc(100dvh * 16 / 9));
+  aspect-ratio: 16 / 9;
+  container-type: size;
+  overflow: hidden;
+  background: #1b1838;
+  image-rendering: pixelated;
+}
+
+.screen { position: absolute; inset: 0; }
+.screen[hidden] { display: none; }
+
+.title-bg, .coming-soon-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.title-bg { animation: drift 24s ease-in-out infinite alternate; transform-origin: 70% 60%; }
+@keyframes drift { to { transform: scale(1.035) translateY(-0.6%); } }
+
+/* Text shadow that mimics a 1px pixel outline at any scale. */
+.hud, .menu-item, .copyright, .coming-soon-title, .coming-soon-sub, .back, .mute {
+  text-shadow: 0.15cqw 0.15cqw 0 #000, -0.1cqw 0.1cqw 0 #000, 0.1cqw -0.1cqw 0 #000, -0.1cqw -0.1cqw 0 #000;
+}
+
+.hud {
+  position: absolute;
+  top: 2.4cqh;
+  left: 1.6cqw;
+  right: 1.6cqw;
+  display: flex;
+  justify-content: space-between;
+  font: 1.7cqw/1 var(--font-hud);
+}
+.hud-right { display: flex; gap: 5.5cqw; }
+
+.logo {
+  position: absolute;
+  top: 7cqh;
+  left: 2.5cqw;
+  width: 47cqw;
+  margin: 0;
+  animation: bob 3.2s ease-in-out infinite;
+}
+.logo img { display: block; width: 100%; height: auto; }
+@keyframes bob { 50% { transform: translateY(-0.8cqh); } }
+
+.menu {
+  position: absolute;
+  left: 2.75cqw;
+  top: 73cqh;
+  width: 45cqw;
+  height: 20.5cqh;
+  display: flex;
+  align-items: center;
+  background: var(--panel);
+  border: 0.35cqw solid var(--panel-edge);
+  border-radius: 1.2cqw;
+  box-shadow: inset 0 0 0 0.25cqw #000, 0 0.4cqw 0 #000;
+}
+.menu ul { list-style: none; margin: 0; padding: 0 0 0 1.6cqw; width: 100%; }
+.menu li + li { border-top: 0.12cqw solid rgba(255, 255, 255, 0.035); }
+
+.menu-item {
+  display: block;
+  width: 100%;
+  padding: 1.5cqh 0 1.5cqh 2.4cqw;
+  position: relative;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: 700 2.15cqw/1.1 var(--font-menu);
+  letter-spacing: 0.05cqw;
+  word-spacing: 0.6em; /* Pixelify's space glyph is narrow; match the reference's airy spacing */
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.menu-item[aria-current='true'] { color: var(--gold); }
+.menu-item[aria-current='true']::before {
+  content: '>';
+  position: absolute;
+  left: 0.2cqw;
+  animation: blink 0.9s steps(1) infinite;
+}
+.menu-item:focus { outline: none; }
+.menu-item:focus-visible { outline: 0.2cqw dashed var(--gold); outline-offset: 0.3cqw; }
+@keyframes blink { 50% { opacity: 0; } }
+
+.copyright {
+  position: absolute;
+  bottom: 1.6cqh;
+  width: 100%;
+  margin: 0;
+  text-align: center;
+  font: 700 1.55cqw/1 var(--font-menu);
+  letter-spacing: 0.08cqw;
+  word-spacing: 0.5em;
+}
+
+.mute {
+  position: absolute;
+  right: 1.4cqw;
+  bottom: 1.4cqh;
+  width: 3.4cqw;
+  height: 3.4cqw;
+  border: 0.2cqw solid var(--panel-edge);
+  border-radius: 0.6cqw;
+  background: var(--panel);
+  color: var(--ink);
+  font: 1.8cqw/1 var(--font-hud);
+  cursor: pointer;
+  padding: 0;
+  opacity: 0.55;
+}
+.mute:hover, .mute:focus-visible { opacity: 1; }
+.mute[aria-pressed='true'] { color: #777; text-decoration: line-through; }
+
+/* Coming Soon */
+.coming-soon { background: #1b1838; cursor: pointer; }
+.coming-soon-title {
+  position: absolute;
+  top: 5cqh;
+  width: 100%;
+  margin: 0;
+  text-align: center;
+  color: var(--gold);
+  font: 5.2cqw/1 var(--font-hud);
+  text-shadow: 0.4cqw 0.4cqw 0 #8a1d0a, 0.7cqw 0.7cqw 0 #000;
+  animation: pop 0.35s cubic-bezier(0.3, 1.6, 0.6, 1) both;
+}
+.coming-soon-sub {
+  position: absolute;
+  top: 16cqh;
+  width: 100%;
+  margin: 0;
+  text-align: center;
+  font: 700 2cqw/1.2 var(--font-menu);
+}
+@keyframes pop { from { transform: scale(0.3); opacity: 0; } }
+
+.back {
+  position: absolute;
+  left: 2.5cqw;
+  bottom: 3cqh;
+  padding: 1.4cqh 2cqw;
+  border: 0.35cqw solid var(--panel-edge);
+  border-radius: 1cqw;
+  background: var(--panel);
+  color: var(--gold);
+  font: 700 2.2cqw/1 var(--font-menu);
+  cursor: pointer;
+}
+.back:focus-visible { outline: 0.2cqw dashed var(--gold); outline-offset: 0.3cqw; }
+
+.noscript { position: fixed; bottom: 1rem; width: 100%; text-align: center; font-family: sans-serif; }
+
+@media (prefers-reduced-motion: reduce) {
+  .title-bg, .logo, .menu-item[aria-current='true']::before, .coming-soon-title { animation: none; }
+}

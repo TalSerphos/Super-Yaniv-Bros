@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Super Yaniv Bros. — Flight 1073</title>
+    <meta name="description" content="A 16-bit platformer: a plumber from Nes Ziona, a diving 737, and a co-pilot named after a bathtub." />
+    <meta name="theme-color" content="#1b1838" />
+    <meta property="og:title" content="Super Yaniv Bros. — Flight 1073" />
+    <meta property="og:description" content="A plumber, a 737, and a co-pilot named after a bathtub." />
+    <meta property="og:image" content="https://superyanivbros.com/og.jpg" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  </head>
+  <body>
+    <main class="stage" id="stage">
+      <section class="screen title" id="title" aria-label="Title screen">
+        <img class="title-bg" src="/src/assets/title.bg.webp" alt="" fetchpriority="high" width="1280" height="720" />
+        <header class="hud">
+          <span>1P</span>
+          <span class="hud-right"><span data-testid="score">1P 000000</span><span>TOP 174000</span></span>
+        </header>
+        <h1 class="logo">
+          <img src="/src/assets/title.logo.webp" alt="Super Yaniv Bros. — Flight 1073" width="900" height="440" />
+        </h1>
+        <nav class="menu" aria-label="Main menu">
+          <ul role="menu">
+            <li role="none"><button role="menuitem" class="menu-item" data-action="1p" aria-current="true">1 PLAYER</button></li>
+            <li role="none"><button role="menuitem" class="menu-item" data-action="2p">2 PLAYERS: SIT NEXT TO AN ISRAELI</button></li>
+          </ul>
+        </nav>
+        <footer class="copyright">(C) 2026 NES ZIONA ENTERTAINMENT SYSTEM</footer>
+        <button class="mute" id="mute" aria-label="Mute sound" aria-pressed="false">♪</button>
+      </section>
+
+      <section class="screen coming-soon" id="coming-soon" aria-label="Coming soon" hidden>
+        <img class="coming-soon-bg" src="/src/assets/screen.coming-soon.webp" alt="Yaniv shrugging next to an occupied airplane lavatory" loading="lazy" width="1280" height="720" />
+        <h2 class="coming-soon-title">COMING SOON!</h2>
+        <p class="coming-soon-sub" data-testid="coming-soon-sub">This lavatory is occupied. Please return to your seat.</p>
+        <button class="back" id="back">◀ BACK</button>
+      </section>
+    </main>
+    <noscript><p class="noscript">Super Yaniv Bros. needs JavaScript to play.</p></noscript>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
