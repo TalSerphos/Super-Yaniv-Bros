@@ -182,7 +182,7 @@ export class Suitcase implements Enemy {
       for (const e of this.others()) {
         if (e === this || !e.live) continue;
         const box = e.hitbox();
-        if (box && overlaps(bodyBox(body), box) && e.hit('shell')) this.world.addScore(RULES.stompScore, e.x, e.y - 30);
+        if (box && overlaps(bodyBox(body), box)) e.hit('shell'); // each enemy's hit() awards its own points
       }
     }
     if (this.s.y > this.world.level.height + 100) this.destroy();
@@ -344,7 +344,8 @@ export class BabyBomber implements Enemy {
     if (!this.live) return;
     const p = this.world.player;
     const dx = p.x - this.x;
-    if (Math.abs(dx) > 300) {
+    // Out of range, or hanging from a mask (knocking him off a vine over a hatch would be cheap).
+    if (Math.abs(dx) > 300 || p.swing) {
       this.timer = Math.max(this.timer, 0.8);
       return;
     }
@@ -470,21 +471,27 @@ export class BinBiter implements Enemy {
 }
 
 // ---------------------------------------------------------------------------------------------------------
-/** One falling bag: dangerous while it drops, harmless (and soon gone) once it lands. */
+/**
+ * One falling bag: it first rattles in the open bin (a fair warning), then drops. Dangerous while it falls,
+ * harmless (and soon gone) once it lands.
+ */
 class Luggage implements Enemy {
   readonly kind = 'luggage';
   live = true;
   private readonly s: Sprite;
+  /** Seconds left rattling in the bin before it drops. */
+  private warning = 0.5;
 
   constructor(
     private readonly world: GameWorld,
     x: number,
     y: number,
-    variant: number,
+    private readonly variant: number,
   ) {
     this.s = world.stage.physics.add.sprite(x, y, 'prop.luggage', variant).setOrigin(0.5, 1).setScale(ART_SCALE).setDepth(8);
-    sizeBody(this.s, 26, 22).setVelocityY(40);
-    this.s.setAngularVelocity((variant - 1) * 120);
+    const body = sizeBody(this.s, 26, 22);
+    body.setAllowGravity(false);
+    world.stage.tweens.add({ targets: this.s, angle: { from: -8, to: 8 }, duration: 70, yoyo: true, repeat: 3 });
     world.stage.physics.add.collider(this.s, world.terrain, () => this.land());
   }
 
@@ -506,16 +513,25 @@ class Luggage implements Enemy {
     this.world.stage.tweens.add({ targets: this.s, alpha: 0, delay: 900, duration: 300, onComplete: () => this.destroy() });
   }
 
-  step(): void {
+  step(dt: number): void {
+    if (this.warning > 0) {
+      this.warning -= dt;
+      if (this.warning <= 0) {
+        const body = this.s.body as Body;
+        body.setAllowGravity(true).setVelocityY(40);
+        this.s.setAngle(0).setAngularVelocity((this.variant - 1) * 120);
+      }
+      return;
+    }
     if (this.s.y > this.world.level.height + 100) this.destroy();
   }
 
   hitbox() {
-    return this.live ? bodyBox(this.s.body as Body) : null;
+    return this.live && this.warning <= 0 ? bodyBox(this.s.body as Body) : null;
   }
 
   touch(player: Player): void {
-    if (player.bamba > 0 || player.big) return void this.hit(); // Big Yaniv shrugs off a bag (bonks it away)
+    if (player.bamba > 0) return void this.hit();
     this.world.hurtPlayer(this.s.x, 'luggage');
     this.land();
   }
@@ -553,7 +569,8 @@ export class LuggageRain implements Enemy {
     if (this.timer > 0) return;
     this.timer = 1.1 + this.world.random() * 0.6;
     const x = this.x + (this.world.random() - 0.5) * 96;
-    this.spawn(new Luggage(this.world, x, this.y + 16, Math.floor(this.world.random() * 3)));
+    // Feet at the bin's bottom edge + bag height: the bag starts just inside the open bin.
+    this.spawn(new Luggage(this.world, x, this.y + 22, Math.floor(this.world.random() * 3)));
   }
 
   hitbox() {

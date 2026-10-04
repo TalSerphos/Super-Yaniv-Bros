@@ -13,6 +13,7 @@ export class MaskVine {
   /** Angle from cabin-space vertical (rad) and angular velocity (rad/s). */
   private phi: number;
   private omega = 0;
+  private prevPhi: number;
   private readonly tube: Phaser.GameObjects.Graphics;
   private readonly mask: Phaser.GameObjects.Image;
   attached = false;
@@ -22,7 +23,7 @@ export class MaskVine {
     readonly anchor: { x: number; y: number },
     readonly length = MASK_LENGTH,
   ) {
-    this.phi = degToRad(world.tiltDeg);
+    this.phi = this.prevPhi = degToRad(world.tiltDeg);
     this.tube = world.stage.add.graphics().setDepth(9);
     this.mask = world.stage.add.image(0, 0, 'prop.mask', 0).setScale(ART_SCALE).setDepth(9);
     this.draw();
@@ -48,11 +49,22 @@ export class MaskVine {
     this.mask.setFrame(1);
   }
 
-  /** Left/right pumps the swing (only adds energy in the direction of travel or from rest). */
+  /**
+   * Left/right pumps the swing: it only adds energy while swinging that way (or from rest), like leaning
+   * into a playground swing, so holding one direction builds up the swing instead of just leaning.
+   */
   pump(dir: number, dt: number): void {
     if (!dir) return;
-    this.omega += dir * 2.6 * dt;
+    if (Math.abs(this.omega) > 0.15 && Math.sign(this.omega) !== dir) return;
+    this.omega += dir * 3.6 * dt;
     this.omega = Phaser.Math.Clamp(this.omega, -3.2, 3.2);
+  }
+
+  /** The rider hit something solid: undo the last step and bounce back softly. */
+  collide(): void {
+    this.phi = this.prevPhi;
+    this.omega *= -0.35;
+    this.draw();
   }
 
   /** Tangential velocity of the mask end (world units/s). */
@@ -73,6 +85,7 @@ export class MaskVine {
     const g = Math.hypot(this.world.gravity.x, this.world.gravity.y);
     // Pendulum about the true-gravity direction, lightly damped (less damping while someone is swinging).
     this.omega += (-(g / this.length) * Math.sin(this.phi - rest) - (this.attached ? 0.15 : 1.2) * this.omega) * dt;
+    this.prevPhi = this.phi;
     this.phi += this.omega * dt;
     this.draw();
   }

@@ -183,9 +183,10 @@ export interface BotView {
   y: number;
   vx: number;
   grounded: boolean;
-  /** Hanging from an oxygen-mask vine, and the vine's horizontal speed. */
+  /** Hanging from an oxygen-mask vine, the vine's horizontal speed, and the mask's x offset from its anchor. */
   swinging?: boolean;
   swingVx?: number;
+  swingDx?: number;
   /** Is there something solid to stand on at this x, near the player's feet? */
   groundAt(x: number): boolean;
   /** Is the space at (x, feet-8) blocked by a wall the player would run into? */
@@ -222,9 +223,9 @@ export class BotInput implements InputSource {
     if (!v) return;
     this.pokeCooldown = Math.max(0, this.pokeCooldown - 1);
     if (v.swinging) {
-      // Pump right, let go on the forward swing.
+      // Pump right, let go on the forward upswing (ahead of the anchor and still moving right).
       into.right = true;
-      if ((v.swingVx ?? 0) > 110) into.jump = true;
+      if ((v.swingVx ?? 0) > 60 && (v.swingDx ?? 0) > 10) into.jump = true;
       return;
     }
     // Plunger poke: reaches ~70 ahead at body height (also calms babies and stuns open bin biters).

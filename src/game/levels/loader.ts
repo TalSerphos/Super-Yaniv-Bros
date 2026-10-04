@@ -56,6 +56,8 @@ export interface ParsedLevel {
   height: number;
   solids: (Rect & { kind: SolidKind })[];
   oneWays: Rect[];
+  /** The '-' platforms among the one-ways (seatback tops are drawn by their seats). */
+  shelves: Rect[];
   start: Point;
   exit: Rect & { kind: 'curtain' | 'door' };
   nuts: Point[];
@@ -92,6 +94,7 @@ export function parseLevel(level: LevelData): ParsedLevel {
     height: rows.length * TILE,
     solids: [],
     oneWays: [],
+    shelves: [],
     start: { x: 0, y: 0 },
     exit: { x: 0, y: 0, w: 0, h: 0, kind: 'curtain' },
     nuts: [],
@@ -114,8 +117,10 @@ export function parseLevel(level: LevelData): ParsedLevel {
     const flush = (c: number) => {
       if (!run) return;
       const rect = { x: run.from * TILE, y: r * TILE, w: (c - run.from) * TILE, h: TILE };
-      if (run.kind === 'oneway') out.oneWays.push(rect);
-      else out.solids.push({ ...rect, kind: run.kind });
+      if (run.kind === 'oneway') {
+        out.oneWays.push(rect);
+        out.shelves.push(rect);
+      } else out.solids.push({ ...rect, kind: run.kind });
       run = null;
     };
     for (let c = 0; c <= cols; c++) {

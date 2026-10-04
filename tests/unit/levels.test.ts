@@ -28,8 +28,25 @@ describe('World 5 levels', () => {
         });
       });
 
-      it('has an altitude budget of at least 2.5 minutes', () => {
-        expect(level.altitude.start / level.altitude.rate).toBeGreaterThanOrEqual(150);
+      it('has an altitude budget of 2.5 to 4 minutes (a real clock, but a generous one)', () => {
+        const seconds = level.altitude.start / level.altitude.rate;
+        expect(seconds).toBeGreaterThanOrEqual(150);
+        expect(seconds).toBeLessThanOrEqual(240);
+      });
+
+      it('drops luggage only from under an overhead bin, never out of thin air', () => {
+        const bins = p.solids.filter((s) => s.kind === 'bin');
+        for (const l of p.luggage) {
+          // The bag spreads ±48 around its drop point: the whole spread must be under the bin run.
+          const bin = bins.find((b) => b.y + b.h === l.y && b.x <= l.x - 48 && b.x + b.w >= l.x + 48);
+          expect(bin, `luggage at x=${l.x}`).toBeDefined();
+        }
+      });
+
+      it('draws every one-way shelf (seat tops excepted)', () => {
+        for (const s of p.shelves) expect(p.oneWays).toContainEqual(s);
+        const grid = level.grid.join('');
+        expect(p.shelves.length > 0).toBe(grid.includes('-'));
       });
 
       it('has no floor gap wider than a running jump (vines only make it easier)', () => {

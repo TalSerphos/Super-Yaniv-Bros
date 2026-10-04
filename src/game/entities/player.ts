@@ -29,8 +29,10 @@ export class Player {
   controlLock = 0;
   plungeCooldown = 0;
   swing: MaskVine | null = null;
-  /** Can't grab a vine again until this runs out (after letting go). */
+  /** Can't grab any vine until this runs out (after letting go). */
   swingCooldown = 0;
+  /** The vine just let go of: not grabbable again until Yaniv lands (no instant re-grab on a hop-off). */
+  releasedVine: MaskVine | null = null;
   lastSafe: { x: number; y: number };
   private coyote = 0;
   private jumpBuffer = 0;
@@ -139,6 +141,7 @@ export class Player {
     if (this.swing) return this.stepSwing(dt, edges);
 
     const grounded = this.grounded;
+    if (grounded) this.releasedVine = null;
     this.coyote = grounded ? PHYS.coyoteTime : Math.max(0, this.coyote - dt);
     this.jumpBuffer = edges.pressed('jump') ? PHYS.jumpBuffer : Math.max(0, this.jumpBuffer - dt);
 
@@ -181,7 +184,7 @@ export class Player {
     else if (!grounded) this.showFrame(this.body.velocity.y < 0 ? 'jump' : 'fall');
     else if (Math.abs(this.body.velocity.x) > 12) p.anims.play(`${SHEET}:run`, true);
     else p.anims.play(`${SHEET}:idle`, true);
-    if (this.bamba <= 0) p.setAlpha(this.invulnerable > 0 && Math.floor(this.invulnerable * 12) % 2 ? 0.35 : 1);
+    p.setAlpha(this.bamba <= 0 && this.invulnerable > 0 && Math.floor(this.invulnerable * 12) % 2 ? 0.35 : 1);
   }
 
   showFrame(name: string): void {
@@ -215,11 +218,22 @@ export class Player {
     vine.pump(dir, dt);
     if (dir) this.sprite.setFlipX(dir < 0);
     // Hang by the hands: the mask sits at the top of the head.
-    const hand = vine.end;
+    let hand = vine.end;
+    // Swinging into an overhead bin (or any solid) stops the swing there instead of passing through it.
+    if (this.world.solidAt(this.swingBox(hand))) {
+      vine.collide();
+      hand = vine.end;
+    }
     this.placeAt(hand.x, hand.y + this.body.height + 4);
     this.animate(false);
     if (edges.pressed('jump') || edges.pressed('grab')) this.letGo(true);
     return false;
+  }
+
+  /** The body box Yaniv would have hanging from a mask end at `hand`. */
+  private swingBox(hand: { x: number; y: number }) {
+    const { width: w, height: h } = this.body;
+    return { left: hand.x - w / 2, right: hand.x + w / 2, top: hand.y + 4, bottom: hand.y + 4 + h };
   }
 
   /** Release the vine, keeping the swing's momentum; a jump release adds an upward kick. */
@@ -228,6 +242,7 @@ export class Player {
     if (!vine) return;
     const v = vine.release();
     this.swing = null;
+    this.releasedVine = vine;
     this.swingCooldown = 0.35;
     this.body.setAllowGravity(true);
     this.body.setVelocity(v.x, v.y - (jump ? 240 : 0));

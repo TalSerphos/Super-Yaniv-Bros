@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 interface SybState {
   level: string;
+  swinging: boolean;
   power: string;
   x: number;
   y: number;
@@ -29,7 +30,7 @@ async function waitForLevel(page: Page, id?: string) {
 
 interface SybHooks {
   teleport(x: number, y: number): void;
-  clearTrolleys(): void;
+  clearEnemies(): void;
 }
 const syb = () => (window as unknown as { __syb: SybHooks }).__syb;
 
@@ -170,8 +171,8 @@ test.describe('QA regressions', () => {
     await page.goto('./?level=5-2#play');
     await waitForLevel(page, '5-2');
     await page.evaluate(() => {
-      const syb = (window as unknown as { __syb: { teleport(x: number, y: number): void; clearTrolleys(): void } }).__syb;
-      syb.clearTrolleys();
+      const syb = (window as unknown as { __syb: { teleport(x: number, y: number): void; clearEnemies(): void } }).__syb;
+      syb.clearEnemies(); // 5-2 has a Baby Bomber right by this hatch
       // Just right of the first cargo hatch (x 992-1056).
       syb.teleport(1110, 320);
     });
@@ -234,7 +235,7 @@ test.describe('QA regressions', () => {
     await page.goto('./?level=5-2#play');
     await waitForLevel(page, '5-2');
     // Past 5-2's galley (column 142, x 2272), just before the third hatch (x 2400-2464): walk in until out of hearts.
-    await page.evaluate(`(${syb})().clearTrolleys(); (${syb})().teleport(2380, 320)`);
+    await page.evaluate(`(${syb})().clearEnemies(); (${syb})().teleport(2380, 320)`);
     await page.keyboard.down('ArrowRight');
     await expect(page.getByRole('heading', { name: 'GAME OVER' })).toBeVisible({ timeout: 90_000 });
     await page.keyboard.up('ArrowRight');
@@ -243,6 +244,41 @@ test.describe('QA regressions', () => {
     const s = (await state(page))!;
     expect(s.finished).toBe(false);
     expect(Math.abs(s.x - 2272)).toBeLessThan(80);
+  });
+
+  test('letting go of a mask with Jump drops off it (no instant re-grab)', async ({ page }) => {
+    test.setTimeout(60_000);
+    await page.goto('./?level=5-2#play');
+    await waitForLevel(page, '5-2');
+    // Fall onto the first mask over 5-2's middle hatch (anchor column 100) and hang still.
+    await page.evaluate(`(${syb})().clearEnemies(); (${syb})().teleport(1600, 262)`);
+    await expect.poll(async () => (await state(page))!.swinging, { timeout: 10_000 }).toBe(true);
+    await page.waitForTimeout(500);
+    await page.keyboard.press('Space');
+    await expect.poll(async () => (await state(page))!.swinging, { timeout: 5_000 }).toBe(false);
+    for (let i = 0; i < 8; i++) {
+      await page.waitForTimeout(100);
+      expect((await state(page))!.swinging).toBe(false);
+    }
+  });
+
+  test('the map opened from pause can resume the level or go to the title', async ({ page }) => {
+    await page.goto('./?level=5-1#play');
+    await waitForLevel(page, '5-1');
+    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: 'WORLD 5 MAP' }).click();
+    await expect(page.getByRole('heading', { name: 'THE ATTACK' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'TITLE' })).toBeVisible();
+    await page.getByRole('button', { name: 'RESUME' }).click();
+    await expect(page.getByRole('heading', { name: 'THE ATTACK' })).toBeHidden();
+    const start = (await state(page))!;
+    await page.keyboard.down('ArrowRight');
+    await expect.poll(async () => (await state(page))!.x, { timeout: 5_000 }).toBeGreaterThan(start.x + 40);
+    await page.keyboard.up('ArrowRight');
+    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: 'WORLD 5 MAP' }).click();
+    await page.getByRole('button', { name: 'TITLE' }).click();
+    await expect(page.getByRole('button', { name: '1 PLAYER', exact: true })).toBeVisible();
   });
 
   test('HUD shows the score', async ({ page }) => {

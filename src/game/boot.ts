@@ -84,7 +84,8 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
         break;
       case 'clear':
         run = e.run;
-        progress = recordClear(progress, WORLD5_ORDER, current.id, e.run.score);
+        // A level's best is the points scored in it, not the run total carried in from earlier levels.
+        progress = recordClear(progress, WORLD5_ORDER, current.id, e.run.score - runAtStart.score);
         saveProgress(progress);
         music.stop();
         if (isLast()) {
@@ -95,7 +96,7 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
              <dl><dt>SCORE</dt><dd data-testid="final-score">${pad6(e.run.score)}</dd><dt>NUTS</dt><dd>${e.run.nuts}</dd></dl>
              <p class="soon">World 6: The Dive is coming soon.</p>`,
             [
-              { label: 'WORLD 5 MAP', run: showMap },
+              { label: 'WORLD 5 MAP', run: () => showMap() },
               { label: 'TITLE', run: opts.onQuit },
             ],
             'clear',
@@ -109,7 +110,13 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
                  <dt>NUTS</dt><dd>${e.run.nuts}</dd><dt>TIME</dt><dd>${e.seconds}s</dd></dl>
              <p class="soon">Next: ${next.id} ${next.name}</p>`,
             [
-              { label: 'NEXT LEVEL', run: () => playLevel(next) },
+              {
+                label: 'NEXT LEVEL',
+                run: () => {
+                  run = { ...run, hearts: Math.max(run.hearts, RULES.hearts) }; // every level starts with at least 3
+                  playLevel(next);
+                },
+              },
               { label: 'TITLE', run: opts.onQuit },
             ],
             'clear',
@@ -133,21 +140,27 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
     }
   };
 
-  /** World 5 map: replay any unlocked level. */
-  function showMap(): void {
-    music.stop();
+  /**
+   * World 5 map: replay any unlocked level. Opened from the pause card, the level stays paused behind it
+   * and RESUME (or Esc) goes back to it; TITLE is always a way out.
+   */
+  function showMap(fromPause = false): void {
+    if (!fromPause) music.stop();
     const unlockedIdx = WORLD5_ORDER.indexOf(progress.unlocked);
+    const levels = WORLD5.map((l, i) => ({
+      label: i <= unlockedIdx ? `${l.id} ${l.name}${l.id in progress.best ? ` · ${pad6(progress.best[l.id])}` : ''}` : `${l.id} LOCKED`,
+      disabled: i > unlockedIdx,
+      run: () => {
+        music.stop();
+        game.scene.stop('level');
+        run = freshRun(RULES.hearts);
+        playLevel(l);
+      },
+    }));
     hud.showOverlay(
       `<p class="world">WORLD 5</p><h2>THE ATTACK</h2>
        <p class="sub">Pick a cabin. Your best scores are saved on this device.</p>`,
-      WORLD5.map((l, i) => ({
-        label: i <= unlockedIdx ? `${l.id} ${l.name}${progress.best[l.id] ? ` · ${pad6(progress.best[l.id])}` : ''}` : `${l.id} LOCKED`,
-        disabled: i > unlockedIdx,
-        run: () => {
-          run = freshRun(RULES.hearts);
-          playLevel(l);
-        },
-      })),
+      [...levels, ...(fromPause ? [{ label: 'RESUME', run: resume }] : []), { label: 'TITLE', run: opts.onQuit }],
       'map',
     );
   }
@@ -211,7 +224,7 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
           btn.textContent = soundLabel();
         },
       },
-      { label: 'WORLD 5 MAP', run: () => (game.scene.stop('level'), showMap()) },
+      { label: 'WORLD 5 MAP', run: () => showMap(true) },
       { label: 'QUIT TO TITLE', run: opts.onQuit },
     ]);
   }

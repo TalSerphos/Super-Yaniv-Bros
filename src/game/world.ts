@@ -30,6 +30,8 @@ export interface GameWorld {
   sfx(name: Sfx): void;
   warn(): void;
   hurtPlayer(fromX: number, cause: string): void;
+  /** Does this box overlap solid terrain (floor slabs, bins)? */
+  solidAt(box: { left: number; right: number; top: number; bottom: number }): boolean;
   /** Is there something to stand on at (x, y) (top surface within a few units)? */
   standableAt(x: number, y: number): boolean;
   /** Deterministic per-level random number in [0, 1). */

@@ -85,3 +85,25 @@ Append after every stage/level: what worked, what didn't, numbers worth remember
 - `window.__syb` survives a level change until the new scene replaces it. Tests that cross levels wait for `state().level === id`, not just for `__syb`.
 - A jump under a block is stopped by the block about 14 units up. "Airborne" asserts have to allow for that.
 - Don't rebuild `dist/` while another process runs e2e against `vite preview`: a test's `goto` can land on deleted hashed files.
+- Mechanic e2e tests clear *all* enemies (`__syb.clearEnemies()`), not just trolleys. When 5-2 gained a Baby Bomber next to the hatch used by the respawn test, that test became timing-flaky.
+
+**QA agent (Stage 3)**: 10 bugs, all fixed with regression tests where they fit.
+- Invisible `-` shelves: now drawn.
+- Instant re-grab after letting go of a mask: the released vine stays locked until Yaniv lands.
+- Swinging through bins: the swing collides and bounces back.
+- Luggage out of thin air: drops now come from real bins and rattle for 0.5 s first, and a unit test checks the bin is above.
+- Map with no way back: RESUME/TITLE added, and the level stays paused behind the map.
+- Per-level best was the run total: it now counts only that level's points.
+- Double scoring on projectile and shell hits.
+- Translucent Bamba Rush.
+- A screamer stuck mid-scream.
+- Level-end visuals: a bulkhead behind the cockpit door, and seat rows past both ends.
+
+Tuning from the same pass:
+- ALT is now about 170 s per level, a real clock.
+- Mask pumping only adds energy in the direction of swing.
+- The plunger reaches above the head, for Bin Biters.
+- Luggage now hurts Big Yaniv too.
+- Babies hold fire while Yaniv hangs from a mask.
+- Every level starts with at least 3 hearts.
+- Bin-top nuts that nobody could reach are gone.

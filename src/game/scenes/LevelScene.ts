@@ -206,6 +206,12 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     }
     const oneWays = this.physics.add.staticGroup();
     for (const r of this.level.oneWays) this.addOneWay(oneWays, r.x, r.y, r.w, r.h);
+    // '-' platforms: a thin luggage shelf (its top is the standable edge) with a shadow underneath.
+    for (const r of this.level.shelves) {
+      this.add.rectangle(r.x + 2, r.y + 10, r.w - 4, 4, 0x000000, 0.25).setOrigin(0);
+      this.add.tileSprite(r.x, r.y, r.w, 10, 'w5.tex.bin').setOrigin(0).setTileScale(ART_SCALE);
+      this.add.rectangle(r.x, r.y, r.w, 2, 0xfff8e7).setOrigin(0);
+    }
     return { solids, oneWays };
   }
 
@@ -227,10 +233,15 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
   private createForeground(): void {
     const step = 52;
     const kinds = ['empty', 'sleeper', 'empty', 'reader', 'empty', 'kid'];
-    for (const r of this.level.solids.filter((s) => s.kind === 'floor')) {
+    const floors = this.level.solids.filter((s) => s.kind === 'floor');
+    const ends = [
+      { x: -VIEW_W, y: this.floorTop, w: VIEW_W, h: 32 },
+      { x: this.level.width, y: this.floorTop, w: VIEW_W, h: 32 },
+    ];
+    for (const r of [...floors, ...ends]) {
       for (let x = r.x + 6, i = Math.floor(r.x / step); x + step <= r.x + r.w; x += step, i++) {
         this.add
-          .image(x, r.y + 104, 'w5.seat', frameIndex('w5.seat', kinds[i % kinds.length]))
+          .image(x, r.y + 104, 'w5.seat', frameIndex('w5.seat', kinds[((i % kinds.length) + kinds.length) % kinds.length]))
           .setOrigin(0, 1)
           .setScale(ART_SCALE * 1.6)
           .setTint(this.cfg.level.mood === 'alarm' ? 0x7a5a6a : 0x6f7894)
@@ -241,7 +252,22 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
 
   private createExit(): void {
     const e = this.level.exit;
-    if (e.kind === 'door') this.door = this.add.sprite(e.x, e.y + EXIT.h, 'w5.door', 0).setOrigin(0, 1).setScale(ART_SCALE);
+    if (e.kind === 'door') {
+      // The cockpit door is set into the forward bulkhead: the cabin wall ends here.
+      const top = this.floorTop - VIEW_H;
+      const left = e.x + EXIT.w / 2;
+      this.add.rectangle(left, top, this.level.width + VIEW_W - left, VIEW_H, 0x8f7a74).setOrigin(0);
+      this.add.rectangle(left, top, 6, VIEW_H, 0x4a3a3e).setOrigin(0);
+      this.add.rectangle(left + 6, top, 3, VIEW_H, 0xc9b2a6).setOrigin(0);
+      // Panel seams and rivets, so it reads as a reinforced bulkhead rather than a blank wall.
+      const right = this.level.width + VIEW_W;
+      for (let y = top + 70; y < this.floorTop; y += 90) this.add.rectangle(left + 9, y, right - left, 2, 0x6e5c58).setOrigin(0);
+      for (let x = left + 80; x < right; x += 96) {
+        this.add.rectangle(x, top, 2, VIEW_H, 0x6e5c58).setOrigin(0);
+        for (let y = top + 40; y < this.floorTop; y += 45) this.add.circle(x + 8, y, 1.5, 0x5a4a48);
+      }
+      this.door = this.add.sprite(e.x, e.y + EXIT.h, 'w5.door', 0).setOrigin(0, 1).setScale(ART_SCALE);
+    }
     else this.add.image(e.x, e.y + EXIT.h, 'w5.curtain').setOrigin(0, 1).setScale(ART_SCALE);
     this.exitZone = this.add.zone(e.x + e.w / 2, e.y + e.h / 2, e.w * 0.6, e.h);
     this.physics.add.existing(this.exitZone, true);
@@ -326,6 +352,10 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
 
   random(): number {
     return this.rng.frac();
+  }
+
+  solidAt(box: { left: number; right: number; top: number; bottom: number }): boolean {
+    return this.level.solids.some((r) => box.left < r.x + r.w && box.right > r.x && box.top < r.y + r.h && box.bottom > r.y);
   }
 
   standableAt(x: number, y: number): boolean {
@@ -438,11 +468,15 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     this.sfx('thwop');
     const reach = this.add.rectangle(p.x + p.facing * 22, p.y - 30, 18, 8, 0xd61f1f).setDepth(11);
     this.tweens.add({ targets: reach, x: reach.x + p.facing * 12, alpha: 0, duration: 160, onComplete: () => reach.destroy() });
+    // Reach well past body contact (~36): the plunger must win against a trolley rolling in at speed. It also
+    // reaches a little above the head, so a Bin Biter can be plunged shut from the floor.
+    const [x0, x1] = p.facing > 0 ? [p.x - 8, p.x + 72] : [p.x - 72, p.x + 8];
+    const reachBox = { left: x0, right: x1, top: p.body.top - 36, bottom: p.y + 4 };
     for (const e of this.enemies) {
       if (!e.live) continue;
-      const dx = (e.x - p.x) * p.facing;
-      // Reach well past body contact (~36): the plunger must win against a trolley rolling in at speed.
-      if (dx > -8 && dx < 72 && Math.abs(e.y - p.y) < 40) e.hit('plunger');
+      const box = e.hitbox();
+      const inReach = box ? overlaps(reachBox, box) : e.x > x0 && e.x < x1 && Math.abs(e.y - p.y) < 40;
+      if (inReach) e.hit('plunger');
     }
   }
 
@@ -450,7 +484,7 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     const p = this.player;
     for (const v of this.vines) {
       v.step(dt);
-      if (!p.swing && p.swingCooldown <= 0 && !p.grounded && p.hurtTimer <= 0 && overlaps(p.body, v.grabZone)) p.grab(v);
+      if (!p.swing && p.swingCooldown <= 0 && v !== p.releasedVine && !p.grounded && p.hurtTimer <= 0 && overlaps(p.body, v.grabZone)) p.grab(v);
     }
   }
 
@@ -482,7 +516,10 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
       this.sfx('scream');
       this.cameras.main.shake(900, 0.012);
       this.warn();
-      this.time.delayedCall(1800, () => s.sprite.anims.stop());
+      this.time.delayedCall(1800, () => {
+        s.sprite.anims.stop();
+        s.sprite.setFrame(frameIndex('npc.screamer', 'calm'));
+      });
     }
     for (const c of this.checkpoints) {
       if (p.x < c.x) continue;
@@ -593,6 +630,7 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
       grounded: p.grounded,
       swinging: !!p.swing,
       swingVx: p.swing?.tipVelocity.x ?? 0,
+      swingDx: p.swing ? p.swing.end.x - p.swing.anchor.x : 0,
       groundAt: (x: number) => standable.some((r) => x >= r.x && x <= r.x + r.w && r.y >= feet - 4 && r.y <= feet + 40),
       // Anything overlapping the player's body height (feet-46 .. feet-8) at x is a wall to jump over.
       wallAt: (x: number) =>
@@ -632,6 +670,11 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
       clearTrolleys: () => {
         this.pendingTrolleys = [];
         for (const e of this.enemies) if (e.kind === 'trolley') e.destroy();
+      },
+      /** Test-only: remove every enemy and hazard (trolleys, cases, babies, biters, luggage). */
+      clearEnemies: () => {
+        this.pendingTrolleys = [];
+        for (const e of this.enemies) e.destroy();
       },
       setPower: (power: 'small' | 'big' | 'golden') => this.player.setPower(power, true),
       giveBamba: () => (this.player.bamba = 8),

@@ -198,10 +198,8 @@ export class ThrownPlunger {
     const box = { left: body.left, right: body.right, top: body.top, bottom: body.bottom };
     for (const e of enemies) {
       const h = e.live ? e.hitbox() : null;
-      if (h && box.left < h.right && box.right > h.left && box.top < h.bottom && box.bottom > h.top && e.hit('projectile')) {
-        this.world.addScore(RULES.stompScore, e.x, e.y - 30);
-        return this.destroy();
-      }
+      // Each enemy's hit() awards its own points.
+      if (h && box.left < h.right && box.right > h.left && box.top < h.bottom && box.bottom > h.top && e.hit('projectile')) return this.destroy();
     }
     const view = this.world.stage.cameras.main.worldView;
     if (this.age > 2 || this.s.x < view.left - 64 || this.s.x > view.right + 64 || this.s.y > this.world.level.height + 50) this.destroy();
