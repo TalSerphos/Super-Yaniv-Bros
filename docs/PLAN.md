@@ -13,6 +13,13 @@ Decisions already made with the user:
 
 ---
 
+## 0. Status
+
+- **Stage 1 (scaffold + title screen): on `main`** since 2026-10-04. `deploy.yml` publishes it to superyanivbros.com.
+- **Next: Stage 2 (World 5 slice).** The only input it needs is `art/reference/w5-aisle.webp`, which we already have. The concept-art PDF is needed before Stage 3.
+
+---
+
 ## 1. Architecture (decided once, used by every stage)
 
 **Stack:** Vite + TypeScript + **Phaser 3** (Arcade physics), Vitest and Playwright. No backend; everything is static files.
