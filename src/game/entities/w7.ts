@@ -41,11 +41,19 @@ export class Drain {
   step(dt: number, canSpawn: boolean, spawn: (e: Enemy) => void): void {
     if (!this.clogged || Math.abs(this.world.player.x - this.x) > 340) return;
     this.spawnTimer -= dt;
-    if (this.spawnTimer > 0 || !canSpawn) return;
+    // Never spawn a blob onto Yaniv (he may be standing on the drain, plunging it).
+    if (this.spawnTimer > 0 || !canSpawn || Math.abs(this.world.player.x - this.x) < 44) return;
     this.spawnTimer = 3.2;
     spawn(algaeBlob(this.world, this.x - 4, this.y - 6));
     this.world.stage.tweens.add({ targets: this.s, scaleY: ART_SCALE * 1.15, duration: 90, yoyo: true });
     this.world.sfx('bump');
+  }
+
+  /** Already clear (e.g. cleared before the checkpoint Yaniv retries from). */
+  setClear(): void {
+    this.clogged = false;
+    this.plunges = DRAIN_PLUNGES;
+    this.s.setFrame(frameIndex('prop.drain', 'clear'));
   }
 
   /** A plunger push. Returns true when this push cleared it. */
@@ -53,6 +61,7 @@ export class Drain {
     if (!this.clogged) return false;
     this.plunges++;
     this.world.sfx('thwop');
+    if (this.plunges < DRAIN_PLUNGES) this.world.popText?.(this.x, this.y - 44, `PLUNGE! ${this.plunges}/${DRAIN_PLUNGES}`);
     this.world.stage.tweens.add({ targets: this.s, x: this.x + 2, duration: 40, yoyo: true, repeat: 2 });
     if (this.plunges < DRAIN_PLUNGES) return false;
     this.clogged = false;
@@ -100,7 +109,7 @@ export class Reporter implements Enemy {
 
   /** The boom mic's reach while it is thrust out (world units). */
   get mic() {
-    const [a, b] = this.dir < 0 ? [this.s.x - 66, this.s.x - 14] : [this.s.x + 14, this.s.x + 66];
+    const [a, b] = this.dir < 0 ? [this.s.x - 70, this.s.x - 12] : [this.s.x + 12, this.s.x + 70];
     return { left: a, right: b, top: this.s.y - 58, bottom: this.s.y - 40 };
   }
 
@@ -112,7 +121,14 @@ export class Reporter implements Enemy {
     this.t += dt;
     switch (this.state) {
       case 'walk': {
-        if (Math.abs(dx) < 320) this.dir = dx < 0 ? -1 : 1;
+        // He waits for his story: still and quiet until Yaniv comes within range, then comes for him.
+        if (Math.abs(dx) > 320) {
+          body.setVelocityX(0);
+          this.s.anims.stop();
+          this.s.setFrame(frameIndex('enemy.reporter', 'walk0'));
+          break;
+        }
+        this.dir = dx < 0 ? -1 : 1;
         const ahead = this.s.x + this.dir * 14;
         const canWalk = !body.blocked.down || this.world.standableAt(ahead, this.s.y);
         body.setVelocityX(canWalk ? this.dir * 30 : 0);
@@ -120,20 +136,27 @@ export class Reporter implements Enemy {
         if (!this.s.anims.isPlaying) this.s.play('enemy.reporter:walk');
         // "One question!": a bubble from a distance.
         this.askTimer -= dt;
-        if (this.askTimer <= 0 && Math.abs(dx) > 110 && Math.abs(dx) < 290) {
-          this.askTimer = 2.8;
-          this.spawn(new Bubble(this.world, this.s.x + this.dir * 20, this.s.y - 40, this.dir * 120, 300, 'question', 'proj.question'));
+        if (this.askTimer <= 0 && Math.abs(dx) > 120 && Math.abs(dx) < 280) {
+          this.askTimer = 3.6;
+          this.spawn(new Bubble(this.world, this.s.x + this.dir * 20, this.s.y - 40, this.dir * 100, 300, 'question', 'proj.question'));
         }
-        if (Math.abs(dx) < 84 && Math.abs(p.y - this.s.y) < 30) this.setState('wind');
+        if (Math.abs(dx) < 72 && Math.abs(p.y - this.s.y) < 30) {
+          this.setState('wind');
+          // The tell: he flushes and shouts before the mic comes out.
+          this.s.anims.stop();
+          this.s.setFrame(frameIndex('enemy.reporter', 'walk0')).setTint(0xffd23f);
+          this.world.popText?.(this.s.x, this.s.y - 70, 'ONE QUESTION!');
+        }
         break;
       }
       case 'wind':
         body.setVelocityX(0);
-        this.s.x += Math.sin(this.t * 60) * 0.4; // a little lean-in wobble: the tell
-        if (this.t >= 0.4) {
+        this.s.x += Math.sin(this.t * 60) * 0.6;
+        if (this.t >= 0.45) {
           this.setState('swing');
-          this.s.anims.stop();
+          this.s.clearTint();
           this.s.setFrame(frameIndex('enemy.reporter', 'swing'));
+          body.setVelocityX(this.dir * 60); // a little lunge with the mic
           this.world.sfx('thwop');
         }
         break;
@@ -141,6 +164,7 @@ export class Reporter implements Enemy {
         if (overlaps(p.body, this.mic)) this.world.hurtPlayer(this.s.x, 'mic');
         if (this.t >= 0.5) {
           this.setState('cool');
+          body.setVelocityX(0);
           this.s.setFrame(frameIndex('enemy.reporter', 'walk0'));
         }
         break;
@@ -175,6 +199,7 @@ export class Reporter implements Enemy {
   private sit(): void {
     if (!this.live) return;
     this.live = false;
+    this.s.clearTint();
     this.s.anims.stop();
     this.s.setFrame(frameIndex('enemy.reporter', 'sit'));
     (this.s.body as Body).setVelocityX(0);
@@ -209,7 +234,7 @@ export class Paparazzo implements Enemy {
     readonly y: number,
   ) {
     // Behind the rope line: drawn under Yaniv and the walkway's front edge.
-    this.s = world.stage.add.sprite(x, y - 6, 'enemy.paparazzi', 0).setOrigin(0.5, 1).setScale(ART_SCALE).setDepth(2);
+    this.s = world.stage.add.sprite(x, y - 14, 'enemy.paparazzi', 0).setOrigin(0.5, 1).setScale(ART_SCALE * 0.92).setDepth(2);
     this.t = (x / 16) % 1.5; // stagger the row
   }
 
@@ -223,7 +248,7 @@ export class Paparazzo implements Enemy {
       this.t = 0;
       this.s.setFrame(frameIndex('enemy.paparazzi', frame));
     };
-    if (this.state === 'idle' && this.t >= 2.2) {
+    if (this.state === 'idle' && this.t >= 3.2) {
       next('aim', 'aim');
       this.world.stage.tweens.add({ targets: this.s, scaleX: ART_SCALE * 1.04, scaleY: ART_SCALE * 1.04, duration: 120, yoyo: true, repeat: 2 });
     } else if (this.state === 'aim' && this.t >= 0.7) {

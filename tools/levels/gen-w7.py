@@ -49,7 +49,7 @@ def l71():
     l.marble(16, 191, 194, nuts=True)
     l.nuts(17, range(200, 212, 2))
     l.put(FEET, 214, 'X')                        # the gate opens once the pool is clean
-    return l.dump({"id": "7-1", "name": "THE REFLECTING POOL", "theme": "mall", "timer": 200, "altitude": {"start": 0, "rate": 0}})
+    return l.dump({"id": "7-1", "name": "THE REFLECTING POOL", "theme": "mall", "timer": 150, "altitude": {"start": 0, "rate": 0}})
 
 def l72():
     W = 220; l = L(W)
@@ -66,7 +66,7 @@ def l72():
     l.put(FEET, 168, 'J'); l.put(FEET, 185, 'J'); l.put(BLOCKROW, 195, 'U')
     l.put(FEET, 200, 'J'); l.nuts(17, range(204, 212, 2))
     l.put(FEET, 214, 'X')
-    return l.dump({"id": "7-2", "name": "PRESS GAGGLE", "theme": "lawn", "timer": 200, "altitude": {"start": 0, "rate": 0}})
+    return l.dump({"id": "7-2", "name": "PRESS GAGGLE", "theme": "lawn", "timer": 120, "altitude": {"start": 0, "rate": 0}})
 
 def l73():
     W = 230; l = L(W)
@@ -82,7 +82,7 @@ def l73():
     l.put(FEET, 176, 'F'); l.marble(16, 186, 189, nuts=True)
     l.put(FEET, 200, 'F'); l.put(FEET, 210, 'J'); l.nuts(17, range(214, 222, 2))
     l.put(FEET, 224, 'X')
-    return l.dump({"id": "7-3", "name": "PAPARAZZI ROW", "theme": "lawn", "timer": 220, "altitude": {"start": 0, "rate": 0}})
+    return l.dump({"id": "7-3", "name": "PAPARAZZI ROW", "theme": "lawn", "timer": 130, "altitude": {"start": 0, "rate": 0}})
 
 def l74():
     W = 40; l = L(W)

@@ -53,8 +53,11 @@ export interface BossHud {
 export type GameEvent =
   | { type: 'warn' }
   | { type: 'pause' }
-  | { type: 'checkpoint'; at: Point }
-  | { type: 'clear'; run: RunState; seconds: number; door: boolean }
+  /** A checkpoint reached (with the 7-1 drains already cleared, so a retry keeps them clear). */
+  | { type: 'checkpoint'; at: Point; drains?: number[] }
+  /** A cutscene starts or ends (the touch buttons step aside). */
+  | { type: 'cutscene'; on: boolean }
+  | { type: 'clear'; run: RunState; seconds: number; door: boolean; bonus?: number }
   | { type: 'gameover'; reason: 'hearts' | 'altitude' | 'time'; score: number }
   /** World 6 Phase C: a knot fully slipped, back to Phase B. */
   | { type: 'slip'; clock: number }
@@ -67,6 +70,8 @@ export interface LevelInit {
   run: RunState;
   /** Retry from this galley checkpoint instead of the level start. */
   checkpoint?: Point;
+  /** 7-1: drains cleared before that checkpoint. */
+  clearedDrains?: number[];
   inputs: InputSource[];
   bot?: BotInput;
   /** Test/bot mode: no damage (pits still respawn). Used to prove every level's geometry is completable. */
@@ -120,10 +125,13 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
   private captain?: Phaser.GameObjects.Sprite;
   private screamer?: { sprite: Phaser.GameObjects.Sprite; done: boolean };
   private drains: Drain[] = [];
-  private algaeLayer?: Phaser.GameObjects.TileSprite;
+  private algaeLayers: Phaser.GameObjects.TileSprite[] = [];
   private gate?: Phaser.GameObjects.Sprite;
   private president?: Phaser.GameObjects.Sprite;
   private gateNagged = 0;
+  private gateWall?: Phaser.GameObjects.Zone;
+  private lastFlash = -9;
+  private lowTimeWarned = false;
   /** ALT in the air, or TIME on the ground (null: no clock, e.g. the Oval Office). */
   private altitude!: Altitude | null;
   private rng!: Phaser.Math.RandomDataGenerator;
@@ -187,8 +195,8 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     if (data.level.theme === 'oval') {
       // The Oval Office is one room on one screen: fixed camera, the floor near the bottom.
       cam.stopFollow();
-      cam.setBounds(0, this.floorTop + 40 - VIEW_H, width, VIEW_H);
-      cam.centerOn(width / 2, this.floorTop + 40 - VIEW_H / 2);
+      cam.setBounds(0, this.floorTop + 22 - VIEW_H, width, VIEW_H);
+      cam.centerOn(width / 2, this.floorTop + 22 - VIEW_H / 2);
     }
     this.applyTilt(true);
     if (data.level.mood === 'alarm') this.createAlarmLight();
@@ -221,8 +229,12 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     this.screamer = undefined;
     this.captain = this.door = undefined;
     this.drains = [];
-    this.algaeLayer = this.gate = this.president = undefined;
+    this.algaeLayers = [];
+    this.gate = this.president = undefined;
     this.gateNagged = 0;
+    this.gateWall = undefined;
+    this.lastFlash = -9;
+    this.lowTimeWarned = false;
   }
 
   // ---------- world construction ----------
@@ -259,7 +271,7 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     const { width } = this.level;
     if (theme === 'oval') {
       // The room fills the screen above the floor line (the camera is fixed, see create()).
-      this.add.image(width / 2, this.floorTop + 40, 'w7.bg.oval').setOrigin(0.5, 1).setScale(ART_SCALE);
+      this.add.image(width / 2, this.floorTop + 22, 'w7.bg.oval').setOrigin(0.5, 1).setScale(ART_SCALE);
       return;
     }
     this.add
@@ -269,16 +281,23 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
       .setTileScale(ART_SCALE);
     // A landmark far behind, scrolling slower still: the Washington Monument, or the White House near the end.
     if (theme === 'mall') {
-      this.add.image(width * 0.3, this.floorTop - 30, 'w7.prop.monument').setOrigin(0.5, 1).setScale(ART_SCALE).setScrollFactor(0.25, 1);
+      // Far away, standing at the tree line (smaller than life: it is a mile off).
+      this.add.image(width * 0.35, this.floorTop - 86, 'w7.prop.monument').setOrigin(0.5, 1).setScale(ART_SCALE * 0.62).setScrollFactor(0.2, 1);
     } else {
       this.add.image(width * 0.55, this.floorTop - 20, 'w7.prop.whitehouse').setOrigin(0.5, 1).setScale(ART_SCALE).setScrollFactor(0.45, 1);
     }
     // Water under the walkway: the pools and fountains show through the gaps.
     const y = this.floorTop + 10;
     this.add.tileSprite(-VIEW_W, y, width + VIEW_W * 2, VIEW_H, 'w7.tex.water').setOrigin(0).setTileScale(ART_SCALE);
-    // 7-1: the Reflecting Pool is choked with algae until its drains are plunged.
+    // 7-1: the Reflecting Pool itself runs alongside the walkway, choked with algae until its drains are plunged.
     if (this.level.drains.length) {
-      this.algaeLayer = this.add.tileSprite(-VIEW_W, y, width + VIEW_W * 2, VIEW_H, 'w7.tex.algae').setOrigin(0).setTileScale(ART_SCALE);
+      const poolY = this.floorTop - 30;
+      this.add.rectangle(-VIEW_W, poolY - 3, width + VIEW_W * 2, 3, 0xe8e2d0).setOrigin(0); // the stone rim
+      this.add.tileSprite(-VIEW_W, poolY, width + VIEW_W * 2, 30, 'w7.tex.water').setOrigin(0).setTileScale(ART_SCALE);
+      const scum = this.add.tileSprite(-VIEW_W, poolY, width + VIEW_W * 2, 30, 'w7.tex.algae').setOrigin(0).setTileScale(ART_SCALE);
+      this.algaeLayers.push(scum);
+      this.algaeLayers.push(this.add.tileSprite(-VIEW_W, y, width + VIEW_W * 2, VIEW_H, 'w7.tex.algae').setOrigin(0).setTileScale(ART_SCALE));
+      if (this.cfg.clearedDrains?.length === this.level.drains.length) this.algaeLayers.forEach((l) => l.setAlpha(0));
     }
   }
 
@@ -331,11 +350,7 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
   /** A darker row of seatbacks in front of the floor (closer to the camera), as in the concept art. */
   private createForeground(): void {
     if (this.ground) {
-      // Paparazzi Row: a velvet rope along the front of the walkway.
-      if (this.level.paparazzi.length) {
-        this.add.tileSprite(-VIEW_W, this.floorTop + 2, this.level.width + VIEW_W * 2, 32, 'w7.rope').setOrigin(0, 1).setTileScale(ART_SCALE).setDepth(3);
-      }
-      return;
+      return; // (each paparazzo brings his own stretch of velvet rope)
     }
     const step = 52;
     const kinds = ['empty', 'sleeper', 'empty', 'reader', 'empty', 'kid'];
@@ -412,6 +427,7 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     for (const l of this.level.luggage) spawn(new LuggageRain(this, l.x, l.y, spawn));
     for (const m of this.level.masks) this.vines.push(new MaskVine(this, m));
     for (const d of this.level.drains) this.drains.push(new Drain(this, d.x, d.y));
+    for (const i of this.cfg.clearedDrains ?? []) this.drains[i]?.setClear();
     for (const a of this.level.algae) spawn(algaeBlob(this, a.x, a.y));
     for (const r of this.level.reporters) spawn(new Reporter(this, r.x, r.y, spawn));
     for (const p of this.level.paparazzi) spawn(new Paparazzo(this, p.x, p.y));
@@ -426,7 +442,16 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     this.physics.add.collider(p, this.stuckPlungers);
     this.physics.add.collider(p, this.blocks.group, (_p, b) => this.blocks.bump(b as Sprite, this.player));
     this.physics.add.overlap(p, this.nuts, (_p, n) => this.collectNut(n as Sprite));
-    this.physics.add.overlap(p, this.exitZone, () => this.clearLevel());
+    if (this.cfg.level.theme !== 'oval') this.physics.add.overlap(p, this.exitZone, () => this.clearLevel());
+    // 7-1: the shut gate is a real barrier until the pool is clean (its zone reaches into the exit zone, so
+    // walking up to it still shows the hint).
+    if (this.level.drains.length) {
+      const e = this.level.exit;
+      this.gateWall = this.add.zone(e.x + 24, e.y + e.h / 2, 16, e.h);
+      this.physics.add.existing(this.gateWall, true);
+      this.physics.add.collider(p, this.gateWall, () => this.clearLevel());
+      if (this.objectiveDone) this.gateWall.destroy();
+    }
   }
 
   private createAlarmLight(): void {
@@ -541,6 +566,12 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
 
     if (p.y > this.level.height + 48 && !p.swing) this.fellInPit();
     if (this.altitude) {
+      if (this.cfg.level.timer && !this.lowTimeWarned && this.altitude.value <= 30) {
+        this.lowTimeWarned = true;
+        this.sfx('warn');
+        this.warn();
+        this.popText(p.x, p.y - 80, 'HURRY UP!', 900, true);
+      }
       this.altitude.tick(dt);
       if (this.altitude.crashed) return this.gameOver(this.cfg.level.timer ? 'time' : 'altitude');
     }
@@ -613,9 +644,18 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
   private poolCleared(): void {
     this.popText(this.player.x, this.player.y - 90, 'THE POOL IS CLEAN!');
     this.sfx('powerup');
-    if (this.algaeLayer) this.tweens.add({ targets: this.algaeLayer, alpha: 0, duration: 1800 });
+    if (this.algaeLayers.length) this.tweens.add({ targets: this.algaeLayers, alpha: 0, duration: 1800 });
     for (const e of this.enemies) if (e.kind === 'algae') e.hit('plunger');
     this.gate?.setFrame(frameIndex('w7.gate', 'open'));
+    this.gateWall?.destroy();
+    this.gateWall = undefined;
+  }
+
+  /** Top-right of the HUD on the ground: TIME, and 7-1's drains still to clear. */
+  private groundLabel(): string {
+    if (!this.altitude) return 'WASHINGTON, D.C.';
+    const left = this.drains.filter((d) => d.clogged).length;
+    return `TIME ${Math.ceil(this.altitude.value)}${this.drains.length ? ` · DRAINS ${left}` : ''}`;
   }
 
   private get objectiveDone(): boolean {
@@ -626,12 +666,20 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     const algae = this.enemies.filter((e) => e.live && e.kind === 'algae').length;
     for (const d of this.drains) d.step(dt, algae < 4, (e) => this.enemies.push(e));
     // 7-4: walk up to the President for the handshake.
-    if (this.president && Math.abs(this.player.x - this.president.x) < 46 && this.player.grounded) this.finale();
+    // (Any height: jumping over him still ends in the handshake.)
+    if (this.president && this.player.x > this.president.x - 46) this.finale();
   }
 
   /** A paparazzo's flash: the whole screen whites out for a moment. */
   flashScreen(): void {
-    this.cameras.main.flash(650, 255, 255, 255, true);
+    // One flash at a time (a row of paparazzi would otherwise strobe), and a gentler one with reduced motion.
+    if (this.elapsed - this.lastFlash < 1.6) return;
+    this.lastFlash = this.elapsed;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      const cam = this.cameras.main;
+      const veil = this.add.rectangle(cam.width / 2, cam.height / 2, VIEW_W * 2, VIEW_H * 2, 0xffffff, 0.45).setScrollFactor(0).setDepth(60);
+      this.tweens.add({ targets: veil, alpha: 0, duration: 650, onComplete: () => veil.destroy() });
+    } else this.cameras.main.flash(650, 255, 255, 255, true);
   }
 
   /**
@@ -643,6 +691,8 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     this.finished = true;
     const p = this.player;
     const pres = this.president;
+    this.cfg.onEvent({ type: 'cutscene', on: true });
+    p.placeAt(pres.x - 34, this.floorTop);
     p.body.stop();
     p.body.enable = false;
     p.sprite.anims.stop();
@@ -730,7 +780,8 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     for (const c of this.checkpoints) {
       if (p.x < c.x) continue;
       this.checkpoints = this.checkpoints.filter((k) => k !== c);
-      this.cfg.onEvent({ type: 'checkpoint', at: c });
+      const drains = this.drains.flatMap((d, i) => (d.clogged ? [] : [i]));
+      this.cfg.onEvent({ type: 'checkpoint', at: c, drains });
       this.popText(c.x, c.y - 70, 'CHECKPOINT');
       this.sfx('ding');
     }
@@ -760,12 +811,13 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
    * cancelled, so no creeping or sliding off the level), fades out behind it, then the card appears.
    */
   private clearLevel(): void {
-    if (this.finished) return;
+    if (this.finished || this.cfg.level.theme === 'oval') return;
     if (!this.objectiveDone) {
       // 7-1: the gate stays shut until the pool's drains are clear.
       if (this.elapsed - this.gateNagged > 2) {
         this.gateNagged = this.elapsed;
-        this.popText(this.level.exit.x + 32, this.level.exit.y - 10, 'UNCLOG THE DRAINS FIRST!');
+        const left = this.drains.filter((d) => d.clogged).length;
+        this.popText(this.level.exit.x, this.level.exit.y - 10, `LOCKED: ${left} DRAIN${left === 1 ? '' : 'S'} STILL CLOGGED!`, 1300, true);
         this.sfx('bump');
       }
       return;
@@ -773,7 +825,8 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     this.finished = true;
     const p = this.player;
     // On the ground the time left becomes points, like the flagpole bonus of old.
-    if (this.cfg.level.timer && this.altitude) this.score += Math.floor(this.altitude.value) * 10;
+    const bonus = this.cfg.level.timer && this.altitude ? Math.floor(this.altitude.value) * 10 : 0;
+    this.score += bonus;
     if (p.swing) p.letGo(false);
     const door = this.level.exit.kind === 'door';
     if (door) {
@@ -801,7 +854,7 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
       },
     });
     const run: RunState = { hearts: this.hearts, power: p.power, nuts: this.nutCount, score: this.score };
-    this.time.delayedCall(door ? 1400 : 900, () => this.cfg.onEvent({ type: 'clear', run, seconds: Math.round(this.elapsed), door }));
+    this.time.delayedCall(door ? 1400 : 900, () => this.cfg.onEvent({ type: 'clear', run, seconds: Math.round(this.elapsed), door, bonus }));
   }
 
   private gameOver(reason: 'hearts' | 'altitude' | 'time'): void {
@@ -813,10 +866,10 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     this.cfg.onEvent({ type: 'gameover', reason, score: this.score });
   }
 
-  popText(x: number, y: number, text: string): void {
-    const t = this.add.text(x, y, text, { fontFamily: '"Press Start 2P", monospace', fontSize: '16px', color: '#fff8e7' });
+  popText(x: number, y: number, text: string, hold = 0, big = false): void {
+    const t = this.add.text(x, y, text, { fontFamily: '"Press Start 2P", monospace', fontSize: big ? '24px' : '16px', color: '#fff8e7' });
     t.setOrigin(0.5).setScale(0.5).setDepth(20).setStroke('#000', 4);
-    this.tweens.add({ targets: t, y: y - 20, alpha: 0, duration: 700, onComplete: () => t.destroy() });
+    this.tweens.add({ targets: t, y: y - 20, alpha: 0, delay: hold, duration: 700, onComplete: () => t.destroy() });
   }
 
   private pushHud(): void {
@@ -828,7 +881,7 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
       nuts: this.nutCount,
       score: this.score,
       alt: this.altitude?.format() ?? '',
-      altLabel: this.ground ? (this.altitude ? `TIME ${Math.ceil(this.altitude.value)}` : 'WASHINGTON, D.C.') : undefined,
+      altLabel: this.ground ? this.groundLabel() : undefined,
       hideBank: this.ground,
       bank: Math.round(this.tiltDeg),
       bankWarning: !!upcomingTilt(this.cfg.level.tilt, this.progressX),

@@ -23,7 +23,7 @@ describe('World 7 levels (on the ground)', () => {
         expect(p.president, 'the President waits in the Oval Office').toBeDefined();
         expect(level.timer).toBeUndefined();
       } else {
-        expect(level.timer).toBeGreaterThanOrEqual(150);
+        expect(level.timer).toBeGreaterThanOrEqual(110); // a real clock: about 4× a fast run
       }
     });
   }

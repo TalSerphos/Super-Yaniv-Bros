@@ -58,6 +58,8 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
   /** Run state at the start of the current level (what RETRY goes back to). */
   let runAtStart: RunState = run;
   let checkpoint: Point | undefined;
+  /** 7-1: drains already cleared when that checkpoint was reached. */
+  let checkpointDrains: number[] | undefined;
 
   const game = new Phaser.Game({
     type: Phaser.AUTO,
@@ -90,6 +92,10 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
         break;
       case 'checkpoint':
         checkpoint = e.at;
+        checkpointDrains = e.drains;
+        break;
+      case 'cutscene':
+        hud.touch.classList.toggle('away', e.on);
         break;
       case 'clear': {
         run = e.run;
@@ -100,7 +106,7 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
         if (!(isBoss(current) && current.phase === 'C')) music.stop();
         const next = nextStage();
         const score = `<dl><dt>SCORE</dt><dd data-testid="final-score">${pad6(e.run.score)}</dd><dt>NUTS</dt><dd>${e.run.nuts}</dd>${
-          e.seconds ? `<dt>TIME</dt><dd>${e.seconds}s</dd>` : ''
+          e.bonus ? `<dt>TIME BONUS</dt><dd>${e.bonus}</dd>` : e.seconds ? `<dt>TIME</dt><dd>${e.seconds}s</dd>` : ''
         }</dl>`;
         const goNext = (label: string) => ({
           label,
@@ -211,7 +217,7 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
            <p class="sub">${e.reason === 'altitude' ? 'Pull up faster next time!' : e.reason === 'time' ? 'The motorcade waits for no one.' : 'Even plumbers need a second try.'}</p>
            <dl><dt>SCORE</dt><dd>${pad6(e.score)}</dd></dl>`,
           [
-            { label: checkpoint ? 'RETRY FROM GALLEY' : 'RETRY', run: retry },
+            { label: checkpoint ? (!isBoss(current) && (current.theme ?? 'cabin') !== 'cabin' ? 'RETRY FROM CHECKPOINT' : 'RETRY FROM GALLEY') : 'RETRY', run: retry },
             { label: 'TITLE', run: opts.onQuit },
           ],
           'over',
@@ -272,13 +278,16 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
     const intro = isBoss(level)
       ? `<p class="world">WORLD ${level.id} · PHASE ${level.phase}</p><h2>${level.name}</h2><p class="sub">${BOSS_GOALS[level.phase]}</p>`
       : (level.theme ?? 'cabin') !== 'cabin'
-        ? `<p class="world">WORLD ${level.id}</p><h2>${level.name}</h2><p class="sub">${level.timer ? `TIME ${level.timer} · ` : ''}WASHINGTON, D.C.</p>`
+        ? `<p class="world">WORLD ${level.id}</p><h2>${level.name}</h2><p class="sub">${
+            level.id === '7-1' ? 'The pool is choked with algae! Plunge its 3 clogged drains (GRAB) to open the gate.' : `${level.timer ? `TIME ${level.timer} · ` : ''}WASHINGTON, D.C.`
+          }</p>`
         : `<p class="world">WORLD ${level.id}</p><h2>${level.name}</h2><p class="sub">ALT ${level.altitude.start.toLocaleString('en-US')} FT · BANK ${level.tilt[0]?.deg ?? 0}°</p>`;
     hud.showOverlay(intro, [], 'intro');
     window.clearTimeout(introTimer);
     introTimer = window.setTimeout(() => {
       if (destroyed) return;
       hud.hideOverlay();
+      hud.touch.classList.remove('away');
       for (const key of ['level', 'boss']) if (game.scene.getScene(key)) game.scene.stop(key);
       const onHud = (s: HudState) => hud.update(s);
       if (isBoss(level)) {
@@ -290,7 +299,7 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
         music.play(level.phase === 'C' ? 'calm' : 'boss');
       } else {
         activeKey = 'level';
-        const init: LevelInit = { level, run: { ...run }, checkpoint, inputs, bot, god: opts.god, onHud, onEvent };
+        const init: LevelInit = { level, run: { ...run }, checkpoint, clearedDrains: checkpoint ? checkpointDrains : undefined, inputs, bot, god: opts.god, onHud, onEvent };
         if (game.scene.getScene('level')) game.scene.start('level', init);
         else game.scene.add('level', LevelScene, true, init);
         const theme = level.theme ?? 'cabin';
@@ -352,11 +361,11 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
       resume();
       return;
     }
-    const nav: Record<string, 'prev' | 'next' | 'confirm'> = {
-      ArrowLeft: 'prev',
-      ArrowUp: 'prev',
-      ArrowRight: 'next',
-      ArrowDown: 'next',
+    const nav: Record<string, 'up' | 'down' | 'left' | 'right' | 'confirm'> = {
+      ArrowLeft: 'left',
+      ArrowUp: 'up',
+      ArrowRight: 'right',
+      ArrowDown: 'down',
       Space: 'confirm',
       KeyZ: 'confirm',
       Enter: 'confirm',
@@ -379,13 +388,16 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
       const x = p.axes[0] ?? 0;
       if (p.buttons[0]?.pressed) now.add('confirm');
       if (p.buttons[9]?.pressed) now.add('start');
-      if (p.buttons[14]?.pressed || x < -0.5) now.add('prev');
-      if (p.buttons[15]?.pressed || x > 0.5) now.add('next');
+      const y = p.axes[1] ?? 0;
+      if (p.buttons[14]?.pressed || x < -0.5) now.add('left');
+      if (p.buttons[15]?.pressed || x > 0.5) now.add('right');
+      if (p.buttons[12]?.pressed || y < -0.5) now.add('up');
+      if (p.buttons[13]?.pressed || y > 0.5) now.add('down');
     }
     for (const a of now) {
       if (padHeld.has(a)) continue;
       if (a === 'start' && paused()) resume();
-      else hud.overlayNavigate(a === 'start' ? 'confirm' : (a as 'prev' | 'next' | 'confirm'));
+      else hud.overlayNavigate(a === 'start' ? 'confirm' : (a as 'up' | 'down' | 'left' | 'right' | 'confirm'));
     }
     padHeld.clear();
     now.forEach((a) => padHeld.add(a));

@@ -195,7 +195,7 @@
 .game-overlay.map .card { padding: 2.2cqh 2.4cqw; }
 .game-overlay.map .card { max-width: 94cqw; }
 .game-overlay.map .card-actions { display: grid; grid-auto-columns: 1fr; gap: 1cqh 1.4cqw; }
-.game-overlay.map .card-actions button { font-size: 1cqw; padding: 1cqh 1cqw; text-align: left; white-space: nowrap; }
+.game-overlay.map .card-actions button { font-size: 1cqw; padding: 1cqh 1cqw; text-align: left; white-space: nowrap; min-height: max(5.5cqh, 44px); }
 .game-overlay.map h2 { margin-bottom: 1cqh; }
 .game-overlay.map .sub { margin-bottom: 1.4cqh; font-size: 1.4cqw; }
 .card-actions button:disabled { opacity: 0.4; cursor: default; }
@@ -211,3 +211,6 @@
   box-shadow: 0 0.6cqw 0 #000;
   transform: rotate(-2deg);
 }
+
+/* Touch buttons step aside during cutscenes (the 7-4 handshake, the 6-3 celebration). */
+.touch.away { visibility: hidden; }

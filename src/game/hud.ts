@@ -182,14 +182,35 @@ export class Hud {
     return !this.overlay.hidden;
   }
 
-  /** Keyboard/gamepad navigation for cards: move focus between buttons and activate the focused one. */
-  overlayNavigate(action: 'prev' | 'next' | 'confirm'): void {
+  /**
+   * Keyboard/gamepad navigation for cards: arrows move focus to the nearest button in that direction (so the
+   * map's columns work like a grid); with nothing that way they step through the list; confirm activates.
+   */
+  overlayNavigate(action: 'up' | 'down' | 'left' | 'right' | 'confirm'): void {
     const buttons = [...this.overlay.querySelectorAll<HTMLButtonElement>('.card-actions button:not(:disabled)')];
     if (!buttons.length) return;
     const i = buttons.indexOf(document.activeElement as HTMLButtonElement);
     if (action === 'confirm') return (buttons[i] ?? buttons[0]).click();
-    const next = buttons[(Math.max(i, 0) + (action === 'next' ? 1 : buttons.length - 1)) % buttons.length];
-    next.focus({ preventScroll: true });
+    if (i < 0) return buttons[0].focus({ preventScroll: true });
+    const centre = (b: HTMLElement) => {
+      const r = b.getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    };
+    const from = centre(buttons[i]);
+    const [ax, ay] = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[action];
+    let best: HTMLButtonElement | null = null;
+    let bestScore = Infinity;
+    for (const b of buttons) {
+      if (b === buttons[i]) continue;
+      const c = centre(b);
+      const along = (c.x - from.x) * ax + (c.y - from.y) * ay;
+      if (along <= 4) continue;
+      const across = Math.abs((c.x - from.x) * ay) + Math.abs((c.y - from.y) * ax);
+      const score = along + across * 2;
+      if (score < bestScore) [best, bestScore] = [b, score];
+    }
+    const step = action === 'down' || action === 'right' ? 1 : buttons.length - 1;
+    (best ?? buttons[(i + step) % buttons.length]).focus({ preventScroll: true });
   }
 
   destroy(): void {

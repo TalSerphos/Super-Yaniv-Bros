@@ -665,9 +665,13 @@ export class BossScene extends Phaser.Scene implements GameWorld {
     }
     // The final win: everyone claps and sings (the victory song keeps playing under the card).
     music.play('victory', true);
-    this.popText(W / 2, FLOOR - 170, 'TABUK!', 2600);
-    this.time.delayedCall(700, () => this.popText(W / 2, FLOOR - 150, 'AM YISRAEL CHAI!', 2600));
-    this.time.delayedCall(1700, () => this.popText(W / 2, FLOOR - 130, 'OD AVINU CHAI!', 2600));
+    this.zip?.destroy();
+    this.zip = undefined;
+    this.knotMarks?.clear();
+    this.cfg.onEvent({ type: 'cutscene', on: true });
+    this.popText(W / 2, FLOOR - 190, 'TABUK!', 2600, true);
+    this.time.delayedCall(700, () => this.popText(W / 2, FLOOR - 160, 'AM YISRAEL CHAI!', 2600, true));
+    this.time.delayedCall(1700, () => this.popText(W / 2, FLOOR - 130, 'OD AVINU CHAI!', 2600, true));
     const crowd = this.children.list.filter((o) => o instanceof Phaser.GameObjects.Sprite && o !== this.boss) as Phaser.GameObjects.Sprite[];
     for (const [i, s] of crowd.entries()) {
       this.tweens.add({ targets: s, y: s.y - 10, duration: 180, yoyo: true, repeat: 7, delay: (i % 3) * 90, ease: 'Quad.Out' });
@@ -685,8 +689,8 @@ export class BossScene extends Phaser.Scene implements GameWorld {
     this.cfg.onEvent({ type: 'gameover', reason, score: this.score });
   }
 
-  popText(x: number, y: number, text: string, hold = 300): void {
-    const t = this.add.text(x, y, text, { fontFamily: '"Press Start 2P", monospace', fontSize: '16px', color: '#fff8e7' });
+  popText(x: number, y: number, text: string, hold = 300, big = false): void {
+    const t = this.add.text(x, y, text, { fontFamily: '"Press Start 2P", monospace', fontSize: big ? '28px' : '16px', color: '#fff8e7' });
     t.setOrigin(0.5).setScale(0.5).setDepth(20).setStroke('#000', 4);
     this.tweens.add({ targets: t, y: y - 20, alpha: 0, delay: hold, duration: 900, onComplete: () => t.destroy() });
   }
@@ -694,6 +698,7 @@ export class BossScene extends Phaser.Scene implements GameWorld {
   // ---------- HUD ----------
 
   private prompt(): string | undefined {
+    if (this.finished) return undefined;
     const p = this.player;
     if (this.a) {
       if (this.a.mode === 'choke') return 'MASH GRAB!';
@@ -749,7 +754,8 @@ export class BossScene extends Phaser.Scene implements GameWorld {
       bank: this.b ? Math.round(Math.max(0, -this.b.pitch)) : Math.round(this.tiltDeg),
       bankWarning: this.leanTilt > 0,
       label: `${this.cfg.level.id}  ${this.cfg.level.name}`,
-      boss: this.bossHud(),
+      // After the final win the boss panel steps aside for the celebration.
+      boss: this.finished && this.phase === 'C' ? undefined : this.bossHud(),
     });
   }
 

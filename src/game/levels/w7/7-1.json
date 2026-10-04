@@ -2,7 +2,7 @@
   "id": "7-1",
   "name": "THE REFLECTING POOL",
   "theme": "mall",
-  "timer": 200,
+  "timer": 150,
   "altitude": {
     "start": 0,
     "rate": 0

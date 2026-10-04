@@ -24,7 +24,11 @@ Decisions already made with the user:
 - **Spec update (2026-10-04, from Tal):** World 6 The Dive is dropped (a freefall may return as 5-5). The cockpit boss is now **World 6** and the final world is **World 7 The White House** (7-1 Reflecting Pool algae, reporters/paparazzi, 7-4 handshake and photo, no fight). Flight music is based on Hava Nagila.
 - **Stage 4 (World 6 boss: 6-1, 6-2, 6-3): built 2026-10-04.** Rules in `src/game/systems/boss.ts`, arenas in `BossScene.ts`, 15 new assets (`docs/levels/w6-boss-assets.md`). The boss bot wins every phase in e2e; fidelity 7.0/10 vs `w6-cockpit.webp`. Flight music is Hava Nagila (cabin, alarm, boss, calm).
 - **6-4 is dropped for now** (maybe later: a no-challenge "Tabuk Terminal" breather). Music: Hava Nagila is World 5 only; World 6 has original music and a clapping "Od Avinu Chai" win.
-- **Now: World 7 The White House** (7-1 Reflecting Pool, 7-2 Press Gaggle, 7-3 Paparazzi Row, 7-4 The Oval Office). Carry over:
+- **Stage 8 (World 7 The White House: 7-1 Reflecting Pool, 7-2 Press Gaggle, 7-3 Paparazzi Row, 7-4 The Oval Office): built 2026-10-04.**
+  - Ground themes (no tilt, TIME instead of ALT, time bonus, HURRY UP at 30 s), drains that gate the 7-1 exit, Reporters with boom mics and question bubbles, Paparazzi flashes (with a cooldown and a reduced-motion veil), and the 7-4 handshake + photo finale card.
+  - 18 new assets (`docs/levels/w7-assets.md`); the President rendered without a refusal. Levels come from `tools/levels/gen-w7.py`. The plain bot clears 7-1..7-3 in e2e; a QA pass found 9 bugs, all fixed.
+  - The map is a grid (one column per world) with spatial arrow-key and gamepad navigation.
+- **Next (candidates):** 5-5 Freefall, the 6-4 Tabuk Terminal breather, Worlds 1–4. Carry over:
   - denser passengers in the play layer
   - a larger Yaniv frame (about 56×72)
   - touch buttons in the phone letterbox bars

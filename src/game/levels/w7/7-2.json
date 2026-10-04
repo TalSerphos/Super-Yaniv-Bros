@@ -2,7 +2,7 @@
   "id": "7-2",
   "name": "PRESS GAGGLE",
   "theme": "lawn",
-  "timer": 200,
+  "timer": 120,
   "altitude": {
     "start": 0,
     "rate": 0
