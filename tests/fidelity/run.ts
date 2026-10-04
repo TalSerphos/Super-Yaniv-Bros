@@ -23,6 +23,11 @@ interface Shot {
   reference: string;
   gate: number;
   notes?: string;
+  /** Game shots: wait until the player (driven by ?bot=1) has reached this x before capturing. */
+  untilX?: number;
+  /** Per-shot regression floors (gameplay frames never match a composed painting pixel-for-pixel). */
+  minPalette?: number;
+  minComposition?: number;
 }
 
 const ROOT = new URL('../../', import.meta.url).pathname;
@@ -96,6 +101,13 @@ async function main() {
       await page.goto(base + shot.url);
       await page.waitForLoadState('networkidle');
       await page.evaluate(() => document.fonts.ready);
+      if (shot.untilX !== undefined) {
+        await page.waitForFunction(
+          (x) => ((window as unknown as { __syb?: { state(): { x: number } } }).__syb?.state().x ?? 0) >= x,
+          shot.untilX,
+          { timeout: 60_000, polling: 50 },
+        );
+      }
       const png = await page.locator('#stage').screenshot();
       const refPath = join(ROOT, shot.reference);
       const [palette, ssim] = await Promise.all([paletteSimilarity(png, refPath), compositionSsim(png, refPath)]);
@@ -121,8 +133,9 @@ async function main() {
       } else {
         line += ' – | – | – |';
       }
-      if (palette < MIN_PALETTE) failures.push(`${shot.id}: palette ${palette.toFixed(3)} < ${MIN_PALETTE}`);
-      if (ssim < MIN_SSIM) failures.push(`${shot.id}: composition ${ssim.toFixed(3)} < ${MIN_SSIM}`);
+      const [minPalette, minSsim] = [shot.minPalette ?? MIN_PALETTE, shot.minComposition ?? MIN_SSIM];
+      if (palette < minPalette) failures.push(`${shot.id}: palette ${palette.toFixed(3)} < ${minPalette}`);
+      if (ssim < minSsim) failures.push(`${shot.id}: composition ${ssim.toFixed(3)} < ${minSsim}`);
 
       const md = join(DOCS, `${shot.id}.md`);
       if (!existsSync(md)) {

@@ -5,5 +5,15 @@
     "reference": "art/reference/title.webp",
     "gate": 8,
     "notes": "Logo top-left, four Bros. standing on the airliner, menu box bottom-left, score line top, copyright bottom."
+  },
+  {
+    "id": "w5-aisle",
+    "url": "/?bot=1#play",
+    "untilX": 900,
+    "reference": "art/reference/w5-aisle.webp",
+    "gate": 5,
+    "notes": "World 5 cabin aisle tilted nose-down about 12 degrees: teal seats with passengers, purple-orange sunset windows, overhead bins with amber lights, brass hex nuts, a Trolley Troll drink cart rolling from behind, Yaniv running with his plunger. HUD bar: SUPER YANIV logo, 3 hearts, nut counter, BANK gauge, level label. The game is a first, simpler slice: judge whether it reads as the same scene and style.",
+    "minPalette": 0.5,
+    "minComposition": 0.0
   }
 ]
