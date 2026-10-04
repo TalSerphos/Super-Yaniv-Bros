@@ -1,0 +1,416 @@
+# World 7 (The White House) assets. Contract: docs/levels/w7-assets.md. Schema: tools/assets/README.md.
+# Sprites are painted on flat magenta and keyed out; frames are built at 2x world units.
+# Mood: a bright morning in Washington. The style prefix asks for sunset light, so every prompt overrides it
+# with clear morning daylight. Scale targets (2x px): Yaniv's idle is 107 tall, adults about the same or a bit
+# more, the President about 1.12x Yaniv.
+
+- id: w7.bg.park
+  kind: background
+  refs: [art/reference/w5-aisle.webp]
+  size: 1536x1024
+  candidates: 2
+  frame: {w: 640, h: 360}
+  seamless: x
+  prompt: >
+    Background layer for a side-scrolling platformer: a wide park lawn in the morning, drawn as a flat,
+    straight-on side view, perfectly level, no perspective, filling the whole image edge to edge. Use the
+    reference image ONLY for the pixel-art technique (crisp pixels, dark outlines, painterly shading); ignore
+    its content, its colors and its sunset light. Lighting: a bright, clear MORNING in early summer, NOT sunset:
+    a clean light-blue sky getting paler toward the horizon, warm white-yellow sunlight from the upper left,
+    a few small puffy white clouds high up. In the distance, low on the horizon, a hazy pale blue-grey city
+    skyline of plain low office blocks, no tall towers, no domes, no obelisks, no monuments. In front of it a
+    long row of big round-crowned elm trees in rich greens with sunlit tops and shaded undersides, their dark
+    trunks standing on the lawn, the treetops reaching about halfway up the image. The bottom sixth of the
+    image is a flat, even, freshly mowed green lawn. The pattern repeats evenly so it can tile horizontally.
+    No landmarks, no buildings in front of the trees, no people, no animals, no benches, no paths, no flags,
+    no signs, no text.
+  out: {dir: w7, quality: 82, position: bottom}
+
+- id: w7.prop.monument
+  kind: image
+  refs: [art/reference/w5-aisle.webp]
+  size: 1024x1536
+  chroma: '#ff00ff'
+  candidates: 2
+  frame: {w: 96, h: 256}
+  prompt: >
+    A single tall object for a platformer's far parallax layer, drawn straight-on and not tilted, in the pixel
+    style of the reference image (ignore its content and its sunset colors): the Washington Monument, a tall,
+    slender, plain white-marble obelisk with a small pointed pyramid tip and a faint horizontal line a third of
+    the way up where the stone changes shade, standing on a low round grassy mound with a small pale stone plaza
+    ring at its foot. Bright clear morning daylight from the left: the left face sunlit warm white, the right
+    face in a cool pale blue-grey shade. The obelisk fills the image height from the top edge down to the mound
+    on the bottom edge; the mound is no wider than one third of the image height. Slightly soft and pale like a
+    distant landmark, still with a clean dark outline. Perfectly flat, solid, uniform magenta (#FF00FF)
+    background around it, no sky, no clouds, no trees, no people, no flags, no shadows on the background, no
+    text.
+  out: {dir: w7, colors: 32}
+
+- id: w7.prop.whitehouse
+  kind: image
+  refs: [art/reference/w5-aisle.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  frame: {w: 480, h: 240}
+  prompt: >
+    A single wide building for a platformer background layer, in the pixel style of the reference image (ignore
+    its content and its sunset colors): the White House north facade seen straight-on, symmetric, not tilted,
+    exactly twice as wide as it is tall, filling the image width. A wide, bright white neoclassical mansion
+    with two rows of tall evenly spaced windows with dark blue-grey glass and white frames, a grey roof edge with a white balustrade,
+    and in the middle a tall columned portico: four big white columns under a triangular pediment, a lantern
+    hanging between the columns, the front door below. In front of it a strip of green lawn across the whole
+    bottom edge with a round white stone fountain splashing in the middle, low clipped hedges and a few small
+    flower beds in red and white. Bright clear morning daylight from the upper left, crisp shading on the
+    columns. Perfectly flat, solid, uniform magenta (#FF00FF) background around and above it: NO sky, NO
+    clouds, NO trees behind it, NO flag on the roof, no people, no cars, no shadows on the background, no text,
+    no letters, no numbers, no signs.
+  out: {dir: w7, quality: 90}
+
+- id: w7.bg.oval
+  kind: background
+  refs: [art/reference/w5-aisle.webp]
+  size: 1536x1024
+  candidates: 2
+  prompt: >
+    Background for a platformer finale room: the Oval Office interior drawn as a flat, straight-on side view of
+    its back wall, seen from far away so everything is small, filling the whole image edge to edge, in the pixel
+    style of the reference image (ignore its content and its sunset colors). SCALE: a standing adult would be
+    only one seventh of the image height, so the furniture is small: the desk is only one ninth of the image
+    height tall (waist high to a person) and the windows are only one third of the image height tall.
+    Warm cream curved walls with white wainscoting panels along the lower part and a white crown moulding at
+    the top; three tall arched windows with white frames spread along the wall, showing a bright clear blue
+    morning sky and green treetops, each flanked by golden-yellow drapes with tasselled tie-backs; bright
+    morning sunlight. Two flags on wooden poles with gold eagle finials (each pole only a little taller than a
+    window) standing between the windows: one United States flag (red and white stripes, a blue field with
+    small white stars) and one plain dark blue flag with no emblem. On the right third, against the wall, a
+    small dark polished wooden desk with carved panels seen from the side, a tiny green-shaded desk lamp on it,
+    an empty leather chair behind it. The floor fills the bottom third of the image: pale wooden boards with a
+    big navy-blue oval rug seen side-on (a flat ellipse) with a golden border and an abstract golden eagle
+    emblem in its middle, no letters, no seal text. No people, no portraits of people, no text, no letters, no
+    numbers, no words anywhere.
+  out: {dir: w7, width: 1280, height: 720, fit: cover, quality: 82}
+
+- id: w7.tex.path
+  kind: texture
+  refs: [art/reference/w5-aisle.webp]
+  size: 1536x1024
+  candidates: 2
+  frame: {w: 64, h: 32}
+  seamless: x
+  prompt: >
+    A flat, straight-on texture swatch that fills the entire image edge to edge, no perspective, no border, in
+    the pixel style of the reference image (ignore its content and colors): the cut side of a park walkway used
+    as the ground in a platformer, in bright morning daylight. Along the top edge, a long smooth light-grey
+    granite curb band about one twelfth of the image height, with a sunlit top highlight and a darker lower lip.
+    Below it, all the way to the bottom: packed pale grey-beige gravel (NOT orange, NOT sand, NOT fabric)
+    made of clearly visible small rounded pebbles of a few sizes in light grey, warm grey and pale tan, each
+    pebble with a light top and a tiny dark shadow, evenly scattered, getting slightly darker toward the
+    bottom. Even and horizontally
+    tileable, no big stones, no grass, no text.
+  out: {dir: w7, colors: 48, position: top, span: 0.5}
+
+- id: w7.tex.stone
+  kind: texture
+  refs: [art/reference/w5-aisle.webp]
+  size: 1536x1024
+  candidates: 2
+  frame: {w: 64, h: 32}
+  seamless: x
+  prompt: >
+    A flat, straight-on texture swatch that fills the entire image edge to edge, no perspective, no border, in
+    the pixel style of the reference image (ignore its content and colors): white marble masonry for platforms
+    and steps, in bright morning daylight. Along the top edge, a polished white marble capstone ledge about one
+    twentieth of the image height with a bright highlight and a thin shadow under it. Directly below it, ONE
+    single course of big rectangular white marble blocks, the course about one quarter of the image height,
+    each block about one quarter of the image width, thin pale grey vertical joints, soft grey veining and a
+    gentle warm shading. Everything below that course, down to the bottom edge, is a plain smooth pale-grey
+    marble face in soft shade with faint veining and NO joints, NO more block rows. Even and horizontally
+    tileable, no text.
+  out: {dir: w7, colors: 48, position: top, span: 0.5}
+
+- id: w7.tex.water
+  kind: texture
+  refs: [art/reference/w5-aisle.webp]
+  size: 1536x1024
+  candidates: 2
+  frame: {w: 64, h: 32}
+  seamless: x
+  prompt: >
+    A flat, straight-on texture swatch that fills the entire image edge to edge, no perspective, no border, in
+    the pixel style of the reference image (ignore its content and colors): the side view of clean, calm blue
+    reflecting-pool water in bright morning daylight. A thin bright pale-aqua surface line along the top edge
+    with small white sparkles, then clear sky-blue water getting gradually deeper blue toward the bottom, with
+    soft horizontal wavy highlight bands and a few tiny white glints. Even and horizontally tileable, no
+    fish, no plants, no text.
+  out: {dir: w7, colors: 48, position: top, span: 0.5}
+
+- id: w7.tex.algae
+  kind: texture
+  refs: [art/reference/w5-aisle.webp]
+  size: 1536x1024
+  candidates: 2
+  frame: {w: 64, h: 32}
+  seamless: x
+  prompt: >
+    A flat, straight-on texture swatch that fills the entire image edge to edge, no perspective, no border, in
+    the pixel style of the reference image (ignore its content and colors): the side view of a pool choked with
+    thick murky green algae scum. A lumpy bright yellow-green slimy crust along the top edge with a few small
+    bubbles, then dense murky olive and dark green sludge with stringy strands and darker blotches getting
+    darker toward the bottom. Gross but cartoony. Even and horizontally tileable, no fish, no eyes, no faces,
+    no text.
+  out: {dir: w7, colors: 48, position: top, span: 0.5}
+
+- id: prop.drain
+  kind: spritesheet
+  refs: [art/reference/w5-aisle.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 2, rows: 1}
+  cells: [0, 1]
+  frame: {w: 32, h: 32}
+  fit: {mode: common, height: 63}
+  anchor: bbox
+  valign: top
+  prompt: >
+    Two sprites of the same pool drain for a platformer, side by side in two equal columns (no grid lines), each
+    drawn straight-on and not tilted, in the pixel style of the reference image (ignore its content and its
+    sunset colors), bright morning daylight. A chunky square block of white marble with bevelled edges, and set
+    into its front face a big round dark iron drain grate with thick radial bars. The block's outer outline is
+    exactly the same shape, size and position in both. (1) clogged: thick bright-green algae gunk bulging out
+    through the bars of the grate and dribbling down the front of the block, a few round green bubbles on it,
+    all the gunk staying inside the block's outline; (2) clear: the same clean grate with no gunk, clear blue
+    water swirling in a spiral behind the bars, a few white sparkles.
+    Bold and simple with a thick dark outline so it reads at a small size. Perfectly flat, solid, uniform
+    magenta (#FF00FF) background, no shadows on the background, no text.
+  out: {dir: w7, colors: 32}
+
+- id: enemy.algae
+  kind: spritesheet
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 3, rows: 1}
+  cells: [0, 1, 2]
+  frame: {w: 24, h: 24}
+  fit: {height: 38}
+  prompt: >
+    Sprite sheet for a small platformer enemy, the "Algae Blob": a squat, gooey blob of bright green pond slime,
+    glossy with white highlights, darker green drips at its base, a few tiny bubbles inside it, two big googly
+    eyes with black pupils looking to the left, a goofy open grin, thick dark green outline, readable at a tiny
+    size, silly and cute. Side view facing LEFT (it oozes toward the left). Three equal columns in a row (no
+    grid lines), one blob per column, centered, same size, on a common baseline: (1) oozing, its body
+    stretched forward to the left and low; (2) oozing, its body bunched up tall and round, leaning back; (3)
+    squashed: the same blob splatted flat like a puddle to a third of its height and wider, the googly eyes
+    spinning on top, a few small slime droplets beside it.
+    Perfectly flat, solid, uniform magenta (#FF00FF) background, no gradient, no floor, no shadows on the
+    background, no text.
+  out: {dir: w7, colors: 32}
+
+- id: enemy.reporter
+  kind: spritesheet
+  refs: [art/masters/char.yaniv.sheet.webp, art/masters/yaniv.small.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 4, rows: 1}
+  cells: [0, 1, 2, 3]
+  frame: {w: 48, h: 64}
+  fit: {height: 104}
+  prompt: >
+    Sprite sheet for a comic platformer enemy, "the Reporter": a generic eager TV news reporter. Draw him with
+    the SAME compact proportions (about 4 heads tall), size and pixel style as the hero in the reference
+    images, but he is a different man (do NOT draw the plumber): slicked blond hair, clean-shaven, a big eager
+    toothy grin, a long beige-khaki trench coat with a belt, a light-blue shirt, grey trousers, black shoes. He
+    carries a small white notepad in one hand and a boom microphone in the other: a slim silver pole about
+    half his height with a fuzzy grey windscreen microphone on its end (no logo, no letters, no cube on it).
+    Full-body side view facing LEFT in every pose (face, chest and toes point left). Layout: four equal columns
+    in a row (no grid lines), one pose per column, all at exactly the same scale, on a common baseline.
+    (1) walk, CONTACT phase: a long stride, legs spread wide in an upside-down V, the front heel touching the
+    ground far ahead to the left and the back toes far behind, the boom pole held upright in front of his chest
+    in one fist, the fuzzy mic level with his face, NOT higher than the top of his head; (2) walk, PASSING
+    phase, clearly different from (1): legs together under his body, one knee lifted high with that foot off
+    the ground, the other leg straight, his body bobbing a little higher, the pole held the same way;
+    (3) swing: standing upright with his feet only a small step apart, NOT lunging, both arms stretched
+    straight forward to the left at head height holding the pole level, so the fuzzy mic pokes out in front
+    of his face; the pole is short, the mic ends just a forearm's length past his hands; this pose is compact:
+    its total width is no more than three quarters of his standing height; the notepad tucked under his arm;
+    (4) sit: sitting on the ground with his knees up, dazed, swirly eyes, a few small yellow stars circling
+    his head, the boom pole drooping limp across his knees, the mic resting on the ground close to his feet.
+    Slapstick cartoon, no weapon, no blood. Perfectly flat, solid, uniform magenta (#FF00FF) background, no
+    gradient, no floor, no shadows on the background, no text, no letters, no logos, no labels.
+  out: {dir: w7, colors: 64, despill: true}
+
+- id: proj.question
+  kind: spritesheet
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 2, rows: 1}
+  cells: [0, 1]
+  frame: {w: 16, h: 16}
+  fit: {mode: common, height: 28}
+  valign: middle
+  prompt: >
+    Two sprites of the same comic speech bubble for a platformer projectile, in two equal columns (no grid
+    lines), each centered in its column, bold and simple with a thick dark outline so it reads at a tiny size:
+    a round white speech bubble with a small pointed tail at its lower right, light-grey shading on its lower
+    edge, and inside it ONE big bold dark-navy question mark "?" filling most of the bubble. Nothing else is
+    written. (1) round, upright; (2) the same bubble a little squashed: slightly wider and shorter, tilted a
+    few degrees. Perfectly flat, solid, uniform magenta (#FF00FF) background, no shadows on the background,
+    no other text.
+  out: {dir: w7, colors: 16}
+
+- id: enemy.paparazzi
+  kind: spritesheet
+  refs: [art/masters/char.yaniv.sheet.webp, art/masters/yaniv.small.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 3, rows: 1}
+  cells: [0, 1, 2]
+  frame: {w: 48, h: 64}
+  fit: {mode: common, height: 108}
+  anchor: left
+  prompt: >
+    Sprite sheet for a comic platformer enemy, "the Paparazzo": a pushy celebrity photographer. Draw him with
+    the SAME compact proportions (about 4 heads tall), size and pixel style as the hero in the reference
+    images, but he is a different man (do NOT draw the plumber): stubbly chin, shaggy black hair under a
+    backwards grey cap, dark sunglasses pushed up on his forehead, an olive-green photographer's vest with many
+    pockets over a grey T-shirt, black jeans, white sneakers. He holds a big black camera with a long lens and a
+    round silver flash reflector bulb on top. He stands still in a three-quarter view facing the viewer and
+    turned toward the RIGHT, behind a short velvet rope: two small brass stanchion posts at his left and right,
+    knee high, with a thick red velvet rope sagging between them in front of his legs; the posts are no further
+    apart than his shoulders are wide, and the posts and rope are exactly the same in all three poses.
+    Layout: three equal columns in a row (no grid lines), one pose per column, same scale, common baseline.
+    (1) idle: holding the camera at chest height, smirking; (2) aim: the camera raised to his eye, the lens
+    pointing to the right, the flash bulb glowing yellow; (3) flash: the same aim pose with a bright white
+    star-shaped burst of light from the flash bulb, the burst about the size of his head, just above and right
+    of the camera, inside the column.
+    Slapstick cartoon, no weapon. Perfectly flat, solid, uniform magenta (#FF00FF) background, no gradient, no
+    floor, no shadows on the background, no text, no letters, no logos, no labels.
+  out: {dir: w7, colors: 64, despill: true}
+
+- id: w7.rope
+  kind: texture
+  refs: [art/reference/w5-aisle.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  frame: {w: 64, h: 32}
+  seamless: x
+  prompt: >
+    A strict side view, perfectly level, no perspective, in the pixel style of the reference image (ignore its
+    content and its sunset colors), bright morning daylight: a long straight row of polished brass rope
+    stanchions with a thick red velvet rope hanging between them, for the foreground decor of a platformer.
+    Exactly three identical SHORT stanchions, evenly spaced exactly one third of the image width apart (at
+    one sixth, one half and five sixths of the width), the gap between two posts more than twice as long as a
+    post is tall: each stanchion is a slim shiny brass post with a round ball top on a heavy round brass base,
+    only one sixth of the image height tall,
+    all standing on one horizontal line at the very bottom edge. Between each pair of posts the red velvet rope
+    hangs in a shallow identical U swag, hooked at the top of each post, its lowest point at half the post's height; the rope continues past the left and
+    right edges as if to the next posts. The top five sixths of the image are empty. Perfectly flat, solid,
+    uniform magenta (#FF00FF) background, no floor, no shadows on the background, no text.
+  out: {dir: w7, colors: 32, position: bottom, span: 0.4}
+
+- id: w7.gate
+  kind: spritesheet
+  refs: [art/reference/w5-aisle.webp]
+  size: 1024x1536
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 2, rows: 1}
+  cells: [0, 1]
+  frame: {w: 64, h: 128}
+  fit: {mode: common, height: 256}
+  anchor: bbox
+  prompt: >
+    Two sprites of the same grand gateway for a platformer level exit, side by side in two equal columns (no
+    grid lines), each drawn straight-on and not tilted, in the pixel style of the reference image (ignore its
+    content and its sunset colors), bright morning daylight. Each gateway is TALL and NARROW: exactly twice as
+    tall as it is wide, filling its column from near the top to the bottom edge; both have exactly the same
+    outer outline, size and position. Two tall, slim square white stone pillars with carved caps at the left
+    and right sides, each topped with a black iron lantern with a warm glowing glass, and between the pillars
+    a pair of tall, narrow black wrought-iron gates with vertical bars, gold spear-tipped finials along the
+    top and a small gilded round rosette in the middle of each gate. The opening between the pillars is about
+    as wide as one pillar is tall divided by three. (1) closed: the two gates shut in the middle. (2) open:
+    both gates swung inward and folded back against the pillars, seen edge-on as narrow strips of bars beside
+    each pillar, leaving the opening between the pillars empty. The gaps between the bars and the whole
+    opening show flat magenta, not scenery. Perfectly flat, solid, uniform magenta (#FF00FF) background around
+    and through them, no ground, no shadows on the background, no text, no letters, no signs, no emblems.
+  out: {dir: w7, colors: 48, despill: true}
+
+- id: w7.checkpoint
+  kind: image
+  refs: [art/reference/w5-aisle.webp]
+  size: 1024x1536
+  chroma: '#ff00ff'
+  candidates: 2
+  frame: {w: 32, h: 96}
+  prompt: >
+    A single tall object for a platformer checkpoint, drawn straight-on and not tilted, in the pixel style of
+    the reference image (ignore its content and its sunset colors), bright morning daylight: a classic
+    Washington street lamppost, a fluted dark green-black cast-iron post on a wide ornate base, with a white
+    glass globe lantern on top, and a small United States flag (red and white stripes, a blue corner with tiny
+    white stars) on a short pole sticking out sideways from the post near the top, waving to the right. The
+    lamppost fills the image height from the top edge to the bottom edge, standing on the bottom edge, and the
+    flag reaches no further out than one third of the image height from the post. Bold, chunky, thick dark
+    outline. Perfectly flat, solid, uniform magenta (#FF00FF) background around it, no ground, no shadows on
+    the background, no text, no letters.
+  out: {dir: w7, colors: 32}
+
+- id: npc.president
+  kind: spritesheet
+  refs: [art/masters/char.yaniv.sheet.webp, art/masters/yaniv.small.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 3, rows: 1}
+  cells: [0, 1, 2]
+  frame: {w: 48, h: 72}
+  fit: {height: 120}
+  prompt: >
+    Sprite sheet for the friendly finale character of a family platformer: a respectful, warm, stylized 16-bit
+    portrait of President Donald Trump, the host who welcomes the hero to the White House for a handshake and a
+    commemorative photo. Draw him in the SAME pixel style and compact proportions as the hero in the reference
+    images (do NOT draw the plumber), a little taller and broader than the hero, standing tall and dignified,
+    a friendly confident smile. Exact outfit: a well-fitted dark navy suit, a crisp white shirt, a long red
+    tie, a small American flag pin on his lapel, black shoes; swept golden-blond hair. Not a caricature, never
+    mocking, no exaggerated features. Layout: three equal columns in a row (no grid lines), one pose per
+    column, all at exactly the same scale, on a common baseline. (1) idle: full-body side view facing LEFT,
+    standing tall, hands relaxed at his sides; (2) handshake: the same side view facing LEFT, his near arm
+    extended forward to the left at waist height with an open hand ready to shake hands (the other person is
+    NOT drawn), a warm smile; (3) photo: turned to face the viewer, smiling for the camera, one hand giving a
+    thumbs up, the other at his side.
+    Perfectly flat, solid, uniform magenta (#FF00FF) background, no gradient, no floor, no shadows on the
+    background, no text, no letters, no labels.
+  out: {dir: w7, colors: 64, despill: true}
+
+- id: yaniv.ending
+  kind: spritesheet
+  refs: [art/masters/char.yaniv.sheet.webp, art/masters/yaniv.small.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 3, rows: 1}
+  cells: [0, 1]
+  frame: {w: 48, h: 64}
+  fit: {height: 117}
+  prompt: >
+    Sprite sheet for a side-scrolling platformer. The SAME hero as in both reference images (Yaniv: short dark
+    brown hair, short dark beard, NO hat, navy polo with a small white wrench logo, brown tool belt, blue jeans,
+    brown boots, a red rubber plunger with a wooden handle), same proportions, same colors, and the same size
+    as the sprites in the second reference image. Layout: three equal columns in a row (no grid lines), one
+    pose per column, all at exactly the same scale, feet on a common baseline.
+    (1) shake: full-body side view facing RIGHT, standing tall, his near (right) arm extended straight forward
+    to the right at waist height with an open hand ready for a handshake (the other person is NOT drawn), a
+    proud, happy smile; the red plunger hangs head-down from his other hand at his side, held close to his leg;
+    (2) pose: a proud photo pose in three-quarter view facing the viewer and turned a little to the right, feet
+    planted apart, one hand giving a big thumbs up in front of his chest, the other hand raising the red plunger
+    high above his head like a trophy (rounded half-dome red cup on top, wooden handle), a big grin;
+    (3) standing idle facing right, holding the plunger, exactly like the first pose of the second reference
+    image.
+    Perfectly flat, solid, uniform magenta (#FF00FF) background, no gradient, no floor, no shadows on the
+    background, no text, no labels, no grid lines.
+  out: {dir: w7, colors: 64}

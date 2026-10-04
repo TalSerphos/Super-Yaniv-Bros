@@ -20,6 +20,8 @@ export interface AssetOut {
   colors?: number;
   /** Framed sprites: alpha at or above this becomes opaque, below it transparent (0 keeps soft alpha). Default 128. */
   alphaThreshold?: number;
+  /** Framed sprites: neutralize a magenta fringe left on dark outlines (lowers red and blue to green's level). */
+  despill?: boolean;
   /** Seamless images: fraction of the master's width one tile spans (default: as much as fits). */
   span?: number;
 }

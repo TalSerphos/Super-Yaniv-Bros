@@ -73,6 +73,7 @@ async function build(entry: AssetEntry) {
 async function buildFrames(entry: AssetEntry, master: string) {
   const frame = { w: entry.frame!.w * PIXEL_SCALE, h: entry.frame!.h * PIXEL_SCALE };
   const src = entry.chroma ? await chromaKeyRaw(master, entry.chroma) : await toRaw(sharp(master).ensureAlpha());
+  if (entry.out?.despill) despillMagenta(src.data);
   const pieces = sliceCells(src.data, src.width, src.height, entry.grid ?? { cols: 1, rows: 1 }, entry.cells ?? [0]);
   const mode = entry.fit?.mode ?? (pieces.length > 1 ? 'common' : 'each');
   const fitH = entry.fit?.height ?? frame.h;
@@ -118,7 +119,7 @@ async function buildFrames(entry: AssetEntry, master: string) {
 }
 
 /**
- * Opaque images that must tile horizontally: crop the stretch of the master that best wraps onto itself
+ * Images that must tile horizontally (opaque, or keyed when the entry has `chroma`): crop the stretch of the master that best wraps onto itself
  * (same aspect as the output), resize it a little wider than the output, then crossfade the overhang into the
  * left edge so the last column flows into the first.
  */
@@ -126,6 +127,10 @@ async function buildSeamless(entry: AssetEntry, master: string) {
   const W = entry.frame!.w * PIXEL_SCALE;
   const H = entry.frame!.h * PIXEL_SCALE;
   const strip = Math.max(4, Math.round(W / 16));
+  // Chroma-keyed strips (foreground decor such as a rope line) keep their alpha; everything else is opaque.
+  const channels = entry.chroma ? 4 : 3;
+  const keyed = entry.chroma ? await chromaKeyRaw(master, entry.chroma) : undefined;
+  const source = () => (keyed ? sharp(keyed.data, { raw: { width: keyed.width, height: keyed.height, channels: 4 } }) : sharp(master).removeAlpha());
   const src = await toRaw(sharp(master).removeAlpha());
   const gray = await toRaw(sharp(master).greyscale().removeAlpha());
   const aspect = W / H;
@@ -144,9 +149,11 @@ async function buildSeamless(entry: AssetEntry, master: string) {
   });
   const h = cropH(best.width);
   const region = { left: best.x, top: top(h), width: Math.round((best.width * (W + strip)) / W), height: h };
-  const wide = await toRaw(sharp(master).removeAlpha().extract(region).resize(W + strip, H, { fit: 'fill', kernel: 'lanczos3' }));
-  const tiled = crossfadeSeam(wide.data, W, H, 3, strip);
-  await writeOut(entry, { data: Buffer.from(tiled), width: W, height: H }, 3, `seamless (crop ${best.width}px at x=${best.x}, wrap diff ${best.score.toFixed(1)})`);
+  const wide = await toRaw(source().extract(region).resize(W + strip, H, { fit: 'fill', kernel: 'lanczos3' }));
+  const tiled = crossfadeSeam(wide.data, W, H, channels, strip);
+  const threshold = entry.out?.alphaThreshold ?? 128;
+  if (channels === 4 && threshold > 0) for (let i = 3; i < tiled.length; i += 4) tiled[i] = tiled[i] >= threshold ? 255 : 0;
+  await writeOut(entry, { data: Buffer.from(tiled), width: W, height: H }, channels, `seamless (crop ${best.width}px at x=${best.x}, wrap diff ${best.score.toFixed(1)})`);
 }
 
 /** Lossless (optionally palette-quantized) WebP for sprites and textures; lossy when `out.quality` is set. */
@@ -184,6 +191,22 @@ export async function chromaKeyRaw(file: string, hex: string, inner = 70, outer 
     data[i + 3] = Math.round(a * data[i + 3]);
   }
   return { data, width, height };
+}
+
+/**
+ * Pull magenta-tinted pixels (red and blue both above green, e.g. dark outlines mixed with the key) back toward
+ * neutral by lowering red and blue to green's level. Pure reds, pinks with a low blue, blues and skin tones are
+ * untouched. Opt-in via `out.despill` for sheets whose outlines picked up a purple fringe.
+ */
+function despillMagenta(rgba: Uint8Array | Buffer) {
+  for (let i = 0; i < rgba.length; i += 4) {
+    if (!rgba[i + 3]) continue;
+    const over = Math.min(rgba[i], rgba[i + 2]) - rgba[i + 1];
+    if (over > 0) {
+      rgba[i] -= over;
+      rgba[i + 2] -= over;
+    }
+  }
 }
 
 export async function chromaKey(file: string, hex: string, inner = 70, outer = 150): Promise<Sharp> {
