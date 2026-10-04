@@ -32,5 +32,5 @@ export const RULES = {
   stompScore: 100,
   blockScore: 50,
   /** Trolleys spawn when the player is this far past their spawner, so they arrive from off-screen behind. */
-  trolleyTriggerDistance: 300,
+  trolleyTriggerDistance: 360,
 };

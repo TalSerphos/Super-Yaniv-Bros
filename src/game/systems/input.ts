@@ -15,6 +15,8 @@ export const noButtons = (): Buttons => ({ left: false, right: false, jump: fals
 
 export interface InputSource {
   read(into: Buttons): void;
+  /** Forget pending taps/held state (level start, resume), so keys pressed on a card don't leak into play. */
+  reset?(): void;
   destroy?(): void;
 }
 
@@ -68,6 +70,11 @@ export class KeyboardInput implements InputSource {
     this.tapped.clear();
   }
 
+  reset(): void {
+    this.held.clear();
+    this.tapped.clear();
+  }
+
   destroy(): void {
     this.target.removeEventListener('keydown', this.down);
     this.target.removeEventListener('keyup', this.up);
@@ -101,17 +108,33 @@ export class TouchInput implements InputSource {
     el.setPointerCapture?.(e.pointerId);
     this.held.set(e.pointerId, el.dataset.btn as keyof Buttons);
     this.tapped.add(el.dataset.btn as keyof Buttons);
-    el.classList.add('pressed');
+    this.syncPressed();
   };
   private readonly up = (e: PointerEvent) => {
     this.held.delete(e.pointerId);
-    (e.target as HTMLElement).closest?.('[data-btn]')?.classList.remove('pressed');
+    this.syncPressed();
+  };
+  /** Sliding a thumb from ◀ to ▶ (or onto JUMP) switches buttons without lifting it. */
+  private readonly move = (e: PointerEvent) => {
+    if (!this.held.has(e.pointerId)) return;
+    const el = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>('[data-btn]');
+    const btn = el?.dataset.btn as keyof Buttons | undefined;
+    if (!btn || btn === 'pause' || btn === this.held.get(e.pointerId)) return;
+    this.held.set(e.pointerId, btn);
+    this.tapped.add(btn);
+    this.syncPressed();
   };
 
   constructor(private readonly root: HTMLElement) {
     root.addEventListener('pointerdown', this.down);
+    root.addEventListener('pointermove', this.move);
     root.addEventListener('pointerup', this.up);
     root.addEventListener('pointercancel', this.up);
+  }
+
+  private syncPressed(): void {
+    const on = new Set(this.held.values());
+    this.root.querySelectorAll<HTMLElement>('[data-btn]').forEach((el) => el.classList.toggle('pressed', on.has(el.dataset.btn as keyof Buttons)));
   }
 
   read(into: Buttons): void {
@@ -120,8 +143,13 @@ export class TouchInput implements InputSource {
     this.tapped.clear();
   }
 
+  reset(): void {
+    this.tapped.clear();
+  }
+
   destroy(): void {
     this.root.removeEventListener('pointerdown', this.down);
+    this.root.removeEventListener('pointermove', this.move);
     this.root.removeEventListener('pointerup', this.up);
     this.root.removeEventListener('pointercancel', this.up);
   }

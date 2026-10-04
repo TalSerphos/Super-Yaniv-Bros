@@ -49,7 +49,7 @@ export interface ParsedLevel {
 }
 
 /** Seat sprite footprint (world units) and the height of its seatback top above the floor. */
-export const SEAT = { w: 48, h: 64, topInset: 10 };
+export const SEAT = { w: 48, h: 64, topInset: 10, backX: 0, backW: 28 };
 export const EXIT = { w: 64, h: 128 };
 export const BLOCK = 32;
 
@@ -113,7 +113,8 @@ export function parseLevel(level: LevelData): ParsedLevel {
         default:
           if (SEAT_CHARS[ch]) {
             out.seats.push({ x, y: bottom - SEAT.h, kind: SEAT_CHARS[ch] });
-            out.oneWays.push({ x: x + 2, y: bottom - SEAT.h + SEAT.topInset, w: SEAT.w - 4, h: 6 });
+            // Only the seatback (left part of the sprite) is standable, not the passenger's head.
+            out.oneWays.push({ x: x + SEAT.backX, y: bottom - SEAT.h + SEAT.topInset, w: SEAT.backW, h: 6 });
           }
       }
     }

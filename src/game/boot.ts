@@ -4,7 +4,7 @@
  * prefetch the title may start.
  */
 import Phaser from 'phaser';
-import { play } from '../audio/sfx.ts';
+import { isMuted, play, setMuted } from '../audio/sfx.ts';
 import { CANVAS_H, CANVAS_W } from './config.ts';
 import { Hud } from './hud.ts';
 import level52 from './levels/w5/5-2.json';
@@ -82,7 +82,8 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
         play('hurt');
         hud.showOverlay(
           `<h2>${e.reason === 'altitude' ? 'ALTITUDE ZERO' : 'GAME OVER'}</h2>
-           <p class="sub">${e.reason === 'altitude' ? 'Pull up faster next time!' : 'Even plumbers need a second try.'}</p>`,
+           <p class="sub">${e.reason === 'altitude' ? 'Pull up faster next time!' : 'Even plumbers need a second try.'}</p>
+           <dl><dt>SCORE</dt><dd>${String(e.score).padStart(6, '0')}</dd></dl>`,
           [
             { label: 'RETRY', run: restart },
             { label: 'TITLE', run: opts.onQuit },
@@ -108,6 +109,7 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
       hud.hideOverlay();
       if (game.scene.getScene('level')) game.scene.start('level', init);
       else game.scene.add('level', LevelScene, true, init);
+      if (portrait.matches) window.setTimeout(pause, 50);
     }, INTRO_MS);
   }
 
@@ -121,25 +123,82 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
     const s = scene();
     if (!s || hud.overlayOpen) return;
     game.scene.pause('level');
+    const soundLabel = () => `SOUND: ${isMuted() ? 'OFF' : 'ON'}`;
     hud.showOverlay('<h2>PAUSED</h2><p class="sub">Please remain seated.</p>', [
       { label: 'RESUME', run: resume },
+      {
+        label: soundLabel(),
+        run: (btn) => {
+          setMuted(!isMuted());
+          btn.textContent = soundLabel();
+        },
+      },
       { label: 'QUIT TO TITLE', run: opts.onQuit },
     ]);
   }
 
   function resume(): void {
     hud.hideOverlay();
+    inputs.forEach((i) => i.reset?.()); // keys pressed on the card must not fire in play
     game.scene.resume('level');
   }
 
-  // Esc / P while the pause card is open resumes (the scene is paused, so it can't see the key).
+  const paused = () => !!scene() && game.scene.isPaused('level');
+
+  // Cards are driven by keyboard and gamepad too: Space/Z/Enter/A confirm, arrows/d-pad move,
+  // Esc/P/Start resume from pause (the paused scene can't see input).
   const onKey = (e: KeyboardEvent) => {
-    if ((e.code === 'Escape' || e.code === 'KeyP') && hud.overlayOpen && game.scene.isPaused('level')) {
+    if (!hud.overlayOpen || e.ctrlKey || e.metaKey || e.altKey) return;
+    if ((e.code === 'Escape' || e.code === 'KeyP') && paused()) {
       e.preventDefault();
       resume();
+      return;
     }
+    const nav: Record<string, 'prev' | 'next' | 'confirm'> = {
+      ArrowLeft: 'prev',
+      ArrowUp: 'prev',
+      ArrowRight: 'next',
+      ArrowDown: 'next',
+      Space: 'confirm',
+      KeyZ: 'confirm',
+      Enter: 'confirm',
+    };
+    const action = nav[e.code];
+    if (!action || e.repeat) return;
+    e.preventDefault();
+    hud.overlayNavigate(action);
   };
   window.addEventListener('keydown', onKey);
+
+  let padRaf = 0;
+  const padHeld = new Set<string>();
+  const pollPads = () => {
+    padRaf = requestAnimationFrame(pollPads);
+    if (!hud.overlayOpen || !('getGamepads' in navigator)) return padHeld.clear();
+    const now = new Set<string>();
+    for (const p of navigator.getGamepads()) {
+      if (!p) continue;
+      const x = p.axes[0] ?? 0;
+      if (p.buttons[0]?.pressed) now.add('confirm');
+      if (p.buttons[9]?.pressed) now.add('start');
+      if (p.buttons[14]?.pressed || x < -0.5) now.add('prev');
+      if (p.buttons[15]?.pressed || x > 0.5) now.add('next');
+    }
+    for (const a of now) {
+      if (padHeld.has(a)) continue;
+      if (a === 'start' && paused()) resume();
+      else hud.overlayNavigate(a === 'start' ? 'confirm' : (a as 'prev' | 'next' | 'confirm'));
+    }
+    padHeld.clear();
+    now.forEach((a) => padHeld.add(a));
+  };
+  padRaf = requestAnimationFrame(pollPads);
+
+  // A phone turned upright shows the rotate hint: don't let the level run on behind it.
+  const portrait = window.matchMedia('(orientation: portrait) and (pointer: coarse)');
+  const onOrientation = () => portrait.matches && pause();
+  portrait.addEventListener('change', onOrientation);
+
   game.events.once(Phaser.Core.Events.READY, begin);
 
   return {
@@ -147,6 +206,8 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
       destroyed = true;
       window.clearTimeout(introTimer);
       window.removeEventListener('keydown', onKey);
+      cancelAnimationFrame(padRaf);
+      portrait.removeEventListener('change', onOrientation);
       inputs.forEach((i) => i.destroy?.());
       game.destroy(true);
       hud.destroy();

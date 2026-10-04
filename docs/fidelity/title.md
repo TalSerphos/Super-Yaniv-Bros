@@ -11,3 +11,4 @@ Reference: `art/reference/title.webp` · gate 8/10
 | 2026-10-03T22:02 | 0.731 | 0.851 | – | – | – |
 | 2026-10-03T22:12 | 0.732 | 0.849 | – | – | – |
 | 2026-10-04T03:58 | 0.731 | 0.849 | – | – | – |
+| 2026-10-04T06:56 | 0.731 | 0.849 | 8.8 | palette 9, composition 9, characters 9, elements 9, hud 8, style 9 | Remove the bottom-right music-note overlay; it is not in the reference title screen and reads like an off-HUD mobile control.; Move the second menu line up and reduce the extra vertical gap so the two options match the reference menu spacing.; Copyright line should read as a single '(C) 2026 NES ZIONA ENTERTAINMENT SYSTEM' and sit cleanly centered at the bottom, not cramped against the edge. |

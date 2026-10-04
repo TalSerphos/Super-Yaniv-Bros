@@ -152,6 +152,7 @@ body {
 }
 .mute:hover, .mute:focus-visible { opacity: 1; }
 .mute { z-index: 2; }
+.stage[data-screen='game'] .mute { display: none; } /* in-game sound toggle lives on the pause card */
 
 /* Invisible 44px hit areas for small controls on phones. */
 .mute::after, .back::after {

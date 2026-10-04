@@ -9,6 +9,7 @@ interface SybState {
   finished: boolean;
   tilt: number;
   width: number;
+  hurts: { cause: string; x: number; y: number; t: number }[];
 }
 
 const state = (page: Page) => page.evaluate(() => (window as unknown as { __syb?: { state(): SybState } }).__syb?.state());
@@ -79,6 +80,10 @@ test('Escape pauses, Resume continues, Quit returns to the title', async ({ page
   await expect(page.getByRole('button', { name: '1 PLAYER', exact: true })).toBeVisible();
   await expect(page.locator('canvas')).toHaveCount(0);
   expect(new URL(page.url()).hash).toBe('');
+  // Game styles must not leak onto the title (the two HUDs once shared a class name).
+  const titleHud = page.locator('#title header');
+  await expect(titleHud).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await expect(titleHud).toHaveCSS('justify-content', 'space-between');
 });
 
 test('browser back from the game returns to the title and tears the game down', async ({ page }) => {
@@ -108,4 +113,73 @@ test('touch controls are shown on touch devices and drive the player', async ({ 
   await page.mouse.down();
   await expect.poll(async () => (await state(page))!.x, { timeout: 5_000 }).toBeGreaterThan(start.x + 40);
   await page.mouse.up();
+});
+
+// Regression tests from the Stage 2 QA playtest.
+test.describe('QA regressions', () => {
+  test.skip(({ isMobile }) => !!isMobile, 'keyboard-driven');
+
+  test('walking left into a hatch respawns on safe floor (no death loop)', async ({ page }) => {
+    test.setTimeout(90_000); // software-rendered CI browsers can run the simulation slowly
+    await page.goto('./#play');
+    await waitForLevel(page);
+    await page.evaluate(() => {
+      const syb = (window as unknown as { __syb: { teleport(x: number, y: number): void; clearTrolleys(): void } }).__syb;
+      syb.clearTrolleys();
+      // Just right of the first cargo hatch (x 992-1056).
+      syb.teleport(1110, 320);
+    });
+    await page.keyboard.down('ArrowLeft');
+    // Release as soon as the fall registers: holding left after the respawn would (correctly) walk back in.
+    await expect.poll(async () => (await state(page))!.hurts.length, { timeout: 30_000, intervals: [50] }).toBeGreaterThan(0);
+    await page.keyboard.up('ArrowLeft');
+    const hurts = (await state(page))!.hurts;
+    expect(hurts.map((h) => h.cause), JSON.stringify(hurts)).toEqual(['pit']);
+    // Respawned standing on the floor right of the hatch, not back inside it, and it stays that way.
+    await expect.poll(async () => (await state(page))!.y, { timeout: 10_000 }).toBe(320);
+    const s = (await state(page))!;
+    expect(s.x).toBeGreaterThan(1056 + 30);
+    await page.waitForTimeout(1_000);
+    expect((await state(page))!).toMatchObject({ hearts: 2, y: 320 });
+  });
+
+  test('a key pressed on the intro card does not fire when play starts', async ({ page }) => {
+    await page.goto('./#play');
+    await page.waitForTimeout(400);
+    await page.keyboard.press('Space');
+    await waitForLevel(page);
+    const ys: number[] = [];
+    for (let i = 0; i < 6; i++) {
+      ys.push((await state(page))!.y);
+      await page.waitForTimeout(60);
+    }
+    expect(Math.min(...ys)).toBeGreaterThanOrEqual(ys[0] - 1);
+  });
+
+  test('pause card works with Space and arrow keys', async ({ page }) => {
+    await page.goto('./#play');
+    await waitForLevel(page);
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('heading', { name: 'PAUSED' })).toBeVisible();
+    await page.keyboard.press('ArrowRight');
+    await expect(page.getByRole('button', { name: /SOUND/ })).toBeFocused();
+    await page.keyboard.press('ArrowLeft');
+    await page.keyboard.press('Space');
+    await expect(page.getByRole('heading', { name: 'PAUSED' })).toBeHidden();
+  });
+
+  test('HUD shows the score', async ({ page }) => {
+    await page.goto('./#play');
+    await waitForLevel(page);
+    await expect(page.getByTestId('hud-score')).toHaveText('000000');
+  });
+});
+
+test('a phone held upright pauses the game behind the rotate hint', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'touch-only');
+  await page.setViewportSize({ width: 412, height: 915 });
+  await page.goto('./#play');
+  await waitForLevel(page);
+  await expect(page.getByText('Turn your phone sideways to board')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'PAUSED' })).toBeVisible();
 });

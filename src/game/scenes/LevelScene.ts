@@ -22,7 +22,7 @@ export type GameEvent =
   | { type: 'warn' }
   | { type: 'pause' }
   | { type: 'clear'; score: number; nuts: number; seconds: number }
-  | { type: 'gameover'; reason: 'hearts' | 'altitude' };
+  | { type: 'gameover'; reason: 'hearts' | 'altitude'; score: number };
 
 export interface LevelInit {
   level: LevelData;
@@ -65,6 +65,11 @@ export class LevelScene extends Phaser.Scene {
   private elapsed = 0;
   private finished = false;
   private lastSafe = { x: 0, y: 0 };
+  /** Seconds of ignored movement input after a respawn. */
+  private controlLock = 0;
+  private plungeCooldown = 0;
+  /** Test/debug log of every heart lost. */
+  private hurtLog: { cause: string; x: number; y: number; t: number }[] = [];
   private hudTimer = 0;
   private tiltDeg = 0;
 
@@ -98,11 +103,12 @@ export class LevelScene extends Phaser.Scene {
     cam.setZoom(ZOOM);
     cam.setBounds(-VIEW_W / 2, -VIEW_H, width + VIEW_W, height + VIEW_H * 1.5);
     cam.startFollow(this.player, true, 0.12, 0.1);
-    cam.setFollowOffset(-70, 55); // look ahead toward the cockpit; keep the floor low in the frame
+    cam.setFollowOffset(-70, 22); // look ahead toward the cockpit; aisle and seat rows fill the lower third
     this.applyTilt(0);
 
     this.altitude = new Altitude(data.level.altitude.start, data.level.altitude.rate);
     this.physics.world.on(Phaser.Physics.Arcade.Events.WORLD_STEP, (delta: number) => this.step(delta));
+    data.inputs.forEach((i) => i.reset?.()); // drop keys pressed during the intro card
     data.onEvent({ type: 'intro', label: data.level.id, name: data.level.name });
     this.pushHud();
     this.exposeTestHooks();
@@ -115,10 +121,11 @@ export class LevelScene extends Phaser.Scene {
   private resetState(): void {
     this.buttons = noButtons();
     this.prev = noButtons();
-    this.coyote = this.jumpBuffer = this.invulnerable = this.hurtTimer = 0;
+    this.coyote = this.jumpBuffer = this.invulnerable = this.hurtTimer = this.controlLock = this.plungeCooldown = 0;
     this.jumpCut = false;
     this.hearts = RULES.hearts;
     this.nutCount = this.score = this.elapsed = this.hudTimer = 0;
+    this.hurtLog = [];
     this.finished = false;
   }
 
@@ -168,6 +175,12 @@ export class LevelScene extends Phaser.Scene {
       const zone = this.add.zone(r.x + r.w / 2, r.y + r.h / 2, r.w, r.h);
       this.solids.add(zone);
     }
+    // Visual-only floor past both level ends, so the tilted view never shows a fake pit at the edges.
+    const ft = this.floorTop;
+    for (const x of [-VIEW_W, this.lvl.width]) {
+      this.add.tileSprite(x, ft, VIEW_W, 32, 'w5.tex.floor').setOrigin(0).setTileScale(ART_SCALE);
+      this.add.rectangle(x, ft + 32, VIEW_W, VIEW_H, 0x22233c).setOrigin(0);
+    }
     this.oneWays = this.physics.add.staticGroup();
     for (const r of this.lvl.oneWays) {
       const zone = this.add.zone(r.x + r.w / 2, r.y + r.h / 2, r.w, r.h);
@@ -187,13 +200,13 @@ export class LevelScene extends Phaser.Scene {
 
   /** A darker row of seatbacks in front of the floor (closer to the camera), as in the concept art. */
   private createForeground(): void {
-    const scale = ART_SCALE * 1.3;
-    const step = 44;
+    const scale = ART_SCALE * 1.6;
+    const step = 52;
     const kinds = ['empty', 'sleeper', 'empty', 'reader', 'empty', 'kid'];
     for (const r of this.lvl.solids.filter((s) => s.kind === 'floor')) {
       for (let x = r.x + 6, i = Math.floor(r.x / step); x + step <= r.x + r.w; x += step, i++) {
         this.add
-          .image(x, r.y + 92, 'w5.seat', frameIndex('w5.seat', kinds[i % kinds.length]))
+          .image(x, r.y + 104, 'w5.seat', frameIndex('w5.seat', kinds[i % kinds.length]))
           .setOrigin(0, 1)
           .setScale(scale)
           .setTint(0x6f7894)
@@ -303,15 +316,19 @@ export class LevelScene extends Phaser.Scene {
     this.jumpBuffer = this.pressed('jump') ? PHYS.jumpBuffer : Math.max(0, this.jumpBuffer - dt);
     this.invulnerable = Math.max(0, this.invulnerable - dt);
     this.hurtTimer = Math.max(0, this.hurtTimer - dt);
+    this.controlLock = Math.max(0, this.controlLock - dt);
+    this.plungeCooldown = Math.max(0, this.plungeCooldown - dt);
 
-    const dir = (b.right ? 1 : 0) - (b.left ? 1 : 0);
+    const dir = this.controlLock > 0 ? 0 : (b.right ? 1 : 0) - (b.left ? 1 : 0);
     // Running downhill (toward the cockpit) is a little faster, uphill a little slower.
     const slope = Math.sin(degToRad(this.tiltDeg));
     const target = dir * PHYS.runSpeed * (1 + 0.6 * slope * dir);
     const accel = (grounded ? PHYS.groundAccel : PHYS.airAccel) * dt;
     if (this.hurtTimer <= 0.9) body.setVelocityX(body.velocity.x + Phaser.Math.Clamp(target - body.velocity.x, -accel, accel));
+    // Standing still on the slope: no creeping (the slope is felt while moving, not while idle).
+    if (grounded && !dir && Math.abs(body.velocity.x) < 6) body.setVelocityX(0);
 
-    if (this.jumpBuffer > 0 && this.coyote > 0) {
+    if (this.jumpBuffer > 0 && this.coyote > 0 && this.controlLock <= 0) {
       body.setVelocityY(-PHYS.jumpVelocity);
       this.jumpBuffer = this.coyote = 0;
       this.jumpCut = false;
@@ -321,7 +338,7 @@ export class LevelScene extends Phaser.Scene {
       body.setVelocityY(body.velocity.y * PHYS.jumpCutFactor);
       this.jumpCut = true;
     }
-    if (this.pressed('grab')) this.plunge();
+    if (this.pressed('grab') && this.plungeCooldown <= 0) this.plunge();
 
     if (dir) p.setFlipX(dir < 0);
     if (this.hurtTimer > 0) this.showFrame('hurt');
@@ -330,8 +347,29 @@ export class LevelScene extends Phaser.Scene {
     else p.anims.play('yaniv.small:idle', true);
     p.setAlpha(this.invulnerable > 0 && Math.floor(this.invulnerable * 12) % 2 ? 0.35 : 1);
 
-    if (grounded && body.blocked.down) this.lastSafe = { x: p.x, y: p.y };
+    // A respawn point needs floor on both sides, so falling in from either direction is safe.
+    if (grounded && body.blocked.down && this.solidUnder(p.x - 40, p.y) && this.solidUnder(p.x + 40, p.y)) {
+      this.lastSafe = { x: p.x, y: p.y };
+    }
     if (p.y > this.lvl.height + 48) this.fellInPit();
+  }
+
+  /**
+   * Move the player's feet to (x, y). Body.reset() would place the body at the sprite's top-left and ignore
+   * the body offset, which can leave it overlapping the floor and falling through; resync from the sprite.
+   */
+  private placePlayer(x: number, y: number): void {
+    const body = this.player.body as Body;
+    this.player.setPosition(x, y);
+    body.updateFromGameObject();
+    body.stop();
+    body.prev.copy(body.position);
+    body.prevFrame.copy(body.position);
+  }
+
+  /** Is there floor (solid or one-way) right under (x, feetY)? */
+  private solidUnder(x: number, feetY: number): boolean {
+    return [...this.lvl.solids, ...this.lvl.oneWays].some((r) => x >= r.x && x <= r.x + r.w && Math.abs(r.y - feetY) < 3);
   }
 
   private showFrame(name: string): void {
@@ -342,13 +380,15 @@ export class LevelScene extends Phaser.Scene {
   private plunge(): void {
     const p = this.player;
     const facing = p.flipX ? -1 : 1;
+    this.plungeCooldown = 0.25;
     play('thwop');
     const reach = this.add.rectangle(p.x + facing * 22, p.y - 30, 18, 8, 0xd61f1f).setDepth(11);
     this.tweens.add({ targets: reach, x: reach.x + facing * 12, alpha: 0, duration: 160, onComplete: () => reach.destroy() });
     for (const t of this.trolleys.getChildren() as Sprite[]) {
       if (t.getData('flat')) continue;
       const dx = (t.x - p.x) * facing;
-      if (dx > 0 && dx < 44 && Math.abs(t.y - p.y) < 30) this.flattenTrolley(t);
+      // Reach well past body contact (~36): the plunger must win against a trolley rolling in at speed.
+      if (dx > -8 && dx < 72 && Math.abs(t.y - p.y) < 30) this.flattenTrolley(t);
     }
   }
 
@@ -387,10 +427,12 @@ export class LevelScene extends Phaser.Scene {
     const fromAbove = pb.velocity.y > 0 && pb.bottom - tb.top < 16;
     if (fromAbove) {
       this.flattenTrolley(t);
-      pb.setVelocityY(-PHYS.stompBounce);
-      this.jumpCut = true;
+      // Holding jump turns a stomp into a full-height bounce (and it can still be cut short).
+      const held = this.buttons.jump;
+      pb.setVelocityY(-(held ? PHYS.jumpVelocity : PHYS.stompBounce));
+      this.jumpCut = !held;
     } else {
-      this.hurt(Math.sign(this.player.x - t.x) || -1);
+      this.hurt(Math.sign(this.player.x - t.x) || -1, 'trolley');
     }
   }
 
@@ -429,37 +471,43 @@ export class LevelScene extends Phaser.Scene {
     this.pushHud();
   }
 
-  private hurt(dir: number): void {
+  private hurt(dir: number, cause: string): void {
     if (this.invulnerable > 0 || this.finished) return;
     this.hearts--;
+    this.hurtLog.push({ cause, x: Math.round(this.player.x), y: Math.round(this.player.y), t: Math.round(this.elapsed * 100) / 100 });
     play('hurt');
     this.cameras.main.shake(180, 0.006);
     this.pushHud();
     if (this.hearts <= 0) return this.gameOver('hearts');
     this.invulnerable = PHYS.hurtInvulnerable;
     this.hurtTimer = 1.05;
+    this.jumpCut = true; // knockback height must not depend on the jump button
     (this.player.body as Body).setVelocity(dir * 160, -220);
   }
 
   private fellInPit(): void {
     this.invulnerable = 0;
-    this.hurt(0);
+    this.hurt(0, 'pit');
     if (this.finished) return;
-    const body = this.player.body as Body;
-    body.reset(this.lastSafe.x - 40, this.lastSafe.y - 2);
+    this.placePlayer(this.lastSafe.x, this.lastSafe.y - 1);
+    this.controlLock = 0.6;
     this.cameras.main.flash(200, 20, 16, 34);
   }
 
   private clearLevel(): void {
     if (this.finished) return;
     this.finished = true;
-    const body = this.player.body as Body;
-    body.setVelocity(0, 0);
-    body.setAllowGravity(false);
+    // Let him land (gravity stays on), clear the aisle behind him, then show the card.
+    (this.player.body as Body).setVelocityX(0);
     this.player.anims.play('yaniv.small:idle', true);
+    for (const t of this.trolleys.getChildren() as Sprite[]) {
+      (t.body as Body).setVelocity(0, 0).setAllowGravity(false);
+      this.tweens.add({ targets: t, alpha: 0, duration: 300 });
+    }
     play('chime');
     this.pushHud();
-    this.cfg.onEvent({ type: 'clear', score: this.score, nuts: this.nutCount, seconds: Math.round(this.elapsed) });
+    const result = { type: 'clear' as const, score: this.score, nuts: this.nutCount, seconds: Math.round(this.elapsed) };
+    this.time.delayedCall(800, () => this.cfg.onEvent(result));
   }
 
   private gameOver(reason: 'hearts' | 'altitude'): void {
@@ -469,7 +517,7 @@ export class LevelScene extends Phaser.Scene {
     this.player.anims.stop();
     this.player.setFrame(frameIndex('yaniv.small', 'hurt'));
     this.pushHud();
-    this.cfg.onEvent({ type: 'gameover', reason });
+    this.cfg.onEvent({ type: 'gameover', reason, score: this.score });
   }
 
   private popText(x: number, y: number, text: string): void {
@@ -504,9 +552,10 @@ export class LevelScene extends Phaser.Scene {
       vx: body.velocity.x,
       grounded: body.blocked.down || body.touching.down,
       groundAt: (x: number) => standable.some((r) => x >= r.x && x <= r.x + r.w && r.y >= feet - 4 && r.y <= feet + 40),
+      // Anything overlapping the player's body height (feet-46 .. feet-8) at x is a wall to jump over.
       wallAt: (x: number) =>
-        this.lvl.solids.some((r) => x >= r.x && x <= r.x + r.w && r.y < feet - 8 && r.y + r.h > feet - 8) ||
-        this.lvl.blocks.some((k) => x >= k.x && x <= k.x + BLOCK && k.y < feet - 8 && k.y + BLOCK > feet - 8),
+        this.lvl.solids.some((r) => x >= r.x && x <= r.x + r.w && r.y < feet - 8 && r.y + r.h > feet - 46) ||
+        this.lvl.blocks.some((k) => x >= k.x && x <= k.x + BLOCK && k.y < feet - 8 && k.y + BLOCK > feet - 46),
       trolleys: (this.trolleys.getChildren() as Sprite[])
         .filter((t) => !t.getData('flat'))
         .map((t) => ({ dx: t.x - p.x, vx: (t.body as Body).velocity.x })),
@@ -524,7 +573,18 @@ export class LevelScene extends Phaser.Scene {
         finished: this.finished,
         tilt: this.tiltDeg,
         width: this.lvl.width,
+        hurts: [...this.hurtLog],
       }),
+      /** Test-only: move the player (feet at y) to set up a situation quickly. */
+      teleport: (x: number, y: number) => {
+        this.placePlayer(x, y);
+        this.lastSafe = { x, y };
+      },
+      /** Test-only: remove all trolleys (pending and live) to isolate other mechanics. */
+      clearTrolleys: () => {
+        this.pendingTrolleys = [];
+        this.trolleys.clear(true, true);
+      },
     };
   }
 }

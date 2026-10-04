@@ -43,3 +43,22 @@ Append after every stage/level: what worked, what didn't, numbers worth remember
 - **Seamless:** choose the crop whose next column matches its first (wrap diff 1–4 on 0–255), then crossfade a W/16 strip. Window rows and light strips tile with no visible seam. For small textures, `span: 0.5` sets the light spacing.
 - gpt-image-2 paints "#FF00FF" as roughly #F205EE to #FB03F8. That is well inside the chroma key's inner radius (70), so no tuning was needed.
 
+
+## Stage 2: World 5 slice (2026-10-04)
+
+**Engine**
+- Run gameplay logic on Arcade's `worldstep` (fixed 60 Hz), not in `update()`. Logic that ran per rendered frame went out of step with physics at low frame rates, and the bot died on loaded machines.
+- Latch key and touch presses until the next step reads them. A tap shorter than one step (16 ms) was being lost; Playwright's `keyboard.press` is exactly such a tap. Reset inputs on level start and resume, so keys pressed on a card don't fire in play.
+- Never use `body.reset()` on an offset body: it places the body at the sprite's top-left and ignores `body.offset`. Use `setPosition` + `body.updateFromGameObject()` (see `placePlayer`).
+- A respawn point needs floor on both sides (±40 units). Otherwise walking into a pit from the right respawns you inside it.
+- Camera rotation sign: `setRotation(+θ)` gives nose-down (floor descends to the right), matching gravity `(sin θ, cos θ)`.
+- CSS class names are global: the title `.hud` and the game `.hud` leaked into each other. Game UI classes use the `ghud-` prefix, with a regression test.
+
+**Testing**
+- Software-rendered WebGL (this sandbox, GitHub runners) makes several parallel games run in slow motion. Use poll-based assertions with generous timeouts, cap CI at 2 workers, and never assert on "X ms of play".
+- `__syb` test hooks (`state`, `teleport`, `clearTrolleys`, and a `hurts` log with causes) turned "flaky" failures into clear diagnoses. Twice the game was right and the test was wrong.
+- Phones run the e2e suite in landscape (the game is landscape-only). Portrait gets its own test: rotate hint plus auto-pause.
+
+**QA agent (2nd pass)**: 9 bugs and 5 feel items, all addressed except placing touch buttons in the letterbox bars (Stage 10). Recipe as in Stage 1, plus real held-key playthroughs and a FPS check under 4× CPU throttle.
+
+**Fidelity**: World 5 judged 8.0 → 7.2 (gate 5). The drop came from a later trolley spawn moving it out of the capture frame, not from the art. Lowering the camera and making the foreground seats larger fixed the "too much empty wall" note. For Stage 3: denser passengers in the play layer, a larger Yaniv frame (the art agent suggests about 56×72), and a capture point that shows the trolley mid-screen.

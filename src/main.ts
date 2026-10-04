@@ -70,6 +70,7 @@ function showScreen(next: Screen): void {
   if (screen === next) return;
   if (screen === 'game') unmountGame();
   screen = next;
+  document.getElementById('stage')!.dataset.screen = next;
   title.hidden = next !== 'title';
   comingSoon.hidden = next !== 'coming-soon';
   gameScreen.hidden = next !== 'game';

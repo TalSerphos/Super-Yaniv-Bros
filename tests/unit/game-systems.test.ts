@@ -85,7 +85,7 @@ describe('parseLevel', () => {
   it('adds one-way platforms for dashes and seatback tops', () => {
     const p = parseLevel(base);
     expect(p.oneWays).toContainEqual({ x: 144, y: 48, w: 48, h: 16 });
-    expect(p.oneWays).toContainEqual({ x: 50, y: 64 - SEAT.h + SEAT.topInset, w: SEAT.w - 4, h: 6 });
+    expect(p.oneWays).toContainEqual({ x: 48 + SEAT.backX, y: 64 - SEAT.h + SEAT.topInset, w: SEAT.backW, h: 6 });
   });
 
   it('rejects levels without exactly one start and exit', () => {

@@ -8,6 +8,8 @@ const allBrowsers = !!process.env.CI;
 export default defineConfig({
   testDir: 'tests/e2e',
   fullyParallel: true,
+  // CI runners render WebGL in software: more parallel games just run each simulation slower.
+  workers: process.env.CI ? 2 : undefined,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',
   use: {
@@ -32,12 +34,13 @@ export default defineConfig({
           },
         ]),
     { name: 'desktop-chrome', use: { ...devices['Desktop Chrome'], ...chromiumOpts } },
-    { name: 'pixel-7', use: { ...devices['Pixel 7'], ...chromiumOpts } },
+    // The game is landscape-only (portrait shows a rotate hint and pauses), so phones test in landscape.
+    { name: 'pixel-7', use: { ...devices['Pixel 7 landscape'], ...chromiumOpts } },
     ...(allBrowsers
       ? [
           { name: 'desktop-firefox', use: { ...devices['Desktop Firefox'] } },
           { name: 'desktop-webkit', use: { ...devices['Desktop Safari'] } },
-          { name: 'iphone-14', use: { ...devices['iPhone 14'] } },
+          { name: 'iphone-14', use: { ...devices['iPhone 14 landscape'] } },
           { name: 'ipad', use: { ...devices['iPad (gen 7) landscape'] } },
         ]
       : []),
