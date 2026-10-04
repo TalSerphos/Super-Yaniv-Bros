@@ -6,7 +6,7 @@
   --panel: rgba(10, 8, 20, 0.92);
   --panel-edge: #4a3424;
   --font-hud: 'Press Start 2P', ui-monospace, monospace;
-  --font-menu: 'Pixelify Sans', 'Press Start 2P', ui-monospace, monospace;
+  --font-menu: 'Pixelify Sans', system-ui, sans-serif; /* narrow fallback: no overflow during font swap */
   color-scheme: dark;
 }
 
@@ -108,7 +108,7 @@ body {
   border: 0;
   background: none;
   color: var(--ink);
-  font: 700 2.15cqw/1.1 var(--font-menu);
+  font: 700 2cqw/1.1 var(--font-menu); /* ~7% headroom for the 2P label across renderers */
   letter-spacing: 0.05cqw;
   word-spacing: 0.25em; /* Pixelify's space glyph is narrow; 0.6em overflowed the panel */
   text-align: left;

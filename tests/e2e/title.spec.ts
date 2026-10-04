@@ -88,6 +88,7 @@ test.describe('QA regressions', () => {
   const heading = (page: Page) => page.getByRole('heading', { name: 'COMING SOON!' });
 
   test('menu labels fit inside the menu box', async ({ page }) => {
+    await page.evaluate(() => document.fonts.ready);
     const overflow = await page.locator('.menu-item').evaluateAll((els) => els.map((e) => e.scrollWidth - e.clientWidth));
     expect(overflow.every((d) => d <= 1)).toBe(true);
     const menu = (await page.locator('.menu').boundingBox())!;
@@ -97,7 +98,8 @@ test.describe('QA regressions', () => {
         range.selectNodeContents(e);
         return range.getBoundingClientRect().right;
       });
-      expect(r).toBeLessThanOrEqual(menu.x + menu.width);
+      // Require 2% headroom so near-misses fail locally, not just on CI's font rasterizer.
+      expect(r).toBeLessThanOrEqual(menu.x + menu.width * 0.98);
     }
   });
 
