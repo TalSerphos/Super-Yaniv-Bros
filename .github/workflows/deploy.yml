@@ -34,6 +34,8 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -50,9 +52,18 @@ jobs:
         with: { node-version: 22, cache: npm }
       - run: npm ci
       - run: npx playwright install --with-deps chromium
+      # Test the URL Pages actually serves: https://superyanivbros.com/ once the custom domain is set
+      # in Settings → Pages, otherwise https://talserphos.github.io/Super-Yaniv-Bros/.
       - name: Wait for the CDN to serve the new build
-        run: sleep 30
+        run: |
+          for i in $(seq 1 30); do
+            curl -sfL "$PAGE_URL" | grep -q 'rotate-hint' && exit 0
+            sleep 10
+          done
+          echo "::error::$PAGE_URL did not serve the new build within 5 minutes"; exit 1
+        env:
+          PAGE_URL: ${{ needs.deploy.outputs.page_url }}
       - name: Smoke test production
         run: npm run e2e -- --project=desktop-chrome --project=pixel-7
         env:
-          BASE_URL: https://superyanivbros.com
+          BASE_URL: ${{ needs.deploy.outputs.page_url }}

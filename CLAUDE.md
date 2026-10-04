@@ -36,3 +36,4 @@ Local Playwright uses `/opt/pw-browsers/chromium`; CI installs browsers itself.
 - HUD/menu text is drawn in DOM or engine, never baked into AI art.
 - Guardrails from the spec: original art only (no Nintendo IP), slapstick only, villain has no ethnic/national markers.
 - Work on the designated feature branch; `main` deploys to production.
+- Keep every URL relative (Vite `base: './'`): the site must work at the domain root and under `/Super-Yaniv-Bros/`.

@@ -27,3 +27,8 @@ Append after every stage/level: what worked, what didn't, numbers worth remember
 - CSS `::before` text becomes part of the accessible name. Use `content: '>' / ''` for decorative glyphs. This also broke `getByRole(..., { exact: true })` in tests.
 - Ignore keydowns with Ctrl/Cmd/Alt. Give small controls 44px hit areas. Phones in portrait get a rotate hint.
 - QA agent recipe that worked: a read-only general-purpose agent, about 9 viewports, scripted edge cases (double tap, deep link, back/forward, Tab vs hover), reporting file:line plus a suggested fix. It took about 5 min.
+
+## Deploy (2026-10-04)
+- With `base: '/'`, the site rendered unstyled at `talserphos.github.io/Super-Yaniv-Bros/` because every asset 404'd under the project subpath. The fix is `base: './'`, which makes all URLs relative so one build works at the domain root and under a subpath. `check-budget.mjs` now fails on root-absolute URLs, and the `subpath` Playwright project serves the build under `/Super-Yaniv-Bros/`.
+- When Pages deploys from Actions, the `public/CNAME` file is ignored. The custom domain must be set in Settings → Pages, and the DNS must point at GitHub. The smoke job now tests the `page_url` the deploy reports, rather than assuming the domain works.
+- e2e tests use `page.goto('./')` (relative), so `BASE_URL` can carry a path.

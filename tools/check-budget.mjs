@@ -1,4 +1,5 @@
-// Fails the build when dist/ exceeds the load-time budgets in docs/PLAN.md §3.
+// Fails the build when dist/ exceeds the load-time budgets in docs/PLAN.md §3,
+// or contains root-absolute URLs that break under a subpath.
 // Text files are measured gzipped (what GitHub Pages serves); binaries as-is.
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
@@ -35,6 +36,12 @@ for (const f of files) {
   if (!LAZY.test(f.rel) && !/coming-soon/.test(f.rel) && !/^(og\.jpg|apple-touch-icon\.png|CNAME)$/.test(f.rel) && !/\.woff$/.test(f.rel)) initial += f.size;
   if (/\.(webp|png|jpe?g|avif)$/.test(f.rel) && f.size > BUDGETS.image) errors.push(`${f.rel} is ${fmt(f.size)} (image budget ${fmt(BUDGETS.image)})`);
   if (/^assets\/index-.*\.js$/.test(f.rel) && f.size > BUDGETS.jsEntry) errors.push(`${f.rel} is ${fmt(f.size)} gz (JS entry budget ${fmt(BUDGETS.jsEntry)})`);
+}
+// Root-absolute URLs ("/assets/...") break when Pages serves the site under /Super-Yaniv-Bros/.
+for (const f of files.filter((f) => /\.(html|css)$/.test(f.rel))) {
+  const text = readFileSync(join(DIST, f.rel), 'utf8');
+  const bad = text.match(/(?:src|href)="\/(?!\/)[^"]*"|url\(["']?\/(?!\/)[^)]*\)/g);
+  if (bad) errors.push(`${f.rel} has root-absolute URLs (use relative): ${bad.slice(0, 3).join(', ')}`);
 }
 if (initial > BUDGETS.initialTotal) errors.push(`initial load is ${fmt(initial)} (budget ${fmt(BUDGETS.initialTotal)})`);
 

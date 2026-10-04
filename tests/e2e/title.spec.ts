@@ -11,7 +11,7 @@ function trackErrors(page: Page): string[] {
 }
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/');
+  await page.goto('./'); // relative, so BASE_URL may include a subpath
 });
 
 test('title screen renders with no errors', async ({ page }) => {
@@ -104,19 +104,19 @@ test.describe('QA regressions', () => {
   });
 
   test('deep link to #coming-soon: BACK stays on the site', async ({ page }) => {
-    await page.goto('/#coming-soon');
+    await page.goto('./#coming-soon');
     await expect(heading(page)).toBeVisible();
     await page.getByRole('button', { name: /BACK/ }).click();
     await expect(item(page, 0)).toBeVisible();
     expect(new URL(page.url()).hash).toBe('');
   });
 
-  test('double BACK does not leave the site', async ({ page }) => {
+  test('double BACK does not leave the site', async ({ page, baseURL }) => {
     await item(page, 0).click();
     await expect(heading(page)).toBeVisible();
     await page.getByRole('button', { name: /BACK/ }).dblclick();
     await expect(item(page, 0)).toBeVisible();
-    expect(page.url()).toContain('localhost');
+    expect(new URL(page.url()).origin).toBe(new URL(baseURL!).origin);
   });
 
   test('double tap on a menu item leaves Coming Soon open', async ({ page }) => {
