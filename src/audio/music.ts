@@ -1,5 +1,5 @@
 /**
- * A tiny chiptune sequencer: original tracks written as note strings, scheduled ahead on the Web Audio
+ * A tiny chiptune sequencer: tracks written as note strings, scheduled ahead on the Web Audio
  * clock (square lead, triangle bass, noise drums). No audio files, nothing to download.
  *
  * Note strings: one token per eighth note. "A4" = note, "-" = hold the previous note, "." = rest.
@@ -14,27 +14,89 @@ interface Song {
   drums: string;
 }
 
-// World 5 cabin theme: A minor, tense but bouncy (original melody).
-const CABIN: Song = {
-  bpm: 132,
-  lead: `A4 . C5 . E5 . D5 C5  B4 . G4 . E4 - - .  A4 . C5 . E5 . G5 F5  E5 - - . D5 . C5 .
-         F4 . A4 . C5 . B4 A4  G4 . B4 . D5 - - .  E5 . D5 . C5 . B4 .   A4 - - . E4 . G#4 .`,
-  bass: `A2 . A3 . A2 . A3 .  E2 . E3 . E2 . E3 .  A2 . A3 . A2 . A3 .  C3 . C4 . G2 . G3 .
-         F2 . F3 . F2 . F3 .  G2 . G3 . G2 . G3 .  A2 . A3 . E2 . E3 .  A2 . A3 . E2 . G#2 .`,
-  drums: 'k . h . s . h . '.repeat(8),
+// All flight music is our own chiptune arrangement of the traditional (public-domain) Hava Nagila, in D
+// freygish (D Eb F# G A Bb C, written with sharps: D# = Eb, A# = Bb). Songs are built from 8-token bars
+// (one 4/4 bar of eighth notes) so every voice always has the same length.
+
+/** Part A: "Ha-va na-gi-la, ha-va na-gi-la, ha-va na-gi-la ve-nis-me-cha" (6 bars). */
+const PART_A = [
+  'D5 - D5 - F#5 - D#5 -',
+  'D5 - - - F#5 - F#5 -',
+  'A5 - G5 - F#5 - - -',
+  'G5 - G5 - A#5 - A5 -',
+  'G5 - - - F#5 - D#5 -',
+  'F#5 - D5 - - - . .',
+];
+const CHORDS_A = ['D', 'D', 'D', 'G', 'G', 'D'];
+
+/** Part B: "Ha-va ne-ra-ne-na ... ve-nis-me-cha" (6 bars). */
+const PART_B = [
+  'A5 - A5 - A5 - G5 F#5',
+  'G5 - - - G5 - G5 -',
+  'G5 - F#5 D#5 F#5 - - -',
+  'F#5 - F#5 - F#5 - D#5 D5',
+  'D#5 - - - F#5 - D#5 -',
+  'F#5 - D5 - - - . .',
+];
+const CHORDS_B = ['D', 'G', 'D', 'D', 'C', 'D'];
+
+/** Part C: "U-ru, u-ru a-chim, u-ru a-chim be-lev sa-me-ach" (8 bars), the climbing finale. */
+const PART_C = [
+  'A5 - A5 - . . A5 A5',
+  'A#5 - A5 - G5 - . .',
+  'A5 - A5 - A#5 A5 G5 F#5',
+  'G5 - F#5 - D#5 - D5 -',
+  'D6 - D6 - . . C6 A#5',
+  'A5 - G5 - F#5 - - -',
+  'G5 G5 A5 A#5 A5 G5 F#5 D#5',
+  'D5 - - - . . . .',
+];
+const CHORDS_C = ['D', 'G', 'D', 'C', 'G', 'D', 'C', 'D'];
+
+/** The 5-4 alarm: a siren fill between phrases. */
+const SIREN = ['D6 C#6 D6 C#6 D6 C#6 D6 .', 'A5 G#5 A5 G#5 A5 G#5 A5 .'];
+const CHORDS_SIREN = ['D', 'D'];
+
+type Chord = 'D' | 'G' | 'C';
+const BASS: Record<'oompah' | 'drive' | 'calm', Record<Chord, string>> = {
+  oompah: { D: 'D2 . A2 . D2 . A2 .', G: 'G2 . D3 . G2 . D3 .', C: 'C3 . G2 . C3 . G2 .' },
+  drive: { D: 'D2 D2 D3 D2 A2 D2 D3 D2', G: 'G2 G2 G3 G2 D3 G2 G3 G2', C: 'C3 C3 C4 C3 G2 C3 C4 C3' },
+  calm: { D: 'D2 - - - A2 - - -', G: 'G2 - - - D3 - - -', C: 'C3 - - - G2 - - -' },
 };
 
-// 5-4 alarm theme: faster, with a siren motif in the lead.
-const ALARM: Song = {
-  bpm: 152,
-  lead: `A5 G#5 A5 G#5 A5 G#5 A5 .  E5 . F5 . E5 . D5 .  A5 G#5 A5 G#5 A5 G#5 A5 .  C6 . B5 . A5 - - .
-         D5 . F5 . A5 . G5 F5  E5 . G#5 . B5 - - .  A5 . E5 . C5 . E5 .  A4 - - . . . . .`,
-  bass: `A2 A2 A3 A2 A2 A2 A3 A2  D2 D2 D3 D2 E2 E2 E3 E2  A2 A2 A3 A2 A2 A2 A3 A2  F2 F2 F3 F2 E2 E2 E3 E2
-         D2 D2 D3 D2 D2 D2 D3 D2  E2 E2 E3 E2 E2 E2 E3 E2  A2 A2 A3 A2 E2 E2 E3 E2  A2 . A3 . A2 . . .`,
-  drums: 'k h s h k k s h '.repeat(8),
-};
+/** Shift every note in a bar by whole octaves. */
+const octave = (bar: string, by: number) => bar.replace(/([A-G]#?)(\d)/g, (_, n: string, o: string) => `${n}${Number(o) + by}`);
 
-const SONGS = { cabin: CABIN, alarm: ALARM };
+/** Assemble a song from [melody bars, chords] sections, a bass style and a one-bar drum pattern. */
+function song(bpm: number, sections: [string[], string[]][], bass: keyof typeof BASS, drumBar: string, shift = 0): Song {
+  const lead = sections.flatMap(([bars]) => bars.map((b) => octave(b, shift)));
+  const chords = sections.flatMap(([, c]) => c as Chord[]);
+  return {
+    bpm,
+    lead: lead.join('  '),
+    bass: chords.map((c) => BASS[bass][c]).join('  '),
+    drums: drumBar.repeat(lead.length),
+  };
+}
+
+const A: [string[], string[]] = [PART_A, CHORDS_A];
+const B: [string[], string[]] = [PART_B, CHORDS_B];
+const C: [string[], string[]] = [PART_C, CHORDS_C];
+const S: [string[], string[]] = [SIREN, CHORDS_SIREN];
+
+/** World 5 cruise: bouncy hora, A A B B. */
+const CABIN = song(132, [A, A, B, B], 'oompah', 'k . h h s . h h');
+/** 5-4 alarm: faster, driving bass, a siren between phrases. */
+const ALARM = song(152, [A, S, A, S], 'drive', 'k h s h k k s h');
+/** World 6 boss (6-1, 6-2): the climbing finale first, then the theme, at full tilt. */
+const BOSS = song(168, [C, A, C, B], 'drive', 'k h s h k h s s');
+/** 6-3, the boss tied up: slow and calm, an octave down. */
+const CALM = song(96, [A, B], 'calm', 'k . . . h . . .', -1);
+
+const SONGS = { cabin: CABIN, alarm: ALARM, boss: BOSS, calm: CALM };
+
+/** For tests: every song's voices and drum pattern. */
+export const songsForTest = () => SONGS;
 export type SongName = keyof typeof SONGS;
 
 const NOTE = /^([A-G])(#?)(\d)$/;
