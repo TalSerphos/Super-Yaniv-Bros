@@ -659,6 +659,9 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
         width: this.level.width,
         hurts: [...this.hurtLog],
         enemies: this.enemies.filter((e) => e.live).map((e) => ({ kind: e.kind, x: Math.round(e.x), y: Math.round(e.y) })),
+        items: this.items
+          .filter((i) => i.ready)
+          .map((i) => ({ kind: i.kind, x: Math.round((i.bounds.left + i.bounds.right) / 2), y: Math.round(i.bounds.bottom) })),
       }),
       /** Test-only: move the player (feet at y) to set up a situation quickly. */
       teleport: (x: number, y: number) => {

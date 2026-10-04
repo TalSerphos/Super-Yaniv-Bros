@@ -45,6 +45,11 @@ export class PowerItem {
     world.sfx('ding');
   }
 
+  /** Out of its block and moving (collectable). */
+  get ready(): boolean {
+    return this.live && !this.emerging;
+  }
+
   get bounds() {
     const b = this.s.body as Body;
     return { left: b.left, right: b.right, top: b.top, bottom: b.bottom };
