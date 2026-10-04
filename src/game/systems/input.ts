@@ -201,6 +201,8 @@ export interface BotView {
    * (dx, dy; negative dy is above), speed, and kind ('trolley', 'suitcase', 'pacifier', 'luggage', ...).
    */
   threats: BotThreat[];
+  /** 7-1: drains along the pool (offset from the player, and whether still clogged). */
+  drains?: { dx: number; clogged: boolean }[];
 }
 
 export interface BotThreat {
@@ -235,11 +237,21 @@ export class BotInput implements InputSource {
     }
     // Plunger poke: reaches ~70 ahead at body height and a little above the head (also calms babies and
     // stuns open bin biters). Pacifiers are lobbed, so swat them anywhere in that box, including overhead.
+    const lobbed = (t: BotThreat) => t.kind === 'pacifier' || t.kind === 'question';
     const inReach = (t: BotThreat) =>
-      t.kind === 'pacifier' ? t.dx > -6 && t.dx < 70 && t.dy > -90 && t.dy < 6 : t.kind !== 'luggage' && t.dx > -6 && t.dx < 66 && Math.abs(t.dy) < 38;
+      lobbed(t) ? t.dx > -6 && t.dx < 70 && t.dy > -90 && t.dy < 6 : t.kind !== 'luggage' && t.dx > -6 && t.dx < 66 && Math.abs(t.dy) < 38;
     if (this.pokeCooldown === 0 && v.threats.some(inReach)) {
       into.grab = true;
       this.pokeCooldown = 16;
+    }
+    // 7-1: stop at a clogged drain and plunge it clear.
+    const drain = v.grounded && v.drains?.find((d) => d.clogged && d.dx > -14 && d.dx < 50);
+    if (drain) {
+      if (this.pokeCooldown === 0) {
+        into.grab = true;
+        this.pokeCooldown = 16;
+      }
+      return;
     }
     // A bag dropping just ahead: let it land first (it is harmless once down).
     const bagAhead = v.threats.some((t) => t.kind === 'luggage' && t.dy < -20 && t.dx > -14 && t.dx < 64);

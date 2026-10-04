@@ -4,6 +4,7 @@
  * and routes Yaniv's actions to the phase's state machine.
  */
 import Phaser from 'phaser';
+import { music } from '../../audio/music.ts';
 import { play, type Sfx } from '../../audio/sfx.ts';
 import { createAnimations, ensurePlaceholders, frameIndex, preloadAssets } from '../assets.ts';
 import { ART_SCALE, PHYS, RULES, VIEW_H, VIEW_W, ZOOM } from '../config.ts';
@@ -652,12 +653,26 @@ export class BossScene extends Phaser.Scene implements GameWorld {
     this.finished = true;
     this.player.pose = null;
     this.score += bonus;
-    this.popText(this.bossX, FLOOR - 140, this.phase === 'C' ? 'TABUK!' : this.phase === 'A' ? 'GOT HIM!' : 'LEVEL FLIGHT!');
-    this.sfx('chime');
     for (const e of this.enemies) e.hit('plunger');
     this.pushHud();
     const run: RunState = { hearts: this.hearts, power: this.player.power, nuts: this.nuts, score: this.score };
-    this.time.delayedCall(1100, () => this.cfg.onEvent({ type: 'clear', run, seconds: Math.round(this.elapsed), door: false }));
+    const clear = () => this.cfg.onEvent({ type: 'clear', run, seconds: Math.round(this.elapsed), door: false });
+    if (this.phase !== 'C') {
+      this.popText(this.bossX, FLOOR - 140, this.phase === 'A' ? 'GOT HIM!' : 'LEVEL FLIGHT!');
+      this.sfx('chime');
+      this.time.delayedCall(1100, clear);
+      return;
+    }
+    // The final win: everyone claps and sings (the victory song keeps playing under the card).
+    music.play('victory', true);
+    this.popText(W / 2, FLOOR - 170, 'TABUK!', 2600);
+    this.time.delayedCall(700, () => this.popText(W / 2, FLOOR - 150, 'AM YISRAEL CHAI!', 2600));
+    this.time.delayedCall(1700, () => this.popText(W / 2, FLOOR - 130, 'OD AVINU CHAI!', 2600));
+    const crowd = this.children.list.filter((o) => o instanceof Phaser.GameObjects.Sprite && o !== this.boss) as Phaser.GameObjects.Sprite[];
+    for (const [i, s] of crowd.entries()) {
+      this.tweens.add({ targets: s, y: s.y - 10, duration: 180, yoyo: true, repeat: 7, delay: (i % 3) * 90, ease: 'Quad.Out' });
+    }
+    this.time.delayedCall(3200, clear);
   }
 
   private gameOver(reason: 'hearts' | 'altitude'): void {
@@ -670,10 +685,10 @@ export class BossScene extends Phaser.Scene implements GameWorld {
     this.cfg.onEvent({ type: 'gameover', reason, score: this.score });
   }
 
-  private popText(x: number, y: number, text: string): void {
+  popText(x: number, y: number, text: string, hold = 300): void {
     const t = this.add.text(x, y, text, { fontFamily: '"Press Start 2P", monospace', fontSize: '16px', color: '#fff8e7' });
     t.setOrigin(0.5).setScale(0.5).setDepth(20).setStroke('#000', 4);
-    this.tweens.add({ targets: t, y: y - 20, alpha: 0, delay: 300, duration: 900, onComplete: () => t.destroy() });
+    this.tweens.add({ targets: t, y: y - 20, alpha: 0, delay: hold, duration: 900, onComplete: () => t.destroy() });
   }
 
   // ---------- HUD ----------

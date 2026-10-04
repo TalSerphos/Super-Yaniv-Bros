@@ -193,8 +193,21 @@
 
 /* Map / level select: two columns (World 5 left, World 6 and the way out right), compact buttons. */
 .game-overlay.map .card { padding: 2.2cqh 2.4cqw; }
-.game-overlay.map .card-actions { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; grid-template-rows: repeat(4, auto); gap: 1cqh 1.6cqw; }
-.game-overlay.map .card-actions button { font-size: 1.25cqw; padding: 1cqh 1.2cqw; text-align: left; }
+.game-overlay.map .card { max-width: 94cqw; }
+.game-overlay.map .card-actions { display: grid; grid-auto-columns: 1fr; gap: 1cqh 1.4cqw; }
+.game-overlay.map .card-actions button { font-size: 1cqw; padding: 1cqh 1cqw; text-align: left; white-space: nowrap; }
 .game-overlay.map h2 { margin-bottom: 1cqh; }
 .game-overlay.map .sub { margin-bottom: 1.4cqh; font-size: 1.4cqw; }
 .card-actions button:disabled { opacity: 0.4; cursor: default; }
+
+/* The ending: the photo from the Oval Office, framed like a print. */
+.game-overlay.finale .card { max-width: 70cqw; }
+.game-overlay .photo {
+  display: block;
+  width: 34cqw;
+  margin: 0 auto 2cqh;
+  border: 0.8cqw solid #fff8e7;
+  border-bottom-width: 2.4cqw;
+  box-shadow: 0 0.6cqw 0 #000;
+  transform: rotate(-2deg);
+}

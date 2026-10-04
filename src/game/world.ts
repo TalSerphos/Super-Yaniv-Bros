@@ -36,6 +36,10 @@ export interface GameWorld {
   standableAt(x: number, y: number): boolean;
   /** Deterministic per-level random number in [0, 1). */
   random(): number;
+  /** A paparazzo's flash: white out the screen for a moment (World 7). */
+  flashScreen?(): void;
+  /** Floating text above something ("NO COMMENT!"). */
+  popText?(x: number, y: number, text: string): void;
 }
 
 /** Size an Arcade body in world units, bottom-centred in the frame (sprites are drawn at ART_SCALE or more). */

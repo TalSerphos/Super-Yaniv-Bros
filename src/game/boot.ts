@@ -96,7 +96,8 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
         // A level's best is the points scored in it, not the run total carried in from earlier levels.
         progress = recordClear(progress, ORDER, current.id, e.run.score - runAtStart.score);
         saveProgress(progress);
-        music.stop();
+        // The 6-3 victory song (clapping, "Od Avinu Chai!") keeps playing under the card.
+        if (!(isBoss(current) && current.phase === 'C')) music.stop();
         const next = nextStage();
         const score = `<dl><dt>SCORE</dt><dd data-testid="final-score">${pad6(e.run.score)}</dd><dt>NUTS</dt><dd>${e.run.nuts}</dd>${
           e.seconds ? `<dt>TIME</dt><dd>${e.seconds}s</dd>` : ''
@@ -110,29 +111,29 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
             playLevel(next!);
           },
         });
-        if (!next) {
+        if (next && worldOf(next.id) !== worldOf(current.id)) {
+          const done = worldOf(current.id).id;
+          const card =
+            done === 5
+              ? {
+                  h: 'THE CAPTAIN OPENED THE DOOR!',
+                  sub: 'Wounded but brave, he lets the Bros. onto the flight deck.',
+                  soon: 'Next: World 6, the cockpit. Jacuzzam is at the controls.',
+                  go: 'INTO THE COCKPIT',
+                }
+              : {
+                  h: 'TABUK!',
+                  sub: 'The off-duty pilots touch down. 174 passengers are safe, and Jacuzzam is still tied up.',
+                  soon: 'Next: World 7, Washington. The Bros. are invited to the White House!',
+                  go: 'TO WASHINGTON',
+                };
           hud.showOverlay(
-            `<p class="world">WORLD 6 COMPLETE</p>
-             <h2>TABUK!</h2>
-             <p class="sub">The off-duty pilots touch down. 174 passengers are safe, and Jacuzzam is still tied up.</p>
-             ${score}
-             <p class="soon">6-4 Tabuk Approach and World 7: The White House are coming soon.</p>`,
-            [
-              { label: 'MAP', run: () => showMap() },
-              { label: 'TITLE', run: opts.onQuit },
-            ],
+            `<p class="world">WORLD ${done} COMPLETE</p><h2>${card.h}</h2><p class="sub">${card.sub}</p>${score}<p class="soon">${card.soon}</p>`,
+            [goNext(card.go), { label: 'MAP', run: () => showMap() }, { label: 'TITLE', run: opts.onQuit }],
             'clear',
           );
-        } else if (worldOf(next.id) !== worldOf(current.id)) {
-          hud.showOverlay(
-            `<p class="world">WORLD 5 COMPLETE</p>
-             <h2>THE CAPTAIN OPENED THE DOOR!</h2>
-             <p class="sub">Wounded but brave, he lets the Bros. onto the flight deck.</p>
-             ${score}
-             <p class="soon">Next: World 6, the cockpit. Jacuzzam is at the controls.</p>`,
-            [goNext('INTO THE COCKPIT'), { label: 'MAP', run: () => showMap() }, { label: 'TITLE', run: opts.onQuit }],
-            'clear',
-          );
+        } else if (!next) {
+          hud.showOverlay(`<h2>THE END</h2>${score}`, [{ label: 'TITLE', run: opts.onQuit }], 'clear');
         } else if (isBoss(current)) {
           hud.showOverlay(
             `<h2>${current.phase === 'A' ? 'GOT HIM!' : 'LEVEL FLIGHT!'}</h2>
@@ -147,9 +148,10 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
             'clear',
           );
         } else {
+          const ground = !isBoss(current) && (current.theme ?? 'cabin') !== 'cabin';
           hud.showOverlay(
-            `<h2>CABIN CLEARED!</h2>
-             <p class="sub">Ding! The seatbelt sign is off.</p>
+            `<h2>${ground ? 'STAGE CLEAR!' : 'CABIN CLEARED!'}</h2>
+             <p class="sub">${ground ? 'Washington loves a plumber.' : 'Ding! The seatbelt sign is off.'}</p>
              ${score}
              <p class="soon">Next: ${next.id} ${next.name}</p>`,
             [goNext('NEXT LEVEL'), { label: 'TITLE', run: opts.onQuit }],
@@ -180,12 +182,33 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
         );
         break;
       }
+      case 'finale': {
+        run = e.run;
+        progress = recordClear(progress, ORDER, current.id, e.run.score - runAtStart.score);
+        saveProgress(progress);
+        music.play('victory', true);
+        const photo = e.photo ? `<img class="photo" src="${e.photo}" alt="The photo: Yaniv, the Bros., the Captain and the President in the Oval Office">` : '';
+        hud.showOverlay(
+          `<p class="world">THE END</p>
+           ${photo}
+           <h2>THANK YOU YANIV!</h2>
+           <p class="sub">But your next client is waiting in Nes Ziona!</p>
+           <dl><dt>SCORE</dt><dd data-testid="final-score">${pad6(e.run.score)}</dd><dt>NUTS</dt><dd>${e.run.nuts}</dd></dl>
+           <p class="soon">Flight 1073 · Yaniv, Assaf, Zvika, Shota and the Captain · Super Yaniv Bros.</p>`,
+          [
+            { label: 'MAP', run: () => showMap() },
+            { label: 'TITLE', run: opts.onQuit },
+          ],
+          'clear finale',
+        );
+        break;
+      }
       case 'gameover':
         play('hurt');
         music.stop();
         hud.showOverlay(
-          `<h2>${e.reason === 'altitude' ? 'ALTITUDE ZERO' : 'GAME OVER'}</h2>
-           <p class="sub">${e.reason === 'altitude' ? 'Pull up faster next time!' : 'Even plumbers need a second try.'}</p>
+          `<h2>${e.reason === 'altitude' ? 'ALTITUDE ZERO' : e.reason === 'time' ? "TIME'S UP!" : 'GAME OVER'}</h2>
+           <p class="sub">${e.reason === 'altitude' ? 'Pull up faster next time!' : e.reason === 'time' ? 'The motorcade waits for no one.' : 'Even plumbers need a second try.'}</p>
            <dl><dt>SCORE</dt><dd>${pad6(e.score)}</dd></dl>`,
           [
             { label: checkpoint ? 'RETRY FROM GALLEY' : 'RETRY', run: retry },
@@ -204,23 +227,33 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
   function showMap(fromPause = false): void {
     if (!fromPause) music.stop();
     const unlockedIdx = ORDER.indexOf(progress.unlocked);
-    const levels = STAGES.map((l, i) => ({
-      label: i <= unlockedIdx ? `${l.id} ${l.name}${l.id in progress.best ? ` · ${pad6(progress.best[l.id])}` : ''}` : `${l.id} LOCKED`,
-      disabled: i > unlockedIdx,
-      run: () => {
-        music.stop();
-        game.scene.stop(activeKey);
-        run = freshRun(RULES.hearts);
-        bossHp = tabukClock = undefined;
-        playLevel(l);
-      },
-    }));
-    // One column per world (4 rows): World 6's fourth slot is the Tabuk Approach, coming next.
-    const soon = { label: '6-4 TABUK · SOON', disabled: true, run: () => undefined };
+    // One column per world, its levels top to bottom; RESUME / TITLE on the row underneath.
+    const levels = WORLDS.flatMap((w, col) =>
+      w.stages.map((l, row) => {
+        const open = ORDER.indexOf(l.id) <= unlockedIdx;
+        return {
+          label: open ? `${l.id} ${l.name}${l.id in progress.best ? ` · ${pad6(progress.best[l.id])}` : ''}` : `${l.id} LOCKED`,
+          disabled: !open,
+          style: `grid-column:${col + 1};grid-row:${row + 1}`,
+          run: () => {
+            music.stop();
+            game.scene.stop(activeKey);
+            run = freshRun(RULES.hearts);
+            bossHp = tabukClock = undefined;
+            playLevel(l);
+          },
+        };
+      }),
+    );
+    const below = `grid-row:${Math.max(...WORLDS.map((w) => w.stages.length)) + 1}`;
     hud.showOverlay(
       `<p class="world">FLIGHT 1073</p><h2>THE MAP</h2>
        <p class="sub">${WORLDS.map((w) => `WORLD ${w.id}: ${w.name}`).join(' · ')}</p>`,
-      [...levels, soon, ...(fromPause ? [{ label: 'RESUME', run: resume, focus: true }] : []), { label: 'TITLE', run: opts.onQuit }],
+      [
+        ...levels,
+        ...(fromPause ? [{ label: 'RESUME', run: resume, focus: true, style: `grid-column:1;${below}` }] : []),
+        { label: 'TITLE', run: opts.onQuit, style: `grid-column:${fromPause ? 2 : 1};${below}` },
+      ],
       'map',
     );
   }
@@ -238,7 +271,9 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
     runAtStart = { ...run };
     const intro = isBoss(level)
       ? `<p class="world">WORLD ${level.id} · PHASE ${level.phase}</p><h2>${level.name}</h2><p class="sub">${BOSS_GOALS[level.phase]}</p>`
-      : `<p class="world">WORLD ${level.id}</p><h2>${level.name}</h2><p class="sub">ALT ${level.altitude.start.toLocaleString('en-US')} FT · BANK ${level.tilt[0]?.deg ?? 0}°</p>`;
+      : (level.theme ?? 'cabin') !== 'cabin'
+        ? `<p class="world">WORLD ${level.id}</p><h2>${level.name}</h2><p class="sub">${level.timer ? `TIME ${level.timer} · ` : ''}WASHINGTON, D.C.</p>`
+        : `<p class="world">WORLD ${level.id}</p><h2>${level.name}</h2><p class="sub">ALT ${level.altitude.start.toLocaleString('en-US')} FT · BANK ${level.tilt[0]?.deg ?? 0}°</p>`;
     hud.showOverlay(intro, [], 'intro');
     window.clearTimeout(introTimer);
     introTimer = window.setTimeout(() => {
@@ -258,7 +293,8 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
         const init: LevelInit = { level, run: { ...run }, checkpoint, inputs, bot, god: opts.god, onHud, onEvent };
         if (game.scene.getScene('level')) game.scene.start('level', init);
         else game.scene.add('level', LevelScene, true, init);
-        music.play(level.mood === 'alarm' ? 'alarm' : 'cabin');
+        const theme = level.theme ?? 'cabin';
+        music.play(theme === 'oval' ? 'ceremony' : theme !== 'cabin' ? 'march' : level.mood === 'alarm' ? 'alarm' : 'cabin');
       }
       if (portrait.matches) window.setTimeout(pause, 50);
     }, INTRO_MS);

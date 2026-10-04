@@ -69,7 +69,7 @@ function sweep(from: number, to: number, start: number, dur: number, type: Oscil
   osc.stop(start + dur + 0.02);
 }
 
-export type Sfx = 'move' | 'ding' | 'back' | 'jump' | 'nut' | 'stomp' | 'hurt' | 'bump' | 'thwop' | 'chime' | 'warn' | 'scream' | 'powerup';
+export type Sfx = 'move' | 'ding' | 'back' | 'jump' | 'nut' | 'stomp' | 'hurt' | 'bump' | 'thwop' | 'chime' | 'warn' | 'scream' | 'powerup' | 'flash' | 'splash';
 
 export function play(sfx: Sfx): void {
   if (muted || !ctx) return;
@@ -131,6 +131,15 @@ function synth(sfx: Sfx): void {
     case 'warn':
       tone(988, t, 0.08, 'square', 0.05);
       tone(988, t + 0.14, 0.08, 'square', 0.05);
+      break;
+    case 'flash': // a camera shutter and the flash's whine
+      tone(2600, t, 0.025, 'square', 0.06);
+      tone(1900, t + 0.04, 0.025, 'square', 0.05);
+      sweep(3200, 900, t + 0.06, 0.18, 'sine', 0.03);
+      break;
+    case 'splash':
+      sweep(700, 140, t, 0.3, 'triangle', 0.1);
+      sweep(1800, 400, t + 0.04, 0.2, 'sine', 0.03);
       break;
   }
 }

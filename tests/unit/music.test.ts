@@ -14,17 +14,20 @@ describe('music', () => {
     describe(name, () => {
       const lead = tokens(song.lead);
       const bass = tokens(song.bass);
+      const chords = song.chords ? tokens(song.chords) : null;
       const drums = song.drums.replace(/\s+/g, '').split('');
 
       it('has lead and bass of equal length in whole 4/4 bars', () => {
         expect(lead.length).toBe(bass.length);
         expect(lead.length % 8).toBe(0);
         expect(drums.length).toBe(lead.length);
+        if (chords) expect(chords.length).toBe(lead.length);
       });
 
       it('uses only notes, holds and rests', () => {
-        for (const t of [...lead, ...bass]) expect(t === '-' || t === '.' || noteFreq(t) !== null, t).toBe(true);
-        for (const d of drums) expect('ksh.').toContain(d);
+        const ok = (t: string) => t === '-' || t === '.' || t.split('+').every((n) => noteFreq(n) !== null);
+        for (const t of [...lead, ...bass, ...(chords ?? [])]) expect(ok(t), t).toBe(true);
+        for (const d of drums) expect('kshc.').toContain(d);
       });
 
       it('never starts a voice on a hold', () => {
@@ -33,4 +36,14 @@ describe('music', () => {
       });
     });
   }
+});
+
+describe('music by world', () => {
+  it('World 5 is a fast hora; World 6 has its own music and a one-shot victory with claps', () => {
+    const s = songsForTest();
+    expect(s.cabin.bpm).toBeGreaterThanOrEqual(176);
+    expect(s.cabin.chords).toBeTruthy(); // off-beat stabs
+    expect(s.boss.lead).not.toBe(s.cabin.lead);
+    expect(s.victory.drums).toContain('c');
+  });
 });

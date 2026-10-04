@@ -5,8 +5,13 @@
  */
 import type Phaser from 'phaser';
 
-const FILES = import.meta.glob<string>(['../assets/w5/*.webp', '../assets/w6/*.webp'], { eager: true, query: '?url', import: 'default' });
-const urlFor = (id: string): string | undefined => FILES[`../assets/w5/${id}.webp`] ?? FILES[`../assets/w6/${id}.webp`];
+const FILES = import.meta.glob<string>(['../assets/w5/*.webp', '../assets/w6/*.webp', '../assets/w7/*.webp'], {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
+const urlFor = (id: string): string | undefined =>
+  FILES[`../assets/w5/${id}.webp`] ?? FILES[`../assets/w6/${id}.webp`] ?? FILES[`../assets/w7/${id}.webp`];
 
 export interface SheetSpec {
   frame: [number, number];
@@ -50,6 +55,15 @@ export const SHEETS: Record<string, SheetSpec> = {
   'npc.zvika': { frame: [48, 64], frames: ['idle', 'throw'] },
   'npc.shota': { frame: [48, 64], frames: ['idle', 'help'] },
   'w6.yoke': { frame: [32, 48], frames: ['neutral', 'pulled', 'pushed'] },
+  // World 7, The White House (docs/levels/w7-assets.md)
+  'prop.drain': { frame: [32, 32], frames: ['clogged', 'clear'] },
+  'enemy.algae': { frame: [24, 24], frames: ['walk0', 'walk1', 'squash'] },
+  'enemy.reporter': { frame: [48, 64], frames: ['walk0', 'walk1', 'swing', 'sit'] },
+  'proj.question': { frame: [16, 16], frames: ['q0', 'q1'] },
+  'enemy.paparazzi': { frame: [48, 64], frames: ['idle', 'aim', 'flash'] },
+  'w7.gate': { frame: [64, 128], frames: ['closed', 'open'] },
+  'npc.president': { frame: [48, 72], frames: ['idle', 'handshake', 'photo'] },
+  'yaniv.ending': { frame: [48, 64], frames: ['shake', 'pose'] },
 };
 
 export const IMAGES: Record<string, [number, number]> = {
@@ -63,6 +77,16 @@ export const IMAGES: Record<string, [number, number]> = {
   'prop.cable': [16, 16],
   'w6.bg.cockpit': [640, 360],
   'w6.bg.galley': [640, 360],
+  'w7.bg.park': [640, 360],
+  'w7.prop.monument': [96, 256],
+  'w7.prop.whitehouse': [480, 240],
+  'w7.bg.oval': [640, 360],
+  'w7.tex.path': [64, 32],
+  'w7.tex.stone': [64, 32],
+  'w7.tex.water': [64, 32],
+  'w7.tex.algae': [64, 32],
+  'w7.rope': [64, 32],
+  'w7.checkpoint': [32, 96],
 };
 
 /** Frame index by name, e.g. frameIndex('yaniv.small', 'jump'). */
@@ -93,6 +117,9 @@ export function createAnimations(scene: Phaser.Scene): void {
   sheet('proj.binder:spin', ['spin0', 'spin1'], 10);
   sheet('proj.bubble:float', ['b0', 'b1'], 8);
   sheet('proj.bathbomb:spin', ['fizz0', 'fizz1'], 10);
+  sheet('enemy.algae:walk', ['walk0', 'walk1'], 5);
+  sheet('enemy.reporter:walk', ['walk0', 'walk1'], 6);
+  sheet('proj.question:float', ['q0', 'q1'], 4);
 }
 
 /** URL of a HUD/DOM icon strip, if the art exists (the DOM HUD falls back to CSS shapes). */
@@ -161,6 +188,14 @@ const COLORS: Record<string, string> = {
   'npc.zvika': '#334155',
   'npc.shota': '#15803d',
   'w6.yoke': '#475569',
+  'prop.drain': '#4d7c0f',
+  'enemy.algae': '#65a30d',
+  'enemy.reporter': '#a16207',
+  'proj.question': '#f8fafc',
+  'enemy.paparazzi': '#525252',
+  'w7.gate': '#1f2937',
+  'npc.president': '#1e3a8a',
+  'yaniv.ending': '#1f3a8a',
 };
 
 function drawPlaceholderFrame(ctx: CanvasRenderingContext2D, id: string, name: string, x: number, w: number, h: number) {

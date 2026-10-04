@@ -6,9 +6,11 @@ import type { Player } from './player.ts';
 
 const box = (b: Body) => ({ left: b.left, right: b.right, top: b.top, bottom: b.bottom });
 
-/** Rubber Ducky: Jacuzzam's bath-toy minion. Waddles and squeaks; stomp it flat or plunge it away. */
-export class Ducky implements Enemy {
-  readonly kind = 'ducky';
+/**
+ * A simple waddling enemy: stomp it flat or plunge it away. Rubber Duckies (World 6) and Algae Blobs (7-1).
+ * `turnAtLedges` keeps it on its platform instead of walking off.
+ */
+export class Walker implements Enemy {
   live = true;
   private dir = -1;
   private readonly s: Sprite;
@@ -17,8 +19,12 @@ export class Ducky implements Enemy {
     private readonly world: GameWorld,
     x: number,
     y: number,
+    readonly kind: string,
+    private readonly key: string,
+    private readonly speed = 46,
+    private readonly turnAtLedges = false,
   ) {
-    this.s = physicsSprite(world, x, y, 'enemy.ducky').play('enemy.ducky:walk');
+    this.s = physicsSprite(world, x, y, key).play(`${key}:walk`);
     sizeBody(this.s, 18, 18).setMaxVelocity(200, PHYS.maxFall);
   }
 
@@ -37,7 +43,8 @@ export class Ducky implements Enemy {
     const body = this.s.body as Body;
     if (body.blocked.left) this.dir = 1;
     if (body.blocked.right) this.dir = -1;
-    body.setVelocityX(this.dir * 46);
+    if (this.turnAtLedges && body.blocked.down && !this.world.standableAt(this.s.x + this.dir * 12, this.s.y)) this.dir *= -1;
+    body.setVelocityX(this.dir * this.speed);
     this.s.setFlipX(this.dir > 0);
     if (this.s.y > this.world.level.height + 100) this.destroy();
   }
@@ -54,7 +61,7 @@ export class Ducky implements Enemy {
     if (!this.live) return;
     this.live = false;
     this.s.anims.stop();
-    this.s.setFrame(frameIndex('enemy.ducky', 'squash'));
+    this.s.setFrame(frameIndex(this.key, 'squash'));
     const body = this.s.body as Body;
     body.setVelocity(0, 0);
     body.checkCollision.none = true;
@@ -78,9 +85,18 @@ export class Ducky implements Enemy {
   }
 }
 
-/** One puff of a jacuzzi-jet bubble stream: flies straight, hurts on contact, pops on anything. */
+/** Rubber Ducky: Jacuzzam's bath-toy minion (World 6). */
+export class Ducky extends Walker {
+  constructor(world: GameWorld, x: number, y: number) {
+    super(world, x, y, 'ducky', 'enemy.ducky');
+  }
+}
+
+/**
+ * Something that floats straight at Yaniv and pops on contact: a puff of a jacuzzi-jet bubble stream
+ * (World 6), or a reporter's question bubble (World 7).
+ */
 export class Bubble implements Enemy {
-  readonly kind = 'bubble';
   live = true;
   private age = 0;
   private readonly x0: number;
@@ -92,9 +108,11 @@ export class Bubble implements Enemy {
     y: number,
     readonly vx: number,
     private readonly range = Infinity,
+    readonly kind = 'bubble',
+    key = 'proj.bubble',
   ) {
     this.x0 = x;
-    this.s = world.stage.physics.add.sprite(x, y, 'proj.bubble', 0).setScale(ART_SCALE).setDepth(9).play('proj.bubble:float');
+    this.s = world.stage.physics.add.sprite(x, y, key, 0).setScale(ART_SCALE).setDepth(9).play(`${key}:float`);
     const body = this.s.body as Body;
     body.setSize(22, 22).setAllowGravity(false).setVelocity(vx, 0);
   }
@@ -119,7 +137,7 @@ export class Bubble implements Enemy {
 
   touch(player: Player): void {
     if (player.bamba > 0) return void this.hit();
-    this.world.hurtPlayer(this.s.x, 'bubble');
+    this.world.hurtPlayer(this.s.x, this.kind);
     this.hit();
   }
 

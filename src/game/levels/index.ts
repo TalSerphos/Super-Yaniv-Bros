@@ -1,9 +1,13 @@
-/** Level registry, in play order: World 5 (platform levels) and World 6 (the three boss phases). */
+/** Level registry, in play order: World 5, World 6 (the three boss phases) and World 7 (The White House). */
 import type { LevelData } from './loader.ts';
 import l51 from './w5/5-1.json';
 import l52 from './w5/5-2.json';
 import l53 from './w5/5-3.json';
 import l54 from './w5/5-4.json';
+import l71 from './w7/7-1.json';
+import l72 from './w7/7-2.json';
+import l73 from './w7/7-3.json';
+import l74 from './w7/7-4.json';
 
 /** A boss phase (World 6): the arena and rules live in BossScene and systems/boss.ts. */
 export interface BossData {
@@ -27,6 +31,8 @@ export const WORLD6: BossData[] = [
   { kind: 'boss', id: '6-3', name: 'KEEP HIM TIED', phase: 'C', altitude: { start: 12000 } },
 ];
 
+export const WORLD7: LevelData[] = [l71, l72, l73, l74] as LevelData[];
+
 export interface World {
   id: number;
   name: string;
@@ -36,6 +42,7 @@ export interface World {
 export const WORLDS: World[] = [
   { id: 5, name: 'THE ATTACK', stages: WORLD5 },
   { id: 6, name: 'THE COCKPIT', stages: WORLD6 },
+  { id: 7, name: 'THE WHITE HOUSE', stages: WORLD7 },
 ];
 
 /** Every stage in play order (unlocking follows this). */

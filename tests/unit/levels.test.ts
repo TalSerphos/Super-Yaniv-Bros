@@ -1,17 +1,43 @@
 import { describe, expect, it } from 'vitest';
-import { WORLD5, WORLD5_ORDER } from '../../src/game/levels/index.ts';
+import { ORDER, WORLD5, WORLD5_ORDER, WORLD7 } from '../../src/game/levels/index.ts';
 import { floorTopOf, parseLevel } from '../../src/game/levels/loader.ts';
 import { PHYS, TILE } from '../../src/game/config.ts';
 
 /** Max gap a running jump clears on flat floor, with a safety margin (world units). */
 const MAX_GAP = ((2 * PHYS.jumpVelocity) / PHYS.gravity) * PHYS.runSpeed * 0.85;
 
-describe('World 5 levels', () => {
-  it('are registered in play order', () => {
+describe('the flight order', () => {
+  it('runs World 5, the three boss phases of World 6, then World 7', () => {
     expect(WORLD5_ORDER).toEqual(['5-1', '5-2', '5-3', '5-4']);
+    expect(ORDER).toEqual(['5-1', '5-2', '5-3', '5-4', '6-1', '6-2', '6-3', '7-1', '7-2', '7-3', '7-4']);
   });
+});
 
-  for (const level of WORLD5) {
+describe('World 7 levels (on the ground)', () => {
+  for (const level of WORLD7) {
+    const p = parseLevel(level);
+    it(`${level.id}: no tilt, a TIME counter (except the Oval Office), a known theme`, () => {
+      expect(level.tilt.every((k) => k.deg === 0)).toBe(true);
+      expect(['mall', 'lawn', 'oval']).toContain(level.theme);
+      if (level.theme === 'oval') {
+        expect(p.president, 'the President waits in the Oval Office').toBeDefined();
+        expect(level.timer).toBeUndefined();
+      } else {
+        expect(level.timer).toBeGreaterThanOrEqual(150);
+      }
+    });
+  }
+
+  it('7-1 has the drains to unclog; the press levels have reporters and paparazzi', () => {
+    const [pool, gaggle, row] = WORLD7.map(parseLevel);
+    expect(pool.drains.length).toBe(3);
+    expect(gaggle.reporters.length).toBeGreaterThanOrEqual(6);
+    expect(row.paparazzi.length).toBeGreaterThanOrEqual(5);
+  });
+});
+
+describe('platform levels (Worlds 5 and 7)', () => {
+  for (const level of [...WORLD5, ...WORLD7]) {
     describe(level.id, () => {
       const p = parseLevel(level);
       const floorTop = floorTopOf(p);
@@ -29,6 +55,7 @@ describe('World 5 levels', () => {
       });
 
       it('has an altitude budget of 2.5 to 4 minutes (a real clock, but a generous one)', () => {
+        if (level.theme && level.theme !== 'cabin') return; // World 7 runs on TIME (checked above)
         const seconds = level.altitude.start / level.altitude.rate;
         expect(seconds).toBeGreaterThanOrEqual(150);
         expect(seconds).toBeLessThanOrEqual(240);

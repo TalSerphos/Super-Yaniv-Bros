@@ -15,6 +15,8 @@ export interface OverlayAction {
   disabled?: boolean;
   /** Gets the initial focus (default: the first enabled button). */
   focus?: boolean;
+  /** Inline style for the button (e.g. its grid cell on the map). */
+  style?: string;
 }
 
 export class Hud {
@@ -88,6 +90,7 @@ export class Hud {
     this.score.textContent = String(s.score).padStart(6, '0');
     this.bankValue.textContent = `${s.bank}°`;
     this.bankBox.classList.toggle('warning', s.bankWarning);
+    this.bankBox.style.visibility = s.hideBank ? 'hidden' : '';
     // 10 segments = 30°; blue while gentle, amber past 10°.
     const lit = Math.min(10, Math.round(Math.abs(s.bank) / 3));
     [...this.bankBars.children].forEach((el, i) => (el.className = i < lit ? (i >= 3 ? 'hot' : 'on') : ''));
@@ -160,6 +163,7 @@ export class Hud {
       const btn = document.createElement('button');
       btn.textContent = a.label;
       btn.disabled = !!a.disabled;
+      if (a.style) btn.setAttribute('style', a.style);
       btn.addEventListener('click', () => a.run(btn));
       row.appendChild(btn);
       if (a.focus) focus = btn;

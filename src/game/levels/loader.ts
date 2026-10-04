@@ -12,8 +12,10 @@
  *             'W' bin biter (top-left cell; hangs from the bin above)   'L' luggage-rain zone (top cell)
  *   swing     'M' oxygen-mask anchor (the mask hangs MASK_LENGTH below it)
  *   seats     'E' 'Z' 'R' 'K' (leftmost cell, feet): empty, sleeper, reader, kid. Their seatback is a one-way platform.
- *   markers   'P' player start (feet)   'X' exit curtain (bottom-left)   'D' cockpit door exit (bottom-left)
- *             'G' galley checkpoint (feet)   'N' the Captain (feet)   'Q' screaming passenger (feet)
+ *   markers   'P' player start (feet)   'X' exit curtain / gate (bottom-left)   'D' cockpit door exit (bottom-left)
+ *             'G' checkpoint (feet)   'N' the Captain (feet)   'Q' screaming passenger (feet)
+ *   World 7   'O' clogged drain (feet; the level's objective: plunge them all)   'a' algae blob (feet)
+ *             'J' reporter (feet)   'F' paparazzo (feet)   'V' the President (feet, 7-4)
  *   '.' or ' ' empty
  */
 import { TILE } from '../config.ts';
@@ -33,6 +35,10 @@ export interface LevelData {
   tilt: TiltKey[];
   /** Optional mood: 'sunset' (default) or 'alarm' (red alarm lighting, World 5-4). */
   mood?: 'sunset' | 'alarm';
+  /** Look of the level (default 'cabin'); World 7 is on the ground in Washington. */
+  theme?: 'cabin' | 'mall' | 'lawn' | 'oval';
+  /** Ground levels: a TIME counter in seconds instead of ALT. */
+  timer?: number;
   grid: string[];
 }
 
@@ -73,6 +79,11 @@ export interface ParsedLevel {
   seats: (Point & { kind: SeatKind })[];
   captain?: Point;
   screamer?: Point;
+  drains: Point[];
+  algae: Point[];
+  reporters: Point[];
+  paparazzi: Point[];
+  president?: Point;
 }
 
 /** Seat sprite footprint (world units), seatback top inset, and the standable seatback span. */
@@ -108,6 +119,10 @@ export function parseLevel(level: LevelData): ParsedLevel {
     masks: [],
     checkpoints: [],
     seats: [],
+    drains: [],
+    algae: [],
+    reporters: [],
+    paparazzi: [],
   };
   let starts = 0;
   let exits = 0;
@@ -183,6 +198,21 @@ export function parseLevel(level: LevelData): ParsedLevel {
           break;
         case 'Q':
           out.screamer = feet;
+          break;
+        case 'O':
+          out.drains.push(feet);
+          break;
+        case 'a':
+          out.algae.push(feet);
+          break;
+        case 'J':
+          out.reporters.push(feet);
+          break;
+        case 'F':
+          out.paparazzi.push(feet);
+          break;
+        case 'V':
+          out.president = feet;
           break;
       }
     }

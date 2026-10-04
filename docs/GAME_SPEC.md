@@ -104,8 +104,10 @@ There are 7 worlds of 4 levels each (28 levels). The trip runs Nes Ziona → Dub
 | 4 | Cruise, 37,000 ft | Boarding (bin wars) | Meal Service (Trolley Trolls) | Wing Dream (Yaniv naps, a sky level) | The Lav (a water level inside the plumbing) |
 | 5 | The Attack | The Scream (a woman shouts and the plane shakes) | The Aisle (tilt 0° → 15°) | Bin Avalanche | Cockpit Door: the wounded Captain opens it |
 | 5 (maybe) | — | *5-5 Freefall Cabin* (vertical, 14,000 ft in 29 s), the last level of World 5, if we add it | | | |
-| 6 | The Cockpit | **Boss Phase A: Fight** | **Boss Phase B: Fight + Fly** | **Boss Phase C: Keep Him Tied** (the 50 minutes) | Tabuk Approach: the off-duty pilots land, you keep order |
+| 6 | The Cockpit | **Boss Phase A: Fight** | **Boss Phase B: Fight + Fly** | **Boss Phase C: Keep Him Tied** (the 50 minutes) | *(none for now: see below)* |
 | 7 | The White House | The Reflecting Pool: it's clogged with algae; plunge the pumps and drains to clear it (Algae Blobs) | Press Gaggle (Reporters and their boom mics) | Paparazzi Row (camera flashes; run between them) | The Oval Office: a handshake and a photo with the President (no fight) |
+
+*World 6 has three levels.* A 6-4 may come back later as a funny breather with no challenge: **Tabuk Terminal**, walking around the terminal while kind Saudis treat the passengers warmly and offer support and coffee.
 
 **Ending (7-4):** the handshake, the camera flash, the photo framed on the screen, then: “Thank you Yaniv! But your next client is waiting in Nes Ziona!”
 
@@ -145,7 +147,10 @@ Phases A and B fail on altitude. Phase C can only send you back to Phase B, so t
 - The flight-attendant *ding* is the coin sound, and the seatbelt chime ends every level.
 - Bubbles gurgle whenever Jacuzzam is on screen.
 - An original chiptune score: a bouncy World 1 theme and a victory fanfare built on a public-domain Israeli folk melody.
-- **Flight music (Worlds 4–6) is based on *Hava Nagila*** (a traditional, public-domain melody) in our own chiptune arrangements: a bouncy cruise version, a faster alarm version with a siren in the fills (5-4), a driving boss version (6-1, 6-2), and a calm, slow version while the boss is tied up (6-3).
+- **World 5 music is based on *Hava Nagila*** (a traditional, public-domain melody), in our own fast, rhythmic chiptune hora arrangements: a bouncy cruise version and a faster alarm version with a siren in the fills (5-4).
+- **World 6 has its own original music:** a driving boss theme (6-1, 6-2) and a tense, quieter theme while the boss is tied up (6-3).
+- **The final win (6-3):** hand-clapping, and everyone sings “**Od Avinu Chai!**” (“Am Yisrael Chai, Od Avinu Chai”). That melody is Shlomo Carlebach's 1965 song and is still under copyright, so until we have permission the game plays the clapping and the chanted words over our own fanfare.
+- **World 7 (Washington)** gets its own original, bright march.
 - The Mayday VHS power-up plays a rewind squeal and a 3-second replay of the correct move.
 
 ## Example screens
@@ -178,5 +183,7 @@ Six concept screens, rendered as 16-bit pixel art in the style of your samples, 
 - [ ] Ask the four heroes for permission to use their names and likeness before any public release?
 - [ ] The President's likeness: image models may refuse to draw a real person. Fallback: a stylized figure seen from the side or back, with the name only in in-engine text.
 - [ ] Add 5-5 Freefall Cabin (the old World 6-1) as the last level of World 5?
+- [ ] Add 6-4 Tabuk Terminal (a no-challenge breather with kind Saudi hosts and coffee)?
+- [ ] Permission to use the “Od Avinu Chai” melody (Carlebach estate) for the 6-3 win?
 - [ ] Platform: browser (HTML5) first, or mobile with touch controls?
 - [x] Scope for a first playable: World 5 + World 6 (the aisle and the three boss phases). World 5 is live; World 6 is in progress.
