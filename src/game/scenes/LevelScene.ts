@@ -1,9 +1,10 @@
 import Phaser from 'phaser';
 import { play, type Sfx } from '../../audio/sfx.ts';
 import { createAnimations, ensurePlaceholders, frameIndex, preloadAssets } from '../assets.ts';
-import { ART_SCALE, PHYS, RULES, VIEW_H, VIEW_W, ZOOM } from '../config.ts';
+import { ART_SCALE, PHYS, ROOM_FLOOR_MARGIN, RULES, VIEW_H, VIEW_W, ZOOM } from '../config.ts';
 import { BabyBomber, BinBiter, LuggageRain, Suitcase, Trolley, type Enemy } from '../entities/enemies.ts';
 import { Blocks, PowerItem, ThrownPlunger } from '../entities/items.ts';
+import { CargoHold, HOLD_H } from '../entities/hold.ts';
 import { MaskVine } from '../entities/masks.ts';
 import { Drain, Paparazzo, Reporter, algaeBlob } from '../entities/w7.ts';
 import { Player } from '../entities/player.ts';
@@ -85,16 +86,20 @@ interface Theme {
   bgColor: string;
   floorTex: string;
   solidTex: string;
-  /** Fill under the floor line (a slab's underside and the ground below it). */
-  under: number;
   /** Pits show water (World 7 pools and fountains) instead of the dark cargo hold. */
   water: boolean;
 }
+/** The floor slab's thickness (world units); the cargo hold starts under it. */
+const FLOOR_SLAB = 32;
+const HOLD_DARK = 0x15142a;
+/** The Oval Office floor is a thin cut, so the secret basement below it shows. */
+const OVAL_SLAB = 10;
+
 const THEMES: Record<ThemeName, Theme> = {
-  cabin: { bgColor: '#d9cdb4', floorTex: 'w5.tex.floor', solidTex: 'w5.tex.bin', under: 0x22233c, water: false },
-  mall: { bgColor: '#9fd3f2', floorTex: 'w7.tex.path', solidTex: 'w7.tex.stone', under: 0x7a6a4c, water: true },
-  lawn: { bgColor: '#9fd3f2', floorTex: 'w7.tex.path', solidTex: 'w7.tex.stone', under: 0x7a6a4c, water: true },
-  oval: { bgColor: '#e9dcc0', floorTex: 'w7.tex.stone', solidTex: 'w7.tex.stone', under: 0x26304d, water: false },
+  cabin: { bgColor: '#d9cdb4', floorTex: 'w5.tex.floor', solidTex: 'w5.tex.bin', water: false },
+  mall: { bgColor: '#9fd3f2', floorTex: 'w7.tex.path', solidTex: 'w7.tex.stone', water: true },
+  lawn: { bgColor: '#9fd3f2', floorTex: 'w7.tex.path', solidTex: 'w7.tex.stone', water: true },
+  oval: { bgColor: '#e9dcc0', floorTex: 'w7.tex.stone', solidTex: 'w7.tex.stone', water: false },
 };
 
 /** Walking pace through the exit (world units/s). */
@@ -126,6 +131,8 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
   private screamer?: { sprite: Phaser.GameObjects.Sprite; done: boolean };
   private drains: Drain[] = [];
   private algaeLayers: Phaser.GameObjects.TileSprite[] = [];
+  /** In the air: the luggage hold under the cabin floor. */
+  private hold?: CargoHold;
   private gate?: Phaser.GameObjects.Sprite;
   private president?: Phaser.GameObjects.Sprite;
   private gateNagged = 0;
@@ -193,10 +200,12 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     // On the ground the sky and landmarks matter more than what's under the walkway: look a little higher.
     if (this.ground) cam.setFollowOffset(-70, 84);
     if (data.level.theme === 'oval') {
-      // The Oval Office is one room on one screen: fixed camera, the floor near the bottom.
+      // The Oval Office is one room on one screen: fixed camera, the floor line ROOM_FLOOR_MARGIN above the
+      // bottom (clear of the touch buttons), with the past presidents' poker night in the basement below.
+      const bottom = this.floorTop + ROOM_FLOOR_MARGIN;
       cam.stopFollow();
-      cam.setBounds(0, this.floorTop + 22 - VIEW_H, width, VIEW_H);
-      cam.centerOn(width / 2, this.floorTop + 22 - VIEW_H / 2);
+      cam.setBounds(0, bottom - VIEW_H, width, VIEW_H);
+      cam.centerOn(width / 2, bottom - VIEW_H / 2);
     }
     this.applyTilt(true);
     if (data.level.mood === 'alarm') this.createAlarmLight();
@@ -230,6 +239,7 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     this.captain = this.door = undefined;
     this.drains = [];
     this.algaeLayers = [];
+    this.hold = undefined;
     this.gate = this.president = undefined;
     this.gateNagged = 0;
     this.gateWall = undefined;
@@ -261,9 +271,31 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
       .setOrigin(0)
       .setScrollFactor(0.45, 1)
       .setTileScale(ART_SCALE);
-    if (this.cfg.level.mood === 'alarm') wall.setTint(0xffb4a8);
-    // Cargo hold: everything below the floor line, so hatches read as dark holes.
-    this.add.rectangle(-VIEW_W, this.floorTop, this.level.width + VIEW_W * 2, VIEW_H * 2, 0x15142a).setOrigin(0);
+    const tint = this.cfg.level.mood === 'alarm' ? 0xffb4a8 : undefined;
+    if (tint) wall.setTint(tint);
+    // The cargo hold below the floor line, packed with luggage; loose bags slide off when the plane banks hard.
+    const top = this.floorTop + FLOOR_SLAB;
+    const slabs = this.level.solids
+      .filter((r) => r.kind === 'floor' && r.y === this.floorTop)
+      .map((r): [number, number] => [r.x, r.x + r.w])
+      .sort((a, b) => a[0] - b[0]);
+    // Behind the open hatches (pits) it is dark from the floor line down, so they still read as holes.
+    this.add.rectangle(-VIEW_W, this.floorTop, this.level.width + VIEW_W * 2, FLOOR_SLAB, HOLD_DARK).setOrigin(0);
+    const holdRng = new Phaser.Math.RandomDataGenerator([`${this.cfg.level.id}:hold`]);
+    this.hold = new CargoHold(this, {
+      left: -VIEW_W,
+      right: this.level.width + VIEW_W,
+      top,
+      spans: slabs,
+      restBand: [34, 96],
+      random: () => holdRng.frac(),
+      tint,
+    });
+    let x = -VIEW_W;
+    for (const [x0, x1] of [...slabs, [this.level.width + VIEW_W, this.level.width + VIEW_W] as [number, number]]) {
+      if (x0 > x) this.add.rectangle(x, top, x0 - x, HOLD_H + VIEW_H, HOLD_DARK, 0.82).setOrigin(0);
+      x = Math.max(x, x1);
+    }
   }
 
   /** World 7: the National Mall / the White House lawn (parallax park, a landmark) or the Oval Office. */
@@ -272,6 +304,7 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     if (theme === 'oval') {
       // The room fills the screen above the floor line (the camera is fixed, see create()).
       this.add.image(width / 2, this.floorTop + 22, 'w7.bg.oval').setOrigin(0.5, 1).setScale(ART_SCALE);
+      this.createBasement();
       return;
     }
     this.add
@@ -304,11 +337,50 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     }
   }
 
+  /**
+   * 7-4: under the Oval Office floor, the past presidents' secret poker night: lamplight, cards, cigar smoke.
+   * It sits in the middle, where the gap between the touch buttons leaves it in view on phones.
+   */
+  private createBasement(): void {
+    const { width } = this.level;
+    const top = this.floorTop + OVAL_SLAB;
+    const h = ROOM_FLOOR_MARGIN - OVAL_SLAB + 8;
+    this.add.tileSprite(-VIEW_W / 2, top, width + VIEW_W, h, 'w7.tex.basement').setOrigin(0).setTileScale(ART_SCALE);
+    const cx = width / 2;
+    const fx = new Phaser.Math.RandomDataGenerator(['basement']); // decoration only: leaves the level's dice alone
+    // The lamp hangs from the ceiling (the Oval Office floor); its glow breathes a little.
+    const glow = this.add.circle(cx, top + 14, 46, 0xffd27a, 0.22).setBlendMode(Phaser.BlendModes.ADD);
+    this.tweens.add({ targets: glow, alpha: 0.32, scale: 1.08, duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+    const table = this.add.image(cx, this.floorTop + ROOM_FLOOR_MARGIN + 2, 'w7.prop.poker').setOrigin(0.5, 1).setScale(ART_SCALE);
+    // Cigar smoke curls up from the right half of the table (Taft and FDR) and spreads under the ceiling.
+    this.time.addEvent({
+      delay: 380,
+      loop: true,
+      callback: () => {
+        const x = table.x + table.displayWidth * (0.12 + fx.frac() * 0.3);
+        const y = table.y - table.displayHeight * 0.62;
+        const puff = this.add.circle(x, y, 1.2 + fx.frac() * 1.3, 0xd8d4cc, 0.32);
+        this.tweens.add({
+          targets: puff,
+          y: Math.max(top + 4, y - 18 - fx.frac() * 10),
+          x: x + (fx.frac() - 0.5) * 14,
+          scale: 3,
+          alpha: 0,
+          duration: 2200,
+          onComplete: () => puff.destroy(),
+        });
+      },
+    });
+    // A floor-cut shadow under the Oval Office.
+    this.add.rectangle(-VIEW_W / 2, top, width + VIEW_W, 5, 0x000000, 0.4).setOrigin(0);
+  }
+
   private createTerrain() {
     const solids = this.physics.add.staticGroup();
     for (const r of this.level.solids) {
       const tex = r.kind === 'floor' ? this.theme.floorTex : this.theme.solidTex;
-      this.add.tileSprite(r.x, r.y, r.w, r.h, tex).setOrigin(0).setTileScale(ART_SCALE);
+      const oval = r.kind === 'floor' && this.cfg.level.theme === 'oval';
+      this.add.tileSprite(r.x, r.y, r.w, oval ? OVAL_SLAB : r.h, tex).setOrigin(0).setTileScale(ART_SCALE);
       if (r.kind === 'floor') this.underFloor(r.x, r.y + r.h, r.w);
       solids.add(this.add.zone(r.x + r.w / 2, r.y + r.h / 2, r.w, r.h));
     }
@@ -333,7 +405,8 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     if (this.ground && this.cfg.level.theme !== 'oval') {
       this.add.tileSprite(x, y, w, VIEW_H, this.theme.solidTex).setOrigin(0).setTileScale(ART_SCALE).setTint(0xd8d2c4);
       this.add.rectangle(x, y, w, 3, 0x000000, 0.25).setOrigin(0); // the walkway's shadow on the wall
-    } else this.add.rectangle(x, y, w, VIEW_H, this.theme.under).setOrigin(0);
+    }
+    // The Oval Office has its basement (createBasement); in the air the cargo hold (createBackground) shows.
   }
 
   private addOneWay(group: Phaser.Physics.Arcade.StaticGroup, x: number, y: number, w: number, h: number) {
@@ -552,6 +625,7 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     const p = this.player;
     this.progressX = Math.max(this.progressX, p.x);
     this.applyTilt(false);
+    this.hold?.step(this.gravity, dt);
 
     if (p.step(dt, this.edges)) this.fire();
     this.stepVines(dt);
@@ -721,7 +795,7 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
       pres.setFrame(frameIndex('npc.president', 'photo'));
       // Frame the group for the photo.
       const cam = this.cameras.main;
-      cam.pan(pres.x - 75, this.floorTop - 40, 500, 'Sine.easeInOut');
+      cam.pan(pres.x - 75, this.floorTop - 90, 500, 'Sine.easeInOut'); // the floor line near the photo's bottom
       cam.zoomTo(ZOOM * 1.7, 500, 'Sine.easeInOut');
     });
     const run: RunState = { hearts: this.hearts, power: p.power, nuts: this.nutCount, score: this.score };

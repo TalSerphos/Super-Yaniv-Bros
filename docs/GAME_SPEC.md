@@ -51,7 +51,7 @@ Yaniv is player 1; the other three Bros. are player 2 in co-op (“Sit next to a
 | **Assaf** (insurance) | Broad shoulders, white shirt, sleeves rolled | P2 / assist | **Full Coverage**: a shield that blocks one hit; in the boss fight he pins the arms |
 | **Zvika** (banker) | Glasses, navy waistcoat, red tie, coil of white headphone cables | P2 / assist | **Cable Lasso**: ties up any enemy for 4 seconds; owns Phase C |
 | **Shota** (dentist) | Green polo, dental mirror, white first-aid kit | P2 / assist | **First Aid**: refills hearts and the Captain's health bar |
-| **The Captain** | Captain's uniform, head bandage, thumbs up | Escort NPC | Wounded, he still opens the cockpit door: World 5 ends when he does |
+| **The Captain** (Captain Machchhar) | Captain's uniform, head bandage, thumbs up | Escort NPC | Wounded, he still opens the cockpit door: World 5 ends when he does |
 | **The off-duty pilots** | Two uniformed pilots | Finale NPCs | Take the seats in 6-3 and land the plane in Tabuk |
 | **Jacuzzam Al-Jacuzzi** | Hulking first officer, navy uniform with gold stripes, oversized cap with a gold rubber-duck badge, mirrored black aviator goggles, white spa bathrobe as a cape, smug grin, soap bubbles | Final boss | Throws QRH binders (the pilots' emergency handbook), fires jacuzzi-jet bubble streams, leans on the yoke to tilt the arena |
 | **Rubber Duckies** | Yellow bath ducks in tiny pilot caps | His minions | Waddle and squeak; stomp them or plunge them |
@@ -109,7 +109,9 @@ There are 7 worlds of 4 levels each (28 levels). The trip runs Nes Ziona → Dub
 
 *World 6 has three levels.* A 6-4 may come back later as a funny breather with no challenge: **Tabuk Terminal**, walking around the terminal while kind Saudis treat the passengers warmly and offer support and coffee.
 
-**Ending (7-4):** the handshake, the camera flash, the photo framed on the screen, then: “Thank you Yaniv! But your next client is waiting in Nes Ziona!”
+**Ending (7-4):** the President waits just right of the room's middle; the handshake, the camera flash, the photo framed on the screen, then: “Thank you Yaniv! But your next client is waiting in Nes Ziona!” and a thank-you to Yaniv, Assaf, Zvika, Shota and Captain Machchhar by name. Gag: under the Oval Office floor, a secret basement where past presidents of history (Washington, Lincoln, Teddy Roosevelt, Taft, FDR) play poker, smoke cigars and drink.
+
+**Under the plane's floor (Worlds 5–6):** the cargo hold, packed with luggage; loose bags slide and tumble off toward the low side when the plane banks past about 7–13°.
 
 ## Boss fight: Jacuzzam Al-Jacuzzi
 

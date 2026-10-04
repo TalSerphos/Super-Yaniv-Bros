@@ -79,6 +79,7 @@ test('7-4: walking up to the President ends the game with the photo', async ({ p
   await page.keyboard.up('ArrowRight');
   await expect(page.getByText('But your next client is waiting in Nes Ziona!')).toBeVisible();
   await expect(page.locator('.game-overlay img.photo')).toBeVisible();
+  await expect(page.getByTestId('credits')).toContainText('Thank you Yaniv, Assaf, Zvika, Shota and Captain Machchhar');
 });
 
 test.describe('World 7 QA regressions', () => {

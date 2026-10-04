@@ -414,3 +414,46 @@
     Perfectly flat, solid, uniform magenta (#FF00FF) background, no gradient, no floor, no shadows on the
     background, no text, no labels, no grid lines.
   out: {dir: w7, colors: 64}
+
+# 7-4's secret basement under the Oval Office floor: the past presidents' poker night (a slapstick gag, drawn
+# warmly; historical presidents only, all long gone). The engine adds smoke curls and the lamp's glow.
+- id: w7.tex.basement
+  kind: texture
+  refs: [art/reference/w5-aisle.webp]
+  size: 1536x1024
+  candidates: 2
+  frame: {w: 128, h: 64}
+  seamless: x
+  prompt: >
+    A flat, straight-on texture swatch that fills the entire image edge to edge, no perspective, no border, in
+    the pixel style of the reference image (ignore its content and its colors): the back wall of an old
+    wood-panelled basement den at night, lit warmly by lamplight. Dark mahogany wainscot panels on the lower
+    half, deep green patterned wallpaper on the upper half, a thin brass picture rail between them, a dark
+    wooden ceiling beam along the very top edge. Cozy, smoky, warm amber light, deep shadows toward the bottom.
+    Even and horizontally tileable. No pictures, no frames, no furniture, no people, no text.
+  out: {dir: w7, quality: 85}
+
+- id: w7.prop.poker
+  kind: image
+  refs: [art/reference/w5-aisle.webp, art/masters/npc.president.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  frame: {w: 128, h: 76}
+  prompt: >
+    A single wide group scene for a platformer, seen from the side, straight-on, in the pixel style of the
+    first reference image (ignore its content and its sunset colors; the second reference shows how big and how
+    stylized a person is): a secret poker night of past American presidents of history, warm and funny, a
+    wholesome cartoon gag, not mocking. A round poker table with green felt and a dark wooden rim in the middle,
+    with stacks of red, white and blue poker chips, playing cards, a whiskey bottle and short glasses of amber
+    drink on it. Five stylized 16-bit figures sit around it on wooden chairs, in a row seen from the side, all
+    relaxed and cheerful, holding fanned playing cards: George Washington with a white powdered wig and a dark
+    blue colonial coat; Abraham Lincoln with a tall black stovepipe hat and a chin beard in a black frock coat;
+    Theodore Roosevelt with round spectacles and a bushy moustache in a brown suit, raising a glass; William
+    Howard Taft, big and jolly with a handlebar moustache in a grey suit, puffing a fat cigar; Franklin D.
+    Roosevelt in a grey suit with a long cigarette holder, grinning. Curls of grey cigar smoke rise above them.
+    A green-shaded lamp hangs on a short cord above the middle of the table, glowing warm yellow. All figures
+    seated, each about as tall when seated as two thirds of the image height. Perfectly flat, solid, uniform
+    magenta (#FF00FF) background around everything: no walls, no floor, no shadows on the background, no
+    text, no letters, no numbers on the cards or chips.
+  out: {dir: w7, quality: 90, despill: true}

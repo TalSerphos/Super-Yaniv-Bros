@@ -223,3 +223,25 @@
     brass hexagonal nut with a round hole; (4) a small white airliner seen from the side, nose pointing right.
     Perfectly flat, solid, uniform magenta (#FF00FF) background, no shadows on the background, no text.
   out: {dir: w5, colors: 24}
+
+# The cargo hold under the cabin floor (also under the cockpit in World 6): seen through pits and below the
+# floor line. Loose bags on top are the engine's prop.luggage sprites; they slide off when the plane tilts.
+- id: w5.bg.hold
+  kind: background
+  refs: [art/reference/w5-aisle.webp]
+  size: 1536x1024
+  candidates: 2
+  frame: {w: 320, h: 160}
+  seamless: x
+  prompt: >
+    A flat, straight-on side view that fills the entire image edge to edge, no perspective, no border, in the
+    pixel style of the reference image (ignore its content): the cargo hold of an airliner seen in cross-section
+    from the side, PACKED full of passengers' luggage. Dark blue-grey curved fuselage ribs every so often,
+    dim cool blue cargo lights along the top with small warm amber pools of light. From the top edge to the
+    bottom edge the hold is crammed with tightly stacked suitcases in many colors and sizes lying on their sides:
+    hard-shell roller cases in orange, red, teal and silver, olive and brown duffel bags,
+    taped cardboard boxes, a guitar case, a stroller, a set of golf clubs in a bag, a big wrapped package,
+    held down by dark green cargo nets with straps hooked to the ribs. The stacks are uneven along the top so
+    bags look loose there. Darker and more shadowed toward the bottom. Even and horizontally tileable. No
+    people, no animals, no text, no letters, no tags with writing, no logos.
+  out: {dir: w5, quality: 85, position: top}

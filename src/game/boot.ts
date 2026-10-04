@@ -193,14 +193,14 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
         progress = recordClear(progress, ORDER, current.id, e.run.score - runAtStart.score);
         saveProgress(progress);
         music.play('victory', true);
-        const photo = e.photo ? `<img class="photo" src="${e.photo}" alt="The photo: Yaniv, the Bros., the Captain and the President in the Oval Office">` : '';
+        const photo = e.photo ? `<img class="photo" src="${e.photo}" alt="The photo: Yaniv, the Bros., Captain Machchhar and the President in the Oval Office">` : '';
         hud.showOverlay(
           `<p class="world">THE END</p>
            ${photo}
            <h2>THANK YOU YANIV!</h2>
            <p class="sub">But your next client is waiting in Nes Ziona!</p>
            <dl><dt>SCORE</dt><dd data-testid="final-score">${pad6(e.run.score)}</dd><dt>NUTS</dt><dd>${e.run.nuts}</dd></dl>
-           <p class="soon">Flight 1073 · Yaniv, Assaf, Zvika, Shota and the Captain · Super Yaniv Bros.</p>`,
+           <p class="soon" data-testid="credits">Flight 1073 · Thank you Yaniv, Assaf, Zvika, Shota and Captain Machchhar · Super Yaniv Bros.</p>`,
           [
             { label: 'MAP', run: () => showMap() },
             { label: 'TITLE', run: opts.onQuit },

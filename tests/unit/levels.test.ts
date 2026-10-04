@@ -21,6 +21,8 @@ describe('World 7 levels (on the ground)', () => {
       expect(['mall', 'lawn', 'oval']).toContain(level.theme);
       if (level.theme === 'oval') {
         expect(p.president, 'the President waits in the Oval Office').toBeDefined();
+        // Just right of the room's middle (Tal: about half as far from it as column 30 was).
+        expect(Math.abs(p.president!.x - p.width / 2)).toBeLessThanOrEqual(96);
         expect(level.timer).toBeUndefined();
       } else {
         expect(level.timer).toBeGreaterThanOrEqual(110); // a real clock: about 4× a fast run

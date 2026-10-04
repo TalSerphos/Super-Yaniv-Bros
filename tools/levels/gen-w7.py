@@ -87,7 +87,7 @@ def l73():
 def l74():
     W = 40; l = L(W)
     l.floor()
-    l.put(FEET, 4, 'P'); l.put(FEET, 30, 'V'); l.put(FEET, 38, 'X')
+    l.put(FEET, 4, 'P'); l.put(FEET, 25, 'V'); l.put(FEET, 38, 'X')  # the President waits just right of centre
     return l.dump({"id": "7-4", "name": "THE OVAL OFFICE", "theme": "oval", "altitude": {"start": 0, "rate": 0}})
 
 out = sys.argv[1]

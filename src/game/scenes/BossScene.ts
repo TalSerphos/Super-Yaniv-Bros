@@ -7,9 +7,10 @@ import Phaser from 'phaser';
 import { music } from '../../audio/music.ts';
 import { play, type Sfx } from '../../audio/sfx.ts';
 import { createAnimations, ensurePlaceholders, frameIndex, preloadAssets } from '../assets.ts';
-import { ART_SCALE, PHYS, RULES, VIEW_H, VIEW_W, ZOOM } from '../config.ts';
+import { ART_SCALE, PHYS, ROOM_FLOOR_MARGIN, RULES, VIEW_H, VIEW_W, ZOOM } from '../config.ts';
 import { Bubble, Ducky } from '../entities/boss.ts';
 import { Lobbed, lobVelocity, type Enemy } from '../entities/enemies.ts';
+import { CargoHold } from '../entities/hold.ts';
 import { Player } from '../entities/player.ts';
 import type { BossData } from '../levels/index.ts';
 import { parseLevel, type ParsedLevel } from '../levels/loader.ts';
@@ -52,9 +53,8 @@ const ZVIKA_X = 84;
 const SHOTA_X = 520;
 const CAPTAIN_X = 572;
 const ZIP_X = 170;
-/** Touch devices: the arena is drawn a little smaller, with the floor this far below the screen centre. */
-const TOUCH_ZOOM = 0.88;
-const TOUCH_FLOOR_BELOW_CENTRE = 36;
+/** Touch devices: the arena is drawn a little smaller, with the floor ROOM_FLOOR_MARGIN above the screen's bottom. */
+const TOUCH_ZOOM = 0.94;
 /** Boss body (world units): a hulking 1.6× Yaniv. */
 const BOSS_BODY = { w: 56, h: 96 };
 /** Jet bubbles fly at shin-to-hip height (a seat-top stance clears them) and fizzle out after this range. */
@@ -94,6 +94,7 @@ export class BossScene extends Phaser.Scene implements GameWorld {
   private zvika?: Phaser.GameObjects.Sprite;
   private zip?: Phaser.GameObjects.Image;
   private knotMarks?: Phaser.GameObjects.Graphics;
+  private hold?: CargoHold;
   private enemies: Enemy[] = [];
   private altitude!: Altitude;
   private rng!: Phaser.Math.RandomDataGenerator;
@@ -163,11 +164,11 @@ export class BossScene extends Phaser.Scene implements GameWorld {
     this.createCast();
 
     const cam = this.cameras.main;
-    // On touch devices the buttons cover the bottom quarter of the screen, and the tilt drops the right side
-    // (where the boss stands) further still: zoom out a little and lift the floor to just below mid-screen.
+    // On touch devices the buttons cover the bottom of the screen, and the tilt drops the right side (where the
+    // boss stands) further still: zoom out a little and lift the floor; the luggage hold fills the space below.
     const touch = window.matchMedia?.('(pointer: coarse)').matches;
     cam.setZoom(touch ? ZOOM * TOUCH_ZOOM : ZOOM);
-    cam.centerOn(W / 2, touch ? FLOOR - TOUCH_FLOOR_BELOW_CENTRE : FLOOR + 50 - VIEW_H / 2);
+    cam.centerOn(W / 2, touch ? FLOOR - (VIEW_H / 2 - ROOM_FLOOR_MARGIN) / TOUCH_ZOOM : FLOOR + 50 - VIEW_H / 2);
     this.applyTilt(true); // always set gravity: the arcade world starts with none
     if (this.phase !== 'C') this.createAlarmLight();
 
@@ -186,7 +187,16 @@ export class BossScene extends Phaser.Scene implements GameWorld {
     // Drawn larger than the view so a tilted camera never shows its edges.
     this.add.image(W / 2, FLOOR + 50 - VIEW_H / 2, bg).setScale(ART_SCALE * 1.5).setDepth(-10);
     this.add.tileSprite(-VIEW_W / 2, FLOOR, W + VIEW_W, 32, 'w5.tex.floor').setOrigin(0).setTileScale(ART_SCALE);
-    this.add.rectangle(-VIEW_W / 2, FLOOR + 32, W + VIEW_W, VIEW_H, 0x22233c).setOrigin(0);
+    // The cargo hold under the cockpit floor: loose bags slide off as the plane noses down and banks.
+    const holdRng = new Phaser.Math.RandomDataGenerator([`${this.cfg.level.id}:hold`]);
+    this.hold = new CargoHold(this, {
+      left: -VIEW_W / 2,
+      right: W + VIEW_W / 2,
+      top: FLOOR + 32,
+      spans: [[-VIEW_W / 2, W + VIEW_W / 2]],
+      restBand: [22, 44],
+      random: () => holdRng.frac(),
+    });
     if (this.phase !== 'C') {
       for (const x of SEATS) this.add.image(x, FLOOR, 'w6.seat.pilot').setOrigin(0, 1).setScale(ART_SCALE).setDepth(2);
       this.yoke = this.add.sprite(YOKE_X, FLOOR, 'w6.yoke', 0).setOrigin(0.5, 1).setScale(ART_SCALE).setDepth(3);
@@ -303,6 +313,7 @@ export class BossScene extends Phaser.Scene implements GameWorld {
     if (this.finished) return;
     if (p.step(dt, this.edges)) this.poke();
     this.applyTilt();
+    this.hold?.step(this.gravity, dt);
     this.stepEnemies(dt);
     this.boss.setTint(this.bossFlash > 0 && Math.floor(this.bossFlash * 20) % 2 ? 0xff8080 : 0xffffff);
 
@@ -846,6 +857,7 @@ export class BossScene extends Phaser.Scene implements GameWorld {
         captain: this.c ? Math.round(this.c.captain) : undefined,
         zip: this.c?.zip,
         bossX: Math.round(this.bossX),
+        hold: this.hold?.counts(),
         grounded: this.player.grounded,
         pose: this.player.pose,
       }),

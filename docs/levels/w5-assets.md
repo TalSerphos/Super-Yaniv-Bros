@@ -23,6 +23,7 @@ pixel row, facing **right**.
 | `w5.bg.wall` | image, seamless horizontally | 640×360 | n/a | far layer: cream cabin wall, row of oval windows with purple-orange sunset, overhead bins along the top, amber light strip. No seats, no people, no text |
 | `w5.tex.floor` | image, seamless horizontally | 64×32 | n/a | aisle floor slab: dark carpet with an amber floor-light strip on the top edge |
 | `w5.tex.bin` | image, seamless horizontally | 64×32 | n/a | overhead-bin underside used as a high platform (cream/grey panel, latch details) |
+| `w5.bg.hold` | image, seamless horizontally | 320×160 | n/a | the cargo hold under the floor, packed with luggage behind cargo nets (also under the World 6 cockpit); loose `prop.luggage` bags slide off in front of it when the plane banks hard |
 | `hud.icons` | spritesheet | 16×16 | heart, heartEmpty, nut, plane | HUD icons |
 
 The level runs nose-down (pitch about 12°), and the camera rotates the whole world. Nothing in the art

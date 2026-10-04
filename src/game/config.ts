@@ -6,6 +6,11 @@ export const CANVAS_W = 1280;
 export const CANVAS_H = 720;
 export const ZOOM = CANVAS_W / VIEW_W;
 export const TILE = 16;
+/**
+ * One-screen rooms keep their floor line this far above the bottom of the view (view units): the boss arena on
+ * touch devices, where the on-screen buttons sit, and the Oval Office (its secret basement shows below).
+ */
+export const ROOM_FLOOR_MARGIN = 74;
 /** Art is authored at 2× (see docs/levels/w5-assets.md) and drawn at this scale. */
 export const ART_SCALE = 0.5;
 

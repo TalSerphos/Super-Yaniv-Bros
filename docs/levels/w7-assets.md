@@ -33,6 +33,8 @@ The engine draws labelled placeholders until each file exists.
 | `npc.president` | spritesheet | 48×72 | idle, handshake, photo | **The President** (7-4): a respectful, warm, stylized 16-bit depiction of President Donald Trump: dark navy suit, white shirt, long red tie, US flag lapel pin, swept golden-blond hair, standing tall, facing **left** (toward Yaniv). `handshake` = arm extended for a handshake, `photo` = smiling, thumbs up, facing the camera. Not a caricature, never mocking. **If the image model refuses a real person**, fall back to the same figure seen from the side with the face turned away (no likeness), and say so in the report |
 | `yaniv.ending` | spritesheet | 48×64 | shake, pose | Yaniv on-model (same scale as `yaniv.small`). `shake` = right arm extended for a handshake, `pose` = proud photo pose, thumbs up, plunger raised in the other hand |
 | `npc.captain.ending` | n/a | | | (reuse `npc.captain`: no new art) |
+| `w7.tex.basement` | image | 128×64 | n/a | **seamless horizontally**: a wood-panelled basement den wall (green damask wallpaper, mahogany wainscot), under the Oval Office floor in 7-4 |
+| `w7.prop.poker` | image | 128×76 | n/a | on magenta: past presidents of history (Washington, Lincoln, T. Roosevelt, Taft, FDR) at a poker table under a green lamp, cards, chips, cigars and whiskey; warm, never mocking. The engine adds smoke curls and the lamp glow |
 
 Style: everything per `art/prompts/style.md`. Check every frame by eye (props, extra limbs, text).
 Navy + brown + red together stay reserved for Yaniv: no enemy uses all three.

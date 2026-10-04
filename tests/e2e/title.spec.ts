@@ -152,3 +152,15 @@ test.describe('QA regressions', () => {
     await expect(heading(page)).toBeVisible();
   });
 });
+
+test('Google Analytics is configured, but tests never load it or count as visits', async ({ page }) => {
+  const gaRequests: string[] = [];
+  page.on('request', (r) => /googletagmanager|google-analytics/.test(r.url()) && gaRequests.push(r.url()));
+  await page.reload();
+  await page.waitForLoadState('load');
+  const configured = await page.evaluate(() =>
+    ((window as unknown as { dataLayer?: unknown[][] }).dataLayer ?? []).some((a) => a[0] === 'config' && a[1] === 'G-4C932NCJMZ'),
+  );
+  expect(configured).toBe(true);
+  expect(gaRequests).toEqual([]);
+});

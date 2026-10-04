@@ -160,15 +160,26 @@ test('on a phone, the fight stays clear of the touch buttons, even at the steepe
     await waitForBoss(page, id);
     await page.waitForTimeout(1500);
     const boxes = await buttons();
-    const top = Math.min(...boxes.map((b) => b.y));
     const s = await onScreen();
-    for (const [name, pt] of Object.entries({ 'player feet': s.player.feet, 'boss feet': s.boss.feet, yoke: s.yoke! })) {
+    // Yaniv, the yoke and the boss's body stay in view (at the far right of his patrol his boots may dip
+    // behind GRAB: Tal asked for the floor halfway between mid-screen and the bottom edge).
+    const bossBody = { x: (s.boss.feet.x + s.boss.head.x) / 2, y: (s.boss.feet.y + s.boss.head.y) / 2 };
+    for (const [name, pt] of Object.entries({ 'player feet': s.player.feet, 'boss body': bossBody, 'boss head': s.boss.head, yoke: s.yoke! })) {
       expect(covered(pt, boxes), `${id} ${name} at ${JSON.stringify(pt)} is under a button`).toBe(false);
       expect(pt.y, `${id} ${name} is on screen`).toBeLessThan(viewport.height);
     }
-    // The yoke and the boss's feet sit above the buttons' row.
-    expect(s.yoke!.y).toBeLessThan(top);
-    expect(s.boss.feet.y).toBeLessThan(top);
+    // The floor sits a margin above the bottom edge (the luggage hold fills it), not at mid-screen.
+    expect(s.yoke!.y).toBeLessThan(viewport.height - 40);
+    expect(s.yoke!.y).toBeGreaterThan(viewport.height * 0.66);
     expect(s.boss.head.y).toBeGreaterThan(0);
   }
+});
+
+test('the luggage in the hold slides off once the plane tilts hard (6-2 starts nose-down)', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop-chrome', 'decoration: one browser is enough');
+  type Hold = { rest: number; slide: number; fall: number; gone: number };
+  const hold = () => page.evaluate(() => (window as unknown as { __syb: { boss(): { hold?: Hold } } }).__syb.boss().hold);
+  await page.goto('./?level=6-2&god=1#play');
+  await waitForBoss(page, '6-2');
+  await expect.poll(async () => (await hold())?.gone ?? 0, { timeout: 15_000 }).toBeGreaterThan(0);
 });

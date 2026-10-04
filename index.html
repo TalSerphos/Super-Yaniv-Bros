@@ -3,6 +3,24 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!-- Google tag (gtag.js). The library loads after the page, so it never delays the title screen, and only on
+         the live site outside automation, so tests, previews and Lighthouse don't count as visitors. -->
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag('js', new Date());
+      gtag('config', 'G-4C932NCJMZ');
+      if (/(^|\.)superyanivbros\.com$|\.github\.io$/.test(location.hostname) && !navigator.webdriver) {
+        addEventListener('load', function () {
+          var s = document.createElement('script');
+          s.async = true;
+          s.src = 'https://www.googletagmanager.com/gtag/js?id=G-4C932NCJMZ';
+          document.head.appendChild(s);
+        });
+      }
+    </script>
     <title>Super Yaniv Bros. — Flight 1073</title>
     <meta name="description" content="A 16-bit platformer: a plumber from Nes Ziona, a diving 737, and a co-pilot named after a bathtub." />
     <meta name="theme-color" content="#1b1838" />
