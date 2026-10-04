@@ -182,6 +182,8 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     cam.setBounds(-VIEW_W / 2, -VIEW_H, width + VIEW_W, height + VIEW_H * 1.5);
     cam.startFollow(this.player.sprite, true, 0.12, 0.1);
     cam.setFollowOffset(-70, 22); // look ahead toward the cockpit; aisle and seat rows fill the lower third
+    // On the ground the sky and landmarks matter more than what's under the walkway: look a little higher.
+    if (this.ground) cam.setFollowOffset(-70, 84);
     if (data.level.theme === 'oval') {
       // The Oval Office is one room on one screen: fixed camera, the floor near the bottom.
       cam.stopFollow();
@@ -285,13 +287,13 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     for (const r of this.level.solids) {
       const tex = r.kind === 'floor' ? this.theme.floorTex : this.theme.solidTex;
       this.add.tileSprite(r.x, r.y, r.w, r.h, tex).setOrigin(0).setTileScale(ART_SCALE);
-      if (r.kind === 'floor') this.add.rectangle(r.x, r.y + r.h, r.w, VIEW_H, this.theme.under).setOrigin(0);
+      if (r.kind === 'floor') this.underFloor(r.x, r.y + r.h, r.w);
       solids.add(this.add.zone(r.x + r.w / 2, r.y + r.h / 2, r.w, r.h));
     }
     // Visual-only floor past both level ends, so the tilted view never shows a fake pit at the edges.
     for (const x of [-VIEW_W, this.level.width]) {
       this.add.tileSprite(x, this.floorTop, VIEW_W, 32, this.theme.floorTex).setOrigin(0).setTileScale(ART_SCALE);
-      this.add.rectangle(x, this.floorTop + 32, VIEW_W, VIEW_H, this.theme.under).setOrigin(0);
+      this.underFloor(x, this.floorTop + 32, VIEW_W);
     }
     const oneWays = this.physics.add.staticGroup();
     for (const r of this.level.oneWays) this.addOneWay(oneWays, r.x, r.y, r.w, r.h);
@@ -302,6 +304,14 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
       this.add.rectangle(r.x, r.y, r.w, 2, 0xfff8e7).setOrigin(0);
     }
     return { solids, oneWays };
+  }
+
+  /** What's below a floor slab: the cabin's dark underside, or a marble terrace wall on the ground. */
+  private underFloor(x: number, y: number, w: number): void {
+    if (this.ground && this.cfg.level.theme !== 'oval') {
+      this.add.tileSprite(x, y, w, VIEW_H, this.theme.solidTex).setOrigin(0).setTileScale(ART_SCALE).setTint(0xd8d2c4);
+      this.add.rectangle(x, y, w, 3, 0x000000, 0.25).setOrigin(0); // the walkway's shadow on the wall
+    } else this.add.rectangle(x, y, w, VIEW_H, this.theme.under).setOrigin(0);
   }
 
   private addOneWay(group: Phaser.Physics.Arcade.StaticGroup, x: number, y: number, w: number, h: number) {

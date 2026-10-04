@@ -18,12 +18,12 @@ art/manifest/*.yaml ──generate.ts──▶ art/raw/<id>/<quality>-<hash>/<n>
 | `chroma` | flat background color to key out (preferred way to get alpha) |
 | `transparent` | native alpha via the alpha model (gpt-image-1.5) |
 | `candidates` | images per request |
-| `out` | `width`, `height`, `fit`, `position`, `trim`, `quality` for the web build; also `dir` (subfolder of `src/assets`), `colors` (palette-quantize, lossless WebP), `alphaThreshold` (default 128: hard pixel-art edges), `span` (seamless: fraction of the master width one tile covers) |
+| `out` | `width`, `height`, `fit`, `position`, `trim`, `quality` for the web build; also `dir` (subfolder of `src/assets`), `colors` (palette-quantize, lossless WebP), `alphaThreshold` (default 128: hard pixel-art edges), `span` (seamless: fraction of the master width one tile covers), `despill` (opt-in: remove the purple chroma fringe on dark outlines) |
 | `frame` | `{w, h}` in **world units**. Output is 2x, frames left to right in one strip (`tools/assets/sheet.ts`) |
 | `grid`, `cells` | pose grid painted in the master, and which cells (reading order) become frames, in output order |
 | `fit` | `mode`: `common` (one scale per sheet from the median pose height: no size jitter), `each`, `stretch`; `height`: target content height at 2x |
 | `anchor`, `valign` | horizontal placement (`mass` default, `bbox`, `left` = shared left edge); vertical `bottom` (feet on the last row, default), `middle`, or `top` (hanging things) |
-| `seamless: x` | crops the stretch of the master that wraps onto itself best, then crossfades the overhang into the left edge |
+| `seamless: x` | crops the stretch of the master that wraps onto itself best, then crossfades the overhang into the left edge (also works with `chroma` for a keyed tile, e.g. `w7.rope`) |
 
 `kind: reference` entries (e.g. the `char.yaniv.sheet` character bible) get a master but no build output; use the
 master as a `refs` image for every pose sheet of that character. Sprite poses are cut by connected component,
@@ -40,3 +40,9 @@ convert src/assets/title.bg.webp -crop 110x110+772+112 +repage -resize 180x180 -
 convert src/assets/title.bg.webp -resize 1200x675^ -gravity center -extent 1200x630 \
   \( src/assets/title.logo.webp -resize 560x \) -gravity northwest -geometry +30+40 -composite -quality 82 -strip public/og.jpg
 ```
+
+Helper scripts: `measure.mts` prints each pose's opaque bbox and the shared scale (calibrate `fit`);
+`compose-boss.mts` assembles a 13-frame sheet from two pose sheets (see LEARNINGS, World 6).
+
+Known issue: with sharp 0.35, `colors: N` does not reduce the palette (every sprite keeps 256 colours). It is
+harmless visually; fixing it would change the look of already-built worlds on their next rebuild.
