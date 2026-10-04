@@ -286,9 +286,12 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     } else {
       this.add.image(width * 0.55, this.floorTop - 20, 'w7.prop.whitehouse').setOrigin(0.5, 1).setScale(ART_SCALE).setScrollFactor(0.45, 1);
     }
-    // Water under the walkway: the pools and fountains show through the gaps.
-    const y = this.floorTop + 10;
-    this.add.tileSprite(-VIEW_W, y, width + VIEW_W * 2, VIEW_H, 'w7.tex.water').setOrigin(0).setTileScale(ART_SCALE);
+    // Water under the walkway: the pools and fountains show through the gaps. In 7-1 it meets the pool strip
+    // (a gap there let the park's grass show through as a green line over every pit).
+    const y = this.floorTop + (this.level.drains.length ? 0 : 10);
+    // One rippled band at the surface, then plain deep water: the tile repeated down the pit showed seams.
+    this.add.tileSprite(-VIEW_W, y, width + VIEW_W * 2, 32, 'w7.tex.water').setOrigin(0).setTileScale(ART_SCALE);
+    this.add.rectangle(-VIEW_W, y + 32, width + VIEW_W * 2, VIEW_H, 0x48c8f6).setOrigin(0);
     // 7-1: the Reflecting Pool itself runs alongside the walkway, choked with algae until its drains are plunged.
     if (this.level.drains.length) {
       const poolY = this.floorTop - 30;
@@ -958,6 +961,12 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
       },
       setPower: (power: 'small' | 'big' | 'golden') => this.player.setPower(power, true),
       giveBamba: () => (this.player.bamba = 8),
+      /** Test-only: unclog every 7-1 drain at once. */
+      clearPool: () => {
+        if (!this.drains.some((d) => d.clogged)) return;
+        this.drains.forEach((d) => d.setClear());
+        this.poolCleared();
+      },
     };
   }
 }

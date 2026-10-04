@@ -139,3 +139,36 @@ test('touch devices get a ▼ button for the yoke', async ({ page, isMobile }) =
   await waitForBoss(page, '6-2');
   await expect(page.locator('[data-btn="down"]')).toBeVisible();
 });
+
+test('on a phone, the fight stays clear of the touch buttons, even at the steepest tilt', async ({ page }, info) => {
+  test.skip(!info.project.use.hasTouch, 'touch devices only');
+  type Pt = { x: number; y: number };
+  type OnScreen = { player: { feet: Pt; head: Pt }; boss: { feet: Pt; head: Pt }; yoke?: Pt };
+  const onScreen = () => page.evaluate(() => (window as unknown as { __syb: { onScreen(): OnScreen } }).__syb.onScreen());
+  const buttons = async () => {
+    const boxes = [];
+    for (const b of ['left', 'down', 'right', 'grab', 'jump']) boxes.push((await page.locator(`.touch [data-btn="${b}"]`).boundingBox())!);
+    return boxes;
+  };
+  const covered = (pt: Pt, boxes: { x: number; y: number; width: number; height: number }[]) =>
+    boxes.some((b) => pt.x >= b.x && pt.x <= b.x + b.width && pt.y >= b.y && pt.y <= b.y + b.height);
+  const viewport = page.viewportSize()!;
+
+  // 6-2 starts nose-down at about −38°: the steepest tilt of the fight. 6-1 has the boss farthest right.
+  for (const id of ['6-2', '6-1']) {
+    await page.goto(`./?level=${id}&god=1#play`);
+    await waitForBoss(page, id);
+    await page.waitForTimeout(1500);
+    const boxes = await buttons();
+    const top = Math.min(...boxes.map((b) => b.y));
+    const s = await onScreen();
+    for (const [name, pt] of Object.entries({ 'player feet': s.player.feet, 'boss feet': s.boss.feet, yoke: s.yoke! })) {
+      expect(covered(pt, boxes), `${id} ${name} at ${JSON.stringify(pt)} is under a button`).toBe(false);
+      expect(pt.y, `${id} ${name} is on screen`).toBeLessThan(viewport.height);
+    }
+    // The yoke and the boss's feet sit above the buttons' row.
+    expect(s.yoke!.y).toBeLessThan(top);
+    expect(s.boss.feet.y).toBeLessThan(top);
+    expect(s.boss.head.y).toBeGreaterThan(0);
+  }
+});

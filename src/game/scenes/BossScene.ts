@@ -52,6 +52,9 @@ const ZVIKA_X = 84;
 const SHOTA_X = 520;
 const CAPTAIN_X = 572;
 const ZIP_X = 170;
+/** Touch devices: the arena is drawn a little smaller, with the floor this far below the screen centre. */
+const TOUCH_ZOOM = 0.88;
+const TOUCH_FLOOR_BELOW_CENTRE = 36;
 /** Boss body (world units): a hulking 1.6× Yaniv. */
 const BOSS_BODY = { w: 56, h: 96 };
 /** Jet bubbles fly at shin-to-hip height (a seat-top stance clears them) and fizzle out after this range. */
@@ -160,10 +163,11 @@ export class BossScene extends Phaser.Scene implements GameWorld {
     this.createCast();
 
     const cam = this.cameras.main;
-    cam.setZoom(ZOOM);
-    // On touch devices the floor sits higher, so the on-screen buttons cover the floor, not the fight.
+    // On touch devices the buttons cover the bottom quarter of the screen, and the tilt drops the right side
+    // (where the boss stands) further still: zoom out a little and lift the floor to just below mid-screen.
     const touch = window.matchMedia?.('(pointer: coarse)').matches;
-    cam.centerOn(W / 2, FLOOR + (touch ? 0 : 50) - VIEW_H / 2);
+    cam.setZoom(touch ? ZOOM * TOUCH_ZOOM : ZOOM);
+    cam.centerOn(W / 2, touch ? FLOOR - TOUCH_FLOOR_BELOW_CENTRE : FLOOR + 50 - VIEW_H / 2);
     this.applyTilt(true); // always set gravity: the arcade world starts with none
     if (this.phase !== 'C') this.createAlarmLight();
 
@@ -797,6 +801,17 @@ export class BossScene extends Phaser.Scene implements GameWorld {
     };
   }
 
+  /** A world point on the page (CSS px): the camera's zoom, rotation and scroll, then the canvas's CSS scale. */
+  private pagePoint(x: number, y: number): { x: number; y: number } {
+    const cam = this.cameras.main;
+    // `matrix` is the camera's view transform (public at runtime, missing from the typings).
+    const { matrix } = cam as unknown as { matrix: Phaser.GameObjects.Components.TransformMatrix };
+    const p = matrix.transformPoint(x - cam.scrollX, y - cam.scrollY, { x: 0, y: 0 });
+    const canvas = this.game.canvas;
+    const r = canvas.getBoundingClientRect();
+    return { x: Math.round(r.left + (p.x * r.width) / canvas.width), y: Math.round(r.top + (p.y * r.height) / canvas.height) };
+  }
+
   private exposeTestHooks(): void {
     (window as unknown as { __syb?: unknown }).__syb = {
       state: () => ({
@@ -837,6 +852,16 @@ export class BossScene extends Phaser.Scene implements GameWorld {
       teleport: (x: number, y: number) => {
         this.player.placeAt(x, y);
         this.player.lastSafe = { x, y };
+      },
+      /** Test-only: where the actors stand on the page (CSS px), after the camera's zoom and tilt. */
+      onScreen: () => {
+        const at = (x: number, y: number) => this.pagePoint(x, y);
+        const box = this.bossBox();
+        return {
+          player: { feet: at(this.player.x, this.player.y), head: at(this.player.x, this.player.body.top) },
+          boss: { feet: at(this.bossX, box.bottom), head: at(this.bossX, box.top) },
+          yoke: this.phase === 'C' ? undefined : at(YOKE_X, FLOOR),
+        };
       },
       clearEnemies: () => {
         for (const e of this.enemies) e.destroy();
