@@ -1,6 +1,6 @@
 # Super Yaniv Bros. — Game Spec
 
-Oct 3, 2026 · @Tal
+Oct 3, 2026 · @Tal · updated Oct 4, 2026 (World 6 The Dive dropped; World 7 is now The White House; Hava Nagila flight music)
 
 ## Pitch
 
@@ -52,9 +52,13 @@ Yaniv is player 1; the other three Bros. are player 2 in co-op (“Sit next to a
 | **Zvika** (banker) | Glasses, navy waistcoat, red tie, coil of white headphone cables | P2 / assist | **Cable Lasso**: ties up any enemy for 4 seconds; owns Phase C |
 | **Shota** (dentist) | Green polo, dental mirror, white first-aid kit | P2 / assist | **First Aid**: refills hearts and the Captain's health bar |
 | **The Captain** | Captain's uniform, head bandage, thumbs up | Escort NPC | Wounded, he still opens the cockpit door: World 5 ends when he does |
-| **The off-duty pilots** | Two uniformed pilots | Finale NPCs | Take the seats in 7-3 and land the plane in Tabuk |
+| **The off-duty pilots** | Two uniformed pilots | Finale NPCs | Take the seats in 6-3 and land the plane in Tabuk |
 | **Jacuzzam Al-Jacuzzi** | Hulking first officer, navy uniform with gold stripes, oversized cap with a gold rubber-duck badge, mirrored black aviator goggles, white spa bathrobe as a cape, smug grin, soap bubbles | Final boss | Throws QRH binders (the pilots' emergency handbook), fires jacuzzi-jet bubble streams, leans on the yoke to tilt the arena |
 | **Rubber Duckies** | Yellow bath ducks in tiny pilot caps | His minions | Waddle and squeak; stomp them or plunge them |
+| **Algae Blobs** | Green slime blobs with googly eyes | World 7-1 enemies | Ooze out of the clogged Reflecting Pool drains; plunge the drain and they wash away |
+| **Reporters** | Trench coat, notepad, boom mic | World 7 enemies | Swing boom mics and fire question bubbles (“Yaniv! One question!”); stomp the mic to duck under it |
+| **Paparazzi** | Big lens camera, flash bulb | World 7 enemies | A camera flash whites out the screen for a moment; run between flashes |
+| **The President** | Dark suit, red tie, American-flag pin | Finale NPC | The handshake and the photo in 7-4. No fight. Drawn as a respectful, stylized 16-bit figure |
 
 **Villain rules:** Jacuzzam is a cartoon clown. He has no ethnic or national markers, the goggles keep his face generic, and there's no weapon or blood. The joke is the name: a *hammam* (bathhouse) upgraded to a jacuzzi, and every plumber has installed one.
 
@@ -88,7 +92,9 @@ Controls are the classic set (run, jump, action), with two airline systems layer
 
 ## World map
 
-There are 8 worlds of 4 levels each, the classic 32. The trip runs Nes Ziona → Dubai → the flight → Tabuk → home. Each x-4 is a “castle” with a fake boss, followed by “Thank you Yaniv! But the cockpit is in another cabin!”
+There are 7 worlds of 4 levels each (28 levels). The trip runs Nes Ziona → Dubai → the flight → Tabuk → Washington. Each x-4 in Worlds 1–4 is a “castle” with a fake boss, followed by “Thank you Yaniv! But the cockpit is in another cabin!”
+
+*Update (Oct 4):* the former World 6 “The Dive” is dropped for now; a single freefall level may return as **5-5**, the last level of World 5. The former World 7 (the cockpit) is now **World 6**, and the final world is **World 7: The White House** instead of “Coming Home”.
 
 | World | Setting | x-1 | x-2 | x-3 | x-4 (castle) |
 | --- | --- | --- | --- | --- | --- |
@@ -97,15 +103,15 @@ There are 8 worlds of 4 levels each, the classic 32. The trip runs Nes Ziona →
 | 3 | DXB Airport | Security Line (trays, belts) | Travelator Rush | Duty-Free (Duty-Free Bills) | Gate Closing, a race against the clock |
 | 4 | Cruise, 37,000 ft | Boarding (bin wars) | Meal Service (Trolley Trolls) | Wing Dream (Yaniv naps, a sky level) | The Lav (a water level inside the plumbing) |
 | 5 | The Attack | The Scream (a woman shouts and the plane shakes) | The Aisle (tilt 0° → 15°) | Bin Avalanche | Cockpit Door: the wounded Captain opens it |
-| 6 | The Dive | Freefall Cabin (vertical, 14,000 ft in 29 s) | Mask Vines | Zero-G Galley | Down to the Flight Deck |
-| 7 | The Cockpit | **Boss Phase A: Fight** | **Boss Phase B: Fight + Fly** | **Boss Phase C: Keep Him Tied** (the 50 minutes) | Tabuk Approach: the off-duty pilots land, you keep order |
-| 8 | Coming Home | Tabuk Tarmac (hospitality bonus: dates and coffee) | The Flight Home | Ben Gurion Welcome | Back to Work: a leaky sink in Nes Ziona |
+| 5 (maybe) | — | *5-5 Freefall Cabin* (vertical, 14,000 ft in 29 s), the last level of World 5, if we add it | | | |
+| 6 | The Cockpit | **Boss Phase A: Fight** | **Boss Phase B: Fight + Fly** | **Boss Phase C: Keep Him Tied** (the 50 minutes) | Tabuk Approach: the off-duty pilots land, you keep order |
+| 7 | The White House | The Reflecting Pool: it's clogged with algae; plunge the pumps and drains to clear it (Algae Blobs) | Press Gaggle (Reporters and their boom mics) | Paparazzi Row (camera flashes; run between them) | The Oval Office: a handshake and a photo with the President (no fight) |
 
-**Ending line (8-4):** “Thank you Yaniv! But your next client is waiting in Nes Ziona!”
+**Ending (7-4):** the handshake, the camera flash, the photo framed on the screen, then: “Thank you Yaniv! But your next client is waiting in Nes Ziona!”
 
 ## Boss fight: Jacuzzam Al-Jacuzzi
 
-The final fight is World 7, three phases in a row. Each phase adds one more thing to juggle: fight him; then fight him *and* fly the plane; then keep him tied while the plane gets to Tabuk.
+The final fight is World 6, three phases in a row (6-1, 6-2, 6-3). Each phase adds one more thing to juggle: fight him; then fight him *and* fly the plane; then keep him tied while the plane gets to Tabuk.
 
 |  | Phase A: Fight | Phase B: Fight + Fly | Phase C: Keep Him Tied |
 | --- | --- | --- | --- |
@@ -128,7 +134,7 @@ Phases A and B fail on altitude. Phase C can only send you back to Phase B, so t
 
 **HUD (top bar, always in the same order).** `YANIV` + hearts · score · brass-nut counter · `WORLD x-y` · `TIME` on the ground or `ALT 24,300 FT` in the air. Flight worlds add a small pitch/bank gauge at the top right. Boss fights add the boss name and HP bar centered, plus a phase label.
 
-**Art direction.** 16-bit, SNES-era richness: painterly backgrounds, crisp square pixels, warm cinematic light (sunset in World 4, red alarm light in Worlds 5–7, morning desert in World 8).
+**Art direction.** 16-bit, SNES-era richness: painterly backgrounds, crisp square pixels, warm cinematic light (sunset in World 4, red alarm light in Worlds 5–6, bright morning in Washington in World 7).
 
 - Cabin palette: teal seats, cream walls, amber cabin lights, purple-orange skies in the windows.
 - Yaniv must read at a glance: navy polo, brown tool belt and red plunger are the three colors that are never reused on enemies.
@@ -138,7 +144,8 @@ Phases A and B fail on altitude. Phase C can only send you back to Phase B, so t
 
 - The flight-attendant *ding* is the coin sound, and the seatbelt chime ends every level.
 - Bubbles gurgle whenever Jacuzzam is on screen.
-- An original chiptune score: a bouncy World 1 theme, a tense 7/8 dive theme for World 6, and a victory fanfare built on a public-domain Israeli folk melody.
+- An original chiptune score: a bouncy World 1 theme and a victory fanfare built on a public-domain Israeli folk melody.
+- **Flight music (Worlds 4–6) is based on *Hava Nagila*** (a traditional, public-domain melody) in our own chiptune arrangements: a bouncy cruise version, a faster alarm version with a siren in the fills (5-4), a driving boss version (6-1, 6-2), and a calm, slow version while the boss is tied up (6-3).
 - The Mayday VHS power-up plays a rewind squeal and a 3-second replay of the correct move.
 
 ## Example screens
@@ -150,11 +157,11 @@ Six concept screens, rendered as 16-bit pixel art in the style of your samples, 
 | Title | — | Logo, the four Bros. standing on the jet, “Sit next to an Israeli” 2P mode, NES Ziona Entertainment System | [open](https://d8j0ntlcm91z4.cloudfront.net/user_3F2NgC52hLLJ1daxZcgIAVCrAOx/hf_20261003_200104_6da8d49a-4c87-4e72-ba01-283cf40612e7.png) |
 | Morning Call | 1-1 | Nes Ziona job site: pipe platforms, call-button blocks, hummus power-up, Clog enemies, a WC lav warp | [open](https://d8j0ntlcm91z4.cloudfront.net/user_3F2NgC52hLLJ1daxZcgIAVCrAOx/hf_20261003_195735_bdf4215a-f90b-428f-a1d6-d00abac38579.png) |
 | The Aisle | 5-2 | Tilted cabin, Trolley Troll from behind, Suitcase Shell, crying baby, mask vines, ALT + pitch HUD | [open](https://d8j0ntlcm91z4.cloudfront.net/user_3F2NgC52hLLJ1daxZcgIAVCrAOx/hf_20261003_195222_ecc4824a-eccf-4013-9a56-973351be1e73.png) |
-| Boss Phase A: Fight | 7-1 | Jacuzzam throws QRH binders and bubble jets; Assaf and Zvika wait at the door | [open](https://d8j0ntlcm91z4.cloudfront.net/user_3F2NgC52hLLJ1daxZcgIAVCrAOx/hf_20261003_195827_f62b3bdb-5975-47fd-9e9d-a782b0a46363.png) |
-| Boss Phase B: Fight + Fly | 7-2 | Yaniv pulls the yoke with one hand and plungers the boss's goggles with the other; pitch indicator HUD | [open](https://d8j0ntlcm91z4.cloudfront.net/user_3F2NgC52hLLJ1daxZcgIAVCrAOx/hf_20261003_195915_ebb384ed-e7b0-4bc2-91fa-d916a2fde682.png) |
-| Boss Phase C: Keep Him Tied | 7-3 | Jacuzzam in headphone-cable spaghetti, Zvika tightening, Shota with the Captain, “Tabuk in 49:58”, zip-tie upgrade | [open](https://d8j0ntlcm91z4.cloudfront.net/user_3F2NgC52hLLJ1daxZcgIAVCrAOx/hf_20261003_200015_a5a16cfd-8eeb-4943-a123-5247a39d1654.png) |
+| Boss Phase A: Fight | 6-1 | Jacuzzam throws QRH binders and bubble jets; Assaf and Zvika wait at the door | [open](https://d8j0ntlcm91z4.cloudfront.net/user_3F2NgC52hLLJ1daxZcgIAVCrAOx/hf_20261003_195827_f62b3bdb-5975-47fd-9e9d-a782b0a46363.png) |
+| Boss Phase B: Fight + Fly | 6-2 | Yaniv pulls the yoke with one hand and plungers the boss's goggles with the other; pitch indicator HUD | [open](https://d8j0ntlcm91z4.cloudfront.net/user_3F2NgC52hLLJ1daxZcgIAVCrAOx/hf_20261003_195915_ebb384ed-e7b0-4bc2-91fa-d916a2fde682.png) |
+| Boss Phase C: Keep Him Tied | 6-3 | Jacuzzam in headphone-cable spaghetti, Zvika tightening, Shota with the Captain, “Tabuk in 49:58”, zip-tie upgrade | [open](https://d8j0ntlcm91z4.cloudfront.net/user_3F2NgC52hLLJ1daxZcgIAVCrAOx/hf_20261003_200015_a5a16cfd-8eeb-4943-a123-5247a39d1654.png) |
 
-**Next screens to render:** world map, “Thank you Yaniv!” castle screen, Tabuk landing, enemy bestiary.
+**Next screens to render:** world map, “Thank you Yaniv!” castle screen, Tabuk landing, enemy bestiary, the Reflecting Pool (7-1), the Oval Office photo (7-4).
 
 ## Guardrails and open questions
 
@@ -164,9 +171,12 @@ Six concept screens, rendered as 16-bit pixel art in the style of your samples, 
 - Heroes are celebrated, never mocked. The Captain is a hero too.
 - No blood, no knife, no axe. Hits are slapstick (bubbles, binders, bonks).
 - The villain gets a joke name and generic cartoon features, and no ethnic or national markers.
+- The President (7-4) is a real public figure: shown respectfully and warmly (a handshake and a photo), never mocked, never fought.
 
 **Open questions**
 
 - [ ] Ask the four heroes for permission to use their names and likeness before any public release?
+- [ ] The President's likeness: image models may refuse to draw a real person. Fallback: a stylized figure seen from the side or back, with the name only in in-engine text.
+- [ ] Add 5-5 Freefall Cabin (the old World 6-1) as the last level of World 5?
 - [ ] Platform: browser (HTML5) first, or mobile with touch controls?
-- [ ] Scope for a first playable: World 5 + World 7 only (the aisle and the three boss phases)?
+- [x] Scope for a first playable: World 5 + World 6 (the aisle and the three boss phases). World 5 is live; World 6 is in progress.

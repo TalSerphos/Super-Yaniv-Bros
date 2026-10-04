@@ -225,7 +225,7 @@
 
 - id: npc.captain
   kind: spritesheet
-  refs: [art/reference/w7-cockpit.webp, art/masters/yaniv.small.webp]
+  refs: [art/reference/w6-cockpit.webp, art/masters/yaniv.small.webp]
   size: 1536x1024
   chroma: '#ff00ff'
   candidates: 2
@@ -281,7 +281,7 @@
 
 - id: w5.door
   kind: spritesheet
-  refs: [art/reference/w7-cockpit.webp, art/reference/w5-aisle.webp]
+  refs: [art/reference/w6-cockpit.webp, art/reference/w5-aisle.webp]
   size: 1536x1024
   chroma: '#ff00ff'
   candidates: 2
