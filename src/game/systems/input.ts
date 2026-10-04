@@ -228,8 +228,11 @@ export class BotInput implements InputSource {
       if ((v.swingVx ?? 0) > 60 && (v.swingDx ?? 0) > 10) into.jump = true;
       return;
     }
-    // Plunger poke: reaches ~70 ahead at body height (also calms babies and stuns open bin biters).
-    if (this.pokeCooldown === 0 && v.threats.some((t) => t.kind !== 'luggage' && t.dx > -6 && t.dx < 66 && Math.abs(t.dy) < 38)) {
+    // Plunger poke: reaches ~70 ahead at body height and a little above the head (also calms babies and
+    // stuns open bin biters). Pacifiers are lobbed, so swat them anywhere in that box, including overhead.
+    const inReach = (t: BotThreat) =>
+      t.kind === 'pacifier' ? t.dx > -6 && t.dx < 70 && t.dy > -90 && t.dy < 6 : t.kind !== 'luggage' && t.dx > -6 && t.dx < 66 && Math.abs(t.dy) < 38;
+    if (this.pokeCooldown === 0 && v.threats.some(inReach)) {
       into.grab = true;
       this.pokeCooldown = 16;
     }

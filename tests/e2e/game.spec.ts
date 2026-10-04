@@ -81,6 +81,8 @@ for (const id of ['5-1', '5-2', '5-3', '5-4']) {
       null,
       { timeout: 160_000, polling: 500 },
     );
+    const end = (await state(page))!;
+    expect(end.hearts, `hurts: ${JSON.stringify(end.hurts)}`).toBeGreaterThan(0);
     const last = id === '5-4';
     await expect(page.getByRole('heading', { name: last ? 'THE CAPTAIN OPENED THE DOOR!' : 'CABIN CLEARED!' })).toBeVisible();
     // He walks through the curtain and stays on the floor: no creeping downhill or dropping off the level.

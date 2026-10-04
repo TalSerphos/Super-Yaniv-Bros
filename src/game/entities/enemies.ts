@@ -344,8 +344,9 @@ export class BabyBomber implements Enemy {
     if (!this.live) return;
     const p = this.world.player;
     const dx = p.x - this.x;
-    // Out of range, or hanging from a mask (knocking him off a vine over a hatch would be cheap).
-    if (Math.abs(dx) > 300 || p.swing) {
+    // Out of range, hanging from a mask (knocking him off a vine over a hatch would be cheap), or right on
+    // top of the seat, where a pacifier would spawn inside him and hit with no chance to react.
+    if (Math.abs(dx) > 300 || Math.abs(dx) < 56 || p.swing) {
       this.timer = Math.max(this.timer, 0.8);
       return;
     }
