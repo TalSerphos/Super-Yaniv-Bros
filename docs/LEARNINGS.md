@@ -119,3 +119,20 @@ Tuning from the same pass:
 - **Multi-state props:** "a wide floor housing … the yoke never reaches past its edges" + `anchor: bbox` keeps the yoke's base registered within 1 px; the first prompt drew "pulled" and "pushed" leaning the same way until it said "its top further LEFT than its foot".
 - Opaque 640×360 backgrounds don't need `frame`: `out: {width: 1280, height: 720, fit: cover, quality: 82}` gives 139 KB (cockpit) and 74 KB (galley). Recreating the concept with "remove ALL text, the HUD, every person, seats, yoke" worked first time; still zoom in on dots that look like glyphs.
 - Black zip ties and the dark-grey yoke are low-contrast against the dark cockpit; give them an outline or glow in the engine if they get lost.
+
+## Stage 4: World 6 boss (2026-10-04)
+
+**Design**
+- Each boss phase is a stage (6-1, 6-2, 6-3) with its own intro card, so a player can retry or pick a phase from the map. Phase C's fail sends you to 6-2 at half HP, as in the spec.
+- Phase rules are plain state machines (`systems/boss.ts`) driven by `tick(dt)` and returning events. The scene only draws them and routes input, and every rule has a unit test without Phaser.
+- Phase B was too easy at first (about 12 s), because his goggles could be plunged any time. Now he is "open" only for 1.3 s after each slap on the yoke, or while Assaf pins him. That forces flying and fighting in turns, which is the point of the phase.
+
+**Engine**
+- A new scene must set gravity itself. The arcade world starts with none: a phase with 0° tilt never called `applyTilt`, so Yaniv floated ("never grounded"). Force it in `create()`.
+- `Altitude(start, rate)` multiplies every tick by `rate`. A rate of 0 with a scaled `dt` never moves. When the rate is dynamic, construct with rate 1 and tick by `dt × rate`.
+- Animations live in `assets.ts#createAnimations` and are created by every scene: a deep link straight into a boss phase has no `LevelScene` to make Yaniv's run cycle first.
+- The player can hold an action pose (`player.pose`: pull, choke, tighten) from a second sheet; `showFrame` switches the texture back.
+
+**Testing**
+- Edge-detected buttons need a released frame between presses. A synthetic "mash" that presses again in the frame right after a release reads as still held, so every other tap is lost. Mash inside the page (`dispatchEvent` + `requestAnimationFrame`) with a gap frame, and wait for each tap to count: test-side round trips are too slow for a 4-second window.
+- The bot needs hysteresis for juggling tasks. Helping Shota until the Captain was just above the threshold made it bounce between Shota and the knots and lose both. Help until 90%, unless a knot is about to slip.
