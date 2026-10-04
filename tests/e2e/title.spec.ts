@@ -164,3 +164,39 @@ test('Google Analytics is configured, but tests never load it or count as visits
   expect(configured).toBe(true);
   expect(gaRequests).toEqual([]);
 });
+
+test('the title shows the version and build', async ({ page }) => {
+  await expect(page.getByTestId('version')).toHaveText(/^v\d+\.\d+\.\d+ · \w+$/);
+});
+
+test.describe('cookie consent in Europe', () => {
+  test.use({ timezoneId: 'Europe/Berlin' });
+
+  test('asks once, remembers the choice, and can be changed from COOKIES', async ({ page }) => {
+    const banner = page.getByTestId('consent');
+    await expect(banner).toBeVisible();
+    await expect(banner).toContainText('Google Analytics');
+    // The menu still works with the banner up.
+    await page.keyboard.press('ArrowDown');
+    await expect(page.locator('.menu-item').nth(1)).toHaveAttribute('aria-current', 'true');
+    await banner.getByRole('button', { name: 'NO THANKS' }).click();
+    await expect(banner).toBeHidden();
+    expect(await page.evaluate(() => localStorage.getItem('syb.consent.v1'))).toBe('denied');
+    await page.reload();
+    await expect(page.getByTestId('consent')).toBeHidden();
+    await page.getByRole('button', { name: 'COOKIES' }).click();
+    await expect(banner).toBeVisible();
+    await banner.getByRole('button', { name: 'OK' }).click();
+    expect(await page.evaluate(() => localStorage.getItem('syb.consent.v1'))).toBe('granted');
+  });
+});
+
+test.describe('cookie consent elsewhere', () => {
+  test.use({ timezoneId: 'America/New_York' });
+
+  test('no banner where the law does not ask for opt-in', async ({ page }) => {
+    await page.waitForLoadState('load');
+    await expect(page.getByTestId('consent')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'COOKIES' })).toHaveCount(0);
+  });
+});

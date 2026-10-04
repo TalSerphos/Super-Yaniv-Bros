@@ -1,7 +1,11 @@
+import { readFileSync } from 'node:fs';
 import { defineConfig } from 'vitest/config';
 
 // Stamped into <meta name="build"> so the deploy smoke test can wait for this exact build.
 process.env.VITE_COMMIT ??= 'dev';
+// Shown on the title screen: the package version and the short commit of this build.
+process.env.VITE_APP_VERSION = (JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as { version: string }).version;
+process.env.VITE_COMMIT_SHORT = process.env.VITE_COMMIT.slice(0, 7);
 
 export default defineConfig({
   // Relative URLs: the same build works at the custom domain root and at

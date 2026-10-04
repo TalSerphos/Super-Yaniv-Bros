@@ -1,18 +1,23 @@
 # Stage 1 — title screen assets. See tools/assets/README.md for the schema.
+# The first version (2026-10-03) recreated art/reference/title.webp without text. Tal found Zvika's headphone cable
+# loop hard to read as headphones, so the plate is now inpainted from that master: only the masked area (the loop
+# over Zvika's head, his head and shoulders) is repainted. Base = art/masters/title.bg.webp as PNG.
 - id: title.bg
   kind: background
-  refs: [art/reference/title.webp]
+  refs: [art/masks/title.bg.base.png]
+  mask: art/masks/title.bg.mask.png
   size: 1536x1024
-  candidates: 2
+  candidates: 3
   prompt: >
-    Recreate this exact title-screen illustration as a clean background plate with ALL text removed:
-    remove the "SUPER YANIV BROS." logo, the "FLIGHT 1073" ribbon, the menu box, the score line at the top
-    and the copyright line at the bottom, and paint the sunset sky and pink-purple clouds where they were.
-    Keep the four heroes standing on top of the white airliner exactly as they are (Yaniv with the raised red
-    plunger and tool belt, the man in the white shirt, the banker with glasses, red tie and headphone cable coil,
-    the dentist in a green polo with a first-aid kit), keep the airliner, the purple-to-orange sunset and the clouds.
-    Wide 3:2 composition: heroes and plane on the right half, open sky on the left half for a logo and a menu.
-    No text, no letters, no logos anywhere.
+    Edit only the masked area of this title-screen illustration and keep everything else pixel-identical. In the
+    masked area is Zvika, the banker with glasses, a navy waistcoat and a red tie, the third of the four heroes
+    standing on the airliner. Remove the big white cable loop that arcs up over his head. Instead he now WEARS a
+    pair of big, chunky, unmistakable over-ear HEADPHONES on his head: a thick black headband over the top of his
+    hair and two big round black-and-silver ear cups covering his ears, like studio headphones, clearly readable
+    as headphones at a glance. A long white headphone cable runs from the left ear cup down to the coil of white
+    cable he still holds in his hands. Keep his face, glasses, moustache, hair, shirt, waistcoat and tie exactly
+    as they are, same pose, same size, same 16-bit pixel-art style and the same purple sunset sky behind him.
+    No text, no letters, no logos.
   out: {width: 1280, height: 720, fit: cover, position: right, quality: 82}
 
 - id: title.logo

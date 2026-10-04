@@ -3,6 +3,7 @@ import '@fontsource/pixelify-sans/latin-700.css';
 import './title/title.css';
 import { MenuState, keyToAction, watchGamepads, type MenuAction } from './title/menu.ts';
 import { isMuted, play, setMuted, unlockAudio } from './audio/sfx.ts';
+import { setupConsent } from './title/consent.ts';
 
 const $ = <T extends HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
 
@@ -132,6 +133,8 @@ document.addEventListener('keydown', (e) => {
   if (e.ctrlKey || e.metaKey || e.altKey) return; // leave browser shortcuts alone
   if (screen === 'game') return unlockAudio();
   if (e.target === muteBtn && (e.code === 'Enter' || e.code === 'Space')) return;
+  // The cookie banner's buttons take Enter/Space themselves (the menu must not also fire).
+  if ((e.target as Element | null)?.closest?.('.consent, .consent-reopen')) return;
   const action = keyToAction(e.code);
   if (!action || e.repeat) return;
   e.preventDefault();
@@ -184,6 +187,7 @@ window.addEventListener('popstate', () => {
 
 watchGamepads(handle);
 syncMute();
+setupConsent(document.getElementById('stage')!);
 render();
 
 // Deep link / reload on #coming-soon or #play: put the title underneath so BACK never leaves the site.

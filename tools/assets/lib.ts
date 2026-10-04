@@ -62,6 +62,11 @@ export interface AssetEntry {
   valign?: 'bottom' | 'middle' | 'top';
   /** Make the built image tile seamlessly along x. */
   seamless?: 'x';
+  /**
+   * Inpainting: a PNG the size of the first ref whose transparent pixels mark the only area the model may
+   * repaint (OpenAI images/edits `mask`). The first ref must then be a PNG of the same size.
+   */
+  mask?: string;
 }
 
 export function loadManifest(): AssetEntry[] {
@@ -84,6 +89,7 @@ export function entryHash(entry: AssetEntry, model: string, quality: string, pre
   const h = createHash('sha256');
   h.update(JSON.stringify({ model, quality, prefix, prompt: entry.prompt, size: entry.size, transparent: entry.transparent, chroma: entry.chroma }));
   for (const ref of entry.refs ?? []) h.update(readFileSync(join(ROOT, ref)));
+  if (entry.mask) h.update(readFileSync(join(ROOT, entry.mask)));
   return h.digest('hex').slice(0, 12);
 }
 

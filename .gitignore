@@ -12,3 +12,4 @@ tests/fidelity/out/
 
 # Throwaway local scripts (QA/bot runs)
 *.tmp.mjs
+art/masks/*.base.png

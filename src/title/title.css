@@ -234,3 +234,59 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .title-bg, .logo, .menu-item[aria-current='true']::before, .coming-soon-title, .rotate-hint::before { animation: none; }
 }
+
+/* Version and build, bottom left (the mute button is bottom right). */
+.version {
+  position: absolute;
+  left: 1.4cqw;
+  bottom: 1.6cqh;
+  margin: 0;
+  font: 0.95cqw/1 var(--font-hud);
+  opacity: 0.6;
+  text-shadow: 0.12cqw 0.12cqw 0 #000;
+}
+
+/* Cookie consent (EEA, UK and Switzerland only): a small panel above the copyright line, title screen only. */
+.consent {
+  position: absolute;
+  right: 1.4cqw;
+  bottom: 8.5cqh;
+  width: 46cqw; /* beside the menu box (which ends near 48cqw), over the clouds */
+  display: flex;
+  align-items: center;
+  gap: 1.6cqw;
+  padding: 1.2cqh 1.4cqw;
+  border: 0.25cqw solid var(--panel-edge);
+  border-radius: 0.8cqw;
+  background: var(--panel);
+  z-index: 3;
+  user-select: text;
+}
+.consent[hidden], .consent-reopen[hidden] { display: none; }
+.consent p { margin: 0; font: 700 1.45cqw/1.35 var(--font-menu); flex: 1; }
+.consent-buttons { display: flex; gap: 0.8cqw; }
+.consent button, .consent-reopen {
+  font: 1.1cqw/1 var(--font-hud);
+  color: var(--ink);
+  background: #2a2140;
+  border: 0.2cqw solid var(--gold);
+  border-radius: 0.5cqw;
+  padding: 0.9cqh 1cqw;
+  min-height: 32px;
+  cursor: pointer;
+}
+.consent button[data-choice='denied'] { border-color: var(--panel-edge); }
+.consent button:focus-visible, .consent-reopen:focus-visible { outline: 0.25cqw solid var(--gold); outline-offset: 0.2cqw; }
+.consent-reopen {
+  position: absolute;
+  left: 1.4cqw;
+  bottom: 4.6cqh;
+  font-size: 0.85cqw;
+  padding: 0.5cqh 0.6cqw;
+  min-height: 0;
+  opacity: 0.6;
+  border-color: var(--panel-edge);
+  z-index: 2;
+}
+.stage[data-screen='game'] :is(.consent, .consent-reopen, .version),
+.stage[data-screen='coming-soon'] :is(.consent, .consent-reopen) { display: none; }

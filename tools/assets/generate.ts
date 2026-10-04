@@ -46,6 +46,7 @@ async function callApi(entry: AssetEntry, prompt: string, n: number): Promise<{ 
       const type = ref.endsWith('.png') ? 'image/png' : ref.endsWith('.jpg') ? 'image/jpeg' : 'image/webp';
       form.append('image[]', new Blob([buf], { type }), basename(ref));
     }
+    if (entry.mask) form.append('mask', new Blob([readFileSync(join(ROOT, entry.mask))], { type: 'image/png' }), basename(entry.mask));
     res = await withRetry(() =>
       fetch('https://api.openai.com/v1/images/edits', { method: 'POST', headers: { Authorization: `Bearer ${apiKey}` }, body: form }),
     );

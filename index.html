@@ -3,23 +3,49 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <!-- Google tag (gtag.js). The library loads after the page, so it never delays the title screen, and only on
-         the live site outside automation, so tests, previews and Lighthouse don't count as visitors. -->
+    <!-- Google tag (gtag.js) with consent. The library loads after the page (it never delays the title), only on the
+         live site and never under automation (tests, Lighthouse). Visitors where analytics cookies need opt-in consent
+         (EEA, UK, Switzerland: told apart by time zone, a static site has no IP lookup) get a banner first
+         (src/title/consent.ts); Google's consent mode also defaults to "denied" for those countries as a backstop. -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag() {
         dataLayer.push(arguments);
       }
-      gtag('js', new Date());
-      gtag('config', 'G-4C932NCJMZ');
-      if (/(^|\.)superyanivbros\.com$|\.github\.io$/.test(location.hostname) && !navigator.webdriver) {
-        addEventListener('load', function () {
+      (function () {
+        var denied = { ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: 'denied' };
+        var optIn = 'AT BE BG HR CY CZ DK EE FI FR DE GR HU IE IT LV LT LU MT NL PL PT RO SK SI ES SE IS LI NO GB CH'.split(' ');
+        gtag('consent', 'default', Object.assign({ region: optIn }, denied));
+        gtag('consent', 'default', Object.assign({}, denied, { analytics_storage: 'granted' }));
+        var tz = '';
+        var choice = null;
+        try {
+          tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+        } catch (e) {}
+        try {
+          choice = localStorage.getItem('syb.consent.v1');
+        } catch (e) {}
+        var islands = 'Atlantic/Canary Atlantic/Madeira Atlantic/Azores Atlantic/Reykjavik Atlantic/Faroe Arctic/Longyearbyen Asia/Nicosia Asia/Famagusta Indian/Reunion Indian/Mayotte America/Guadeloupe America/Martinique America/Cayenne America/Marigot America/St_Barthelemy'.split(' ');
+        var regulated = /^Europe\//.test(tz) || islands.indexOf(tz) >= 0;
+        if (regulated) gtag('consent', 'update', { analytics_storage: choice === 'granted' ? 'granted' : 'denied' });
+        gtag('js', new Date());
+        gtag('config', 'G-4C932NCJMZ');
+        var live = /(^|\.)superyanivbros\.com$|\.github\.io$/.test(location.hostname) && !navigator.webdriver;
+        var loaded = false;
+        function load() {
+          if (loaded || !live) return;
+          loaded = true;
           var s = document.createElement('script');
           s.async = true;
           s.src = 'https://www.googletagmanager.com/gtag/js?id=G-4C932NCJMZ';
           document.head.appendChild(s);
-        });
-      }
+        }
+        window.sybAnalytics = { regulated: regulated, choice: choice, load: load };
+        if (!regulated || choice === 'granted') {
+          if (document.readyState === 'complete') load();
+          else addEventListener('load', load);
+        }
+      })();
     </script>
     <title>Super Yaniv Bros. — Flight 1073</title>
     <meta name="description" content="A 16-bit platformer: a plumber from Nes Ziona, a diving 737, and a co-pilot named after a bathtub." />
@@ -49,6 +75,7 @@
           </ul>
         </nav>
         <footer class="copyright">(C) 2026 NES ZIONA ENTERTAINMENT SYSTEM</footer>
+        <p class="version" data-testid="version">v%VITE_APP_VERSION% · %VITE_COMMIT_SHORT%</p>
       </section>
 
       <section class="screen coming-soon" id="coming-soon" aria-label="Coming soon" hidden>
