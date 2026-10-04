@@ -1,0 +1,225 @@
+# World 5 (cabin aisle) assets. Contract: docs/levels/w5-assets.md. Schema: tools/assets/README.md.
+# Sprites are painted on flat magenta and keyed out; frames are built at 2x world units.
+
+# Character bible: the master is used as a reference image for every Yaniv pose sheet. Not built.
+- id: char.yaniv.sheet
+  kind: reference
+  refs: [art/reference/title.webp, art/reference/w5-aisle.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  prompt: >
+    Character model sheet for the hero Yaniv: the plumber holding up the red plunger in the FIRST reference image
+    (title screen). Ignore the grey-haired man in the white shirt in the second image; use the second image only
+    for the in-game sprite style. Draw Yaniv four times in a row at exactly the same scale, all standing on one
+    common baseline, full body from hair to boots: front view, three-quarter view facing right, side profile
+    facing right, back view. Compact 16-bit platformer hero proportions (about 4 heads tall, big expressive head,
+    sturdy build). Exact outfit in every view: short dark brown hair, short dark beard, NO hat, navy blue
+    short-sleeved polo shirt with a small white wrench logo on the chest, brown leather tool belt with pouches,
+    blue jeans, brown work boots, a red rubber plunger with a wooden handle in one hand.
+    Perfectly flat, solid, uniform magenta (#FF00FF) background, no gradient, no floor, no shadows on the
+    background, no text, no labels, no grid lines.
+
+- id: yaniv.small
+  kind: spritesheet
+  refs: [art/masters/char.yaniv.sheet.webp, art/reference/title.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 4, rows: 3}
+  cells: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  frame: {w: 48, h: 64}
+  fit: {height: 118}
+  prompt: >
+    Sprite sheet for a side-scrolling platformer. The SAME hero as the character sheet in the first reference
+    image (Yaniv: short dark brown hair, short dark beard, NO hat, navy polo with a small white wrench logo,
+    brown tool belt, blue jeans, brown boots, red plunger with a wooden handle), same proportions, same colors.
+    Full-body three-quarter side view, facing RIGHT in every pose (head, chest and feet all point right). One
+    small white wrench logo on his chest. Layout: an invisible grid of 4 columns by 3 rows of equal cells (do not
+    draw grid lines). Each pose sits in the middle of its cell, fully inside it with a clear margin, all poses at
+    exactly the same scale, feet on a common baseline in each row. In every pose he grips the red plunger in his
+    forward hand, held out in FRONT of his chest on the RIGHT side of the sprite (the direction he runs), cup up
+    at shoulder height, close to his body; it is never behind him and never on the left side.
+    Row 1: (1) idle, standing relaxed, plunger held at his side; (2) idle, same pose, chest slightly raised as he
+    breathes in; (3) run CONTACT: legs in a wide stride, front heel touching down far in front, back leg
+    stretched behind; (4) run DOWN: front foot planted under his hips, knee bent, back foot lifting off behind,
+    body at its lowest.
+    Row 2: (5) run PASSING: standing on the front leg straight under his body, the back knee swinging through
+    high in front, feet close together, body at its highest; (6) run CONTACT with the OTHER leg in front;
+    (7) run DOWN with the other leg; (8) run PASSING with the other leg. The six run frames form one smooth
+    looping run cycle, arms swinging opposite to the legs.
+    Row 3: (9) jump: rising, one knee up, free fist raised, plunger forward; (10) fall: legs apart and dangling,
+    arms up, worried face; (11) hurt: still facing right but knocked backwards, leaning back, eyes squeezed shut,
+    small yellow dizzy stars around his head;
+    (12) leave this last cell completely empty.
+    Perfectly flat, solid, uniform magenta (#FF00FF) background, no gradient, no floor, no shadows on the
+    background, no text, no labels, no grid lines.
+  out: {dir: w5, colors: 64}
+
+- id: enemy.trolley
+  kind: spritesheet
+  refs: [art/reference/w5-aisle.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 2, rows: 2}
+  cells: [0, 1, 2, 3]
+  frame: {w: 64, h: 56}
+  fit: {height: 108}
+  prompt: >
+    Sprite sheet for a platformer enemy, the "Trolley Troll": the airline drink trolley from the reference image
+    come to life. Side view facing RIGHT. A boxy dark slate-blue metal cart with bright silver steel corner trim
+    and handles, four small black caster wheels, an angry cartoon face on its side panel (glaring yellow eyes,
+    heavy slanted brows, gritted white teeth), a few white coffee cups and a silver coffee pot rattling on top.
+    No red anywhere on it. Layout: an invisible grid of 2 columns by 2 rows of equal cells (do not draw grid
+    lines), one cart per cell, centered, same scale, wheels on a common baseline.
+    (1) rolling, wheels mid-turn; (2) rolling, wheels turned further, cups hopping up a little; (3) rolling,
+    body bobbing down, cups landing; (4) squashed: the same cart crushed flat like a pancake, half its height,
+    swirly dazed eyes, cups knocked over on top, small yellow stars.
+    Perfectly flat, solid, uniform magenta (#FF00FF) background, no gradient, no floor, no shadows on the
+    background, no text, no labels, no grid lines.
+  out: {dir: w5, colors: 48}
+
+- id: item.nut
+  kind: spritesheet
+  size: 1024x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 2, rows: 2}
+  cells: [0, 1, 2, 3]
+  frame: {w: 16, h: 16}
+  fit: {height: 28}
+  valign: middle
+  prompt: >
+    Sprite sheet of a collectible coin for a platformer: a shiny brass hexagonal nut (bolt nut) with a round
+    hole in the middle, golden yellow with a bright highlight and a thick dark brown outline, chunky and simple,
+    readable at a tiny size. Four animation frames of it spinning around its vertical axis, in an invisible grid
+    of 2 columns by 2 rows (no grid lines), each centered in its cell at the same height:
+    (1) face-on hexagon; (2) turned three-quarters, narrower; (3) edge-on, a thin vertical sliver;
+    (4) turned three-quarters the other way, narrower.
+    Perfectly flat, solid, uniform magenta (#FF00FF) background, no shadows on the background, no text.
+  out: {dir: w5, colors: 24}
+
+- id: block.call
+  kind: spritesheet
+  refs: [art/reference/w5-aisle.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 2, rows: 1}
+  cells: [0, 1]
+  frame: {w: 32, h: 32}
+  fit: {mode: stretch}
+  prompt: >
+    Two square bonus blocks for a platformer, side by side, each a perfect square seen straight on, same size.
+    They are flight-attendant call-button panels from an airliner ceiling: a chunky cream and light-grey plastic
+    block with bevelled edges, four corner screws and a dark outline. Left block (active): a big round call
+    button in the middle glowing bright amber, with a simple white bell symbol on it and a warm glow.
+    Right block (used): the same block dimmed to flat grey, the button dark and pressed in, no glow, no bell.
+    Perfectly flat, solid, uniform magenta (#FF00FF) background around the blocks, no shadows on the background,
+    no text, no letters.
+  out: {dir: w5, colors: 32}
+
+- id: w5.seat
+  kind: spritesheet
+  refs: [art/reference/w5-aisle.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 4, rows: 1}
+  cells: [0, 1, 2, 3]
+  frame: {w: 48, h: 64}
+  fit: {height: 128}
+  anchor: left
+  prompt: >
+    Four airliner economy seats in strict side view, all facing RIGHT (the seat back is on the left, the seat
+    cushion points right), like the teal seats in the reference image but drawn flat side-on, not tilted. Teal
+    upholstery, cream-grey plastic shell and armrest, dark grey base, the same seat at the same size in all four.
+    Layout: four equal columns in a row (no grid lines), one seat per column, all on a common floor baseline.
+    (1) the empty seat; (2) a woman with long brown hair asleep in the seat wearing big white headphones;
+    (3) a bearded man with glasses in a brown jacket reading a book; (4) a smiling boy in a blue and white
+    baseball cap and yellow hoodie. Passengers sit inside the seat, facing right, side view.
+    Perfectly flat, solid, uniform magenta (#FF00FF) background, no gradient, no floor, no shadows on the
+    background, no text, no labels.
+  out: {dir: w5, colors: 64}
+
+- id: w5.curtain
+  kind: image
+  refs: [art/reference/w5-aisle.webp]
+  size: 1024x1536
+  chroma: '#ff00ff'
+  candidates: 2
+  frame: {w: 64, h: 128}
+  prompt: >
+    A single tall object for a platformer level goal, drawn straight-on and not tilted: the galley doorway at the
+    end of an airliner aisle. A tall cream bulkhead door frame with rounded corners, a half-drawn teal-grey
+    fabric curtain hanging from a rail, warm golden light glowing out of the opening behind it, a small green
+    glowing lamp with a simple arrow above the opening. The doorway fills the image height, standing on the
+    bottom edge. Perfectly flat, solid, uniform magenta (#FF00FF) background around it, no shadows on the
+    background, no text, no letters, no people.
+  out: {dir: w5, colors: 64}
+
+- id: w5.bg.wall
+  kind: background
+  refs: [art/reference/w5-aisle.webp]
+  size: 1536x1024
+  candidates: 2
+  frame: {w: 640, h: 360}
+  seamless: x
+  prompt: >
+    Background layer for a side-scrolling platformer: a long stretch of the far interior wall of an airliner
+    cabin drawn as a flat, straight-on side view, perfectly level, NOT tilted, no perspective, seen from a
+    distance so the details are small. Top fifth of the image: a row of closed cream overhead luggage bins with
+    small dark latch handles, and a thin glowing warm amber light strip under them. Below that, cream wall panels
+    with ONE horizontal row of about nine small, evenly spaced, rounded oval windows across the width; each window
+    is only about a quarter of the image height and about two thirds as wide as it is tall, every window showing
+    a purple-to-orange sunset over clouds. The bottom third of the image is plain cream wall panels getting
+    darker toward the bottom. Same palette and pixel style as the reference image. The pattern repeats evenly so
+    it can tile horizontally. No seats, no people, no luggage, no signs, no text.
+  out: {dir: w5, quality: 85, position: top}
+
+- id: w5.tex.floor
+  kind: texture
+  refs: [art/reference/w5-aisle.webp]
+  size: 1536x1024
+  candidates: 2
+  frame: {w: 64, h: 32}
+  seamless: x
+  prompt: >
+    A flat, straight-on texture swatch that fills the entire image edge to edge, no perspective, no border:
+    the side of the aisle floor slab from the reference image, as a thick platform. Along the top edge a thin
+    brushed-metal trim with a row of small glowing amber floor lights; below it dark charcoal-blue carpet with a
+    subtle woven pattern, getting darker toward the bottom. Even and horizontally tileable. No text.
+  out: {dir: w5, colors: 48, position: top, span: 0.5}
+
+- id: w5.tex.bin
+  kind: texture
+  refs: [art/reference/w5-aisle.webp]
+  size: 1536x1024
+  candidates: 2
+  frame: {w: 64, h: 32}
+  seamless: x
+  prompt: >
+    A flat, straight-on texture swatch that fills the entire image edge to edge, no perspective, no border:
+    the front lip and underside of an airliner overhead luggage bin used as a platform. Cream and light grey
+    plastic panels with a bevelled highlight along the top edge, a dark recessed latch handle, small screws and a
+    darker shaded bottom edge, like the bins in the reference image. Even and horizontally tileable. No text.
+  out: {dir: w5, colors: 48, position: top}
+
+- id: hud.icons
+  kind: spritesheet
+  size: 1024x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 2, rows: 2}
+  cells: [0, 1, 2, 3]
+  frame: {w: 16, h: 16}
+  fit: {mode: each, height: 30}
+  valign: middle
+  prompt: >
+    Four chunky game HUD icons in an invisible 2 by 2 grid (no grid lines), each centered in its cell, bold and
+    simple with thick dark outlines so they read at a tiny size: (1) a bright red heart with a white highlight;
+    (2) an empty heart: the same heart shape, dark outline with a dark grey hollow inside; (3) a shiny golden
+    brass hexagonal nut with a round hole; (4) a small white airliner seen from the side, nose pointing right.
+    Perfectly flat, solid, uniform magenta (#FF00FF) background, no shadows on the background, no text.
+  out: {dir: w5, colors: 24}

@@ -27,7 +27,7 @@ export default defineConfig({
       : [
           {
             name: 'subpath',
-            grep: /renders with no errors|deep link|pointer: tapping "1 PLAYER"/,
+            grep: /renders with no errors|deep link|pointer: tapping|boards World 5/,
             use: { ...devices['Desktop Chrome'], ...chromiumOpts, baseURL: 'http://localhost:4175/Super-Yaniv-Bros/' },
           },
         ]),

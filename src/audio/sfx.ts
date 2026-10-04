@@ -50,7 +50,21 @@ function tone(freq: number, start: number, dur: number, type: OscillatorType, ga
   osc.stop(start + dur + 0.02);
 }
 
-export type Sfx = 'move' | 'ding' | 'back';
+function sweep(from: number, to: number, start: number, dur: number, type: OscillatorType, gain: number): void {
+  if (!ctx) return;
+  const osc = ctx.createOscillator();
+  const amp = ctx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(from, start);
+  osc.frequency.exponentialRampToValueAtTime(to, start + dur);
+  amp.gain.setValueAtTime(gain, start);
+  amp.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+  osc.connect(amp).connect(ctx.destination);
+  osc.start(start);
+  osc.stop(start + dur + 0.02);
+}
+
+export type Sfx = 'move' | 'ding' | 'back' | 'jump' | 'nut' | 'stomp' | 'hurt' | 'bump' | 'thwop' | 'chime' | 'warn';
 
 export function play(sfx: Sfx): void {
   if (muted || !ctx) return;
@@ -78,6 +92,33 @@ function synth(sfx: Sfx): void {
     case 'back':
       tone(660, t, 0.07, 'square', 0.05);
       tone(440, t + 0.07, 0.1, 'square', 0.05);
+      break;
+    case 'jump':
+      sweep(330, 760, t, 0.14, 'square', 0.05);
+      break;
+    case 'nut': // a short, high flight-attendant ding: the coin sound
+      tone(1568, t, 0.25, 'sine', 0.12);
+      tone(2093, t + 0.05, 0.3, 'sine', 0.08);
+      break;
+    case 'stomp':
+      sweep(420, 90, t, 0.16, 'square', 0.08);
+      break;
+    case 'hurt':
+      sweep(500, 120, t, 0.35, 'sawtooth', 0.06);
+      break;
+    case 'bump':
+      tone(180, t, 0.08, 'square', 0.08);
+      break;
+    case 'thwop': // plunger
+      sweep(200, 70, t, 0.12, 'triangle', 0.12);
+      break;
+    case 'chime': // seatbelt sign off: the two-tone cabin chime
+      tone(1046, t, 0.9, 'sine', 0.18);
+      tone(784, t + 0.45, 1.2, 'sine', 0.18);
+      break;
+    case 'warn':
+      tone(988, t, 0.08, 'square', 0.05);
+      tone(988, t + 0.14, 0.08, 'square', 0.05);
       break;
   }
 }

@@ -14,6 +14,22 @@ export interface AssetOut {
   position?: string;
   trim?: boolean;
   quality?: number;
+  /** Subfolder of src/assets (e.g. `w5` → src/assets/w5/<id>.webp). */
+  dir?: string;
+  /** Quantize to this many colors (palette, no dither) and write lossless WebP. */
+  colors?: number;
+  /** Framed sprites: alpha at or above this becomes opaque, below it transparent (0 keeps soft alpha). Default 128. */
+  alphaThreshold?: number;
+  /** Seamless images: fraction of the master's width one tile spans (default: as much as fits). */
+  span?: number;
+}
+
+/** How cut-out poses are sized into their frames. */
+export interface AssetFit {
+  /** common: one scale for the whole sheet (animation); each: every frame on its own; stretch: fill the frame. */
+  mode?: 'common' | 'each' | 'stretch';
+  /** Target content height in output pixels (2x). Defaults to the frame height. */
+  height?: number;
 }
 
 export interface AssetEntry {
@@ -28,6 +44,19 @@ export interface AssetEntry {
   chroma?: string;
   candidates?: number;
   out?: AssetOut;
+  /** Pose grid painted in the master (spritesheets). Default 1×1. */
+  grid?: { cols: number; rows: number };
+  /** Grid cells (reading order) to use, in output frame order. Default [0]. */
+  cells?: number[];
+  /** Frame size in world units; files are built at 2x. Frames go left to right in one strip. */
+  frame?: { w: number; h: number };
+  fit?: AssetFit;
+  /** Horizontal placement in the frame: centre of mass (default), bounding-box centre, or shared left edge. */
+  anchor?: 'mass' | 'bbox' | 'left';
+  /** Vertical placement: feet on the bottom row (default, characters and props) or centred (items, icons). */
+  valign?: 'bottom' | 'middle';
+  /** Make the built image tile seamlessly along x. */
+  seamless?: 'x';
 }
 
 export function loadManifest(): AssetEntry[] {

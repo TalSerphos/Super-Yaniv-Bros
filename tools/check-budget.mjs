@@ -11,6 +11,8 @@ const BUDGETS = {
   initialTotal: 350 * KB, // everything the title screen needs (excludes lazy chunks/packs)
   jsEntry: 15 * KB, // title JS, gzipped
   image: 180 * KB, // any single image
+  gameJs: 420 * KB, // lazy game code (Phaser + levels), gzipped
+  worldPack: 1536 * KB, // art for one world
 };
 const TEXT = /\.(html|js|css|json|svg|txt|webmanifest)$/;
 const LAZY = /(^|\/)(game|packs?)\//; // Phaser chunk + world packs load after the title
@@ -43,10 +45,22 @@ for (const f of files.filter((f) => /\.(html|css)$/.test(f.rel))) {
   const bad = text.match(/(?:src|href)="\/(?!\/)[^"]*"|url\(["']?\/(?!\/)[^)]*\)/g);
   if (bad) errors.push(`${f.rel} has root-absolute URLs (use relative): ${bad.slice(0, 3).join(', ')}`);
 }
+const gameJs = files.filter((f) => /^assets\/game\/.*\.js$/.test(f.rel)).reduce((n, f) => n + f.size, 0);
+if (gameJs > BUDGETS.gameJs) errors.push(`game JS is ${fmt(gameJs)} gz (budget ${fmt(BUDGETS.gameJs)})`);
+const packs = {};
+for (const f of files) {
+  const w = f.rel.match(/^assets\/packs\/(w\d+)\//)?.[1];
+  if (w) packs[w] = (packs[w] ?? 0) + f.size;
+}
+for (const [w, size] of Object.entries(packs)) {
+  if (size > BUDGETS.worldPack) errors.push(`world pack ${w} is ${fmt(size)} (budget ${fmt(BUDGETS.worldPack)})`);
+}
 if (initial > BUDGETS.initialTotal) errors.push(`initial load is ${fmt(initial)} (budget ${fmt(BUDGETS.initialTotal)})`);
 
 for (const f of files.sort((a, b) => b.size - a.size)) console.log(`${fmt(f.size).padStart(10)}  ${f.rel}`);
 console.log(`${fmt(initial).padStart(10)}  = initial load (budget ${fmt(BUDGETS.initialTotal)})`);
+console.log(`${fmt(gameJs).padStart(10)}  = game JS, lazy (budget ${fmt(BUDGETS.gameJs)})`);
+for (const [w, size] of Object.entries(packs)) console.log(`${fmt(size).padStart(10)}  = ${w} pack, lazy`);
 if (errors.length) {
   console.error('\nBudget exceeded:\n  ' + errors.join('\n  '));
   process.exit(1);

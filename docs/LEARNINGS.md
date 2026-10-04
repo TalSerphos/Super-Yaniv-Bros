@@ -32,3 +32,14 @@ Append after every stage/level: what worked, what didn't, numbers worth remember
 - With `base: '/'`, the site rendered unstyled at `talserphos.github.io/Super-Yaniv-Bros/` because every asset 404'd under the project subpath. The fix is `base: './'`, which makes all URLs relative so one build works at the domain root and under a subpath. `check-budget.mjs` now fails on root-absolute URLs, and the `subpath` Playwright project serves the build under `/Super-Yaniv-Bros/`.
 - When Pages deploys from Actions, the `public/CNAME` file is ignored. The custom domain must be set in Settings → Pages, and the DNS must point at GitHub. The smoke job now tests the `page_url` the deploy reports, rather than assuming the domain works.
 - e2e tests use `page.goto('./')` (relative), so `BASE_URL` can carry a path.
+
+## World 5 assets (2026-10-04)
+- Everything in `docs/levels/w5-assets.md` comes from `art/manifest/w5.yaml`. Spend was about $4.30 estimated (25 calls), counting low exploration, two prompt fixes and high/medium finals.
+- **Character bible first.** A 4-view Yaniv turnaround on magenta (refs: title + aisle) became `art/masters/char.yaniv.sheet.webp`. Used as the first ref, it kept the 4×3 pose sheets on-model, including no hat, one wrench logo, and boots.
+- **Pose sheets: say where the prop goes.** "Plunger in his front hand" gave a plunger trailing behind him. "Held out in front of his chest on the RIGHT side of the sprite, never behind him" fixed it. Name the run phases (CONTACT / DOWN / PASSING, then the same with the other leg). Without that, the model draws six near-identical strides.
+- **High is not a strict upgrade.** The two high candidates differed in the details (one dropped the plunger in the fall pose), so check every cell.
+- **Downscaling:** lanczos3, a hard alpha threshold at 128, then palette quantize (24 to 64 colors, no dither) and lossless WebP. This looks crisp at 1:1 even at 0.1x (the nut). Scale every frame of a sheet by one common factor (median height), or the animation pulses in size.
+- **Scale check with a mock.** The first wall (16:9 crop of a 3:2 image) had windows about 1.5x too tall next to Yaniv. Asking for "about nine small windows, each a quarter of the image height" matched the concept art. Always composite wall + floor + sprites and compare with the reference.
+- **Seamless:** choose the crop whose next column matches its first (wrap diff 1–4 on 0–255), then crossfade a W/16 strip. Window rows and light strips tile with no visible seam. For small textures, `span: 0.5` sets the light spacing.
+- gpt-image-2 paints "#FF00FF" as roughly #F205EE to #FB03F8. That is well inside the chroma key's inner radius (70), so no tuning was needed.
+

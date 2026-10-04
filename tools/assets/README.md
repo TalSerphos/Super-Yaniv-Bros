@@ -18,7 +18,16 @@ art/manifest/*.yaml ──generate.ts──▶ art/raw/<id>/<quality>-<hash>/<n>
 | `chroma` | flat background color to key out (preferred way to get alpha) |
 | `transparent` | native alpha via the alpha model (gpt-image-1.5) |
 | `candidates` | images per request |
-| `out` | `width`, `height`, `fit`, `position`, `trim`, `quality` for the web build |
+| `out` | `width`, `height`, `fit`, `position`, `trim`, `quality` for the web build; also `dir` (subfolder of `src/assets`), `colors` (palette-quantize, lossless WebP), `alphaThreshold` (default 128: hard pixel-art edges), `span` (seamless: fraction of the master width one tile covers) |
+| `frame` | `{w, h}` in **world units**. Output is 2x, frames left to right in one strip (`tools/assets/sheet.ts`) |
+| `grid`, `cells` | pose grid painted in the master, and which cells (reading order) become frames, in output order |
+| `fit` | `mode`: `common` (one scale per sheet from the median pose height: no size jitter), `each`, `stretch`; `height`: target content height at 2x |
+| `anchor`, `valign` | horizontal placement (`mass` default, `bbox`, `left` = shared left edge); vertical `bottom` (feet on the last row, default) or `middle` |
+| `seamless: x` | crops the stretch of the master that wraps onto itself best, then crossfades the overhang into the left edge |
+
+`kind: reference` entries (e.g. the `char.yaniv.sheet` character bible) get a master but no build output; use the
+master as a `refs` image for every pose sheet of that character. Sprite poses are cut by connected component,
+so a pose that pokes over a cell line still comes out whole.
 
 Generation is cached by a hash of model + prompt + style prefix + refs + params, so re-running is free
 unless something changed. `--force` regenerates. `art/cost-log.csv` records every paid call.

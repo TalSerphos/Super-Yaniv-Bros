@@ -2,22 +2,26 @@ import '@fontsource/press-start-2p/latin-400.css';
 import '@fontsource/pixelify-sans/latin-700.css';
 import './title/title.css';
 import { MenuState, keyToAction, watchGamepads, type MenuAction } from './title/menu.ts';
-import { isMuted, play, setMuted, unlockAudio } from './title/sfx.ts';
+import { isMuted, play, setMuted, unlockAudio } from './audio/sfx.ts';
 
 const $ = <T extends HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
 
 const title = $<HTMLElement>('#title');
 const comingSoon = $<HTMLElement>('#coming-soon');
+const gameScreen = $<HTMLElement>('#game');
 const backBtn = $<HTMLButtonElement>('#back');
 const muteBtn = $<HTMLButtonElement>('#mute');
 const items = [...document.querySelectorAll<HTMLButtonElement>('.menu-item')];
 const menu = new MenuState(items.length);
 
-const COMING_SOON_HASH = '#coming-soon';
+const HASHES = { 'coming-soon': '#coming-soon', game: '#play' } as const;
+const params = new URLSearchParams(location.search);
 /** Taps on the Coming Soon backdrop are ignored this long after it opens (double-tap guard). */
 const BACKDROP_GUARD_MS = 350;
 
-type Screen = 'title' | 'coming-soon';
+type Screen = 'title' | keyof typeof HASHES;
+const screenForHash = (hash: string): Screen =>
+  (Object.keys(HASHES) as (keyof typeof HASHES)[]).find((k) => HASHES[k] === hash) ?? 'title';
 let screen: Screen = 'title';
 let openedAt = 0;
 /** True while a history.back() we issued is in flight, so a double BACK can't leave the site. */
@@ -33,27 +37,56 @@ function render(): void {
 }
 
 function focusCurrent(): void {
-  (screen === 'title' ? items[menu.current] : backBtn).focus({ preventScroll: true });
+  if (screen === 'title') items[menu.current].focus({ preventScroll: true });
+  else if (screen === 'coming-soon') backBtn.focus({ preventScroll: true });
+  else (document.activeElement as HTMLElement | null)?.blur();
+}
+
+// ---------- game (lazy chunk) ----------
+
+type GameModule = typeof import('./game/boot.ts');
+let gameModule: Promise<GameModule> | undefined;
+let game: { destroy(): void } | undefined;
+/** Starts downloading the game chunk (Phaser + level) without running it. */
+const loadGame = () => (gameModule ??= import('./game/boot.ts'));
+
+function mountGame(): void {
+  void loadGame().then((m) => {
+    if (screen !== 'game' || game) return; // left before the chunk arrived
+    gameScreen.querySelector('.game-loading')?.remove();
+    game = m.startGame(gameScreen, { onQuit: goBack, bot: params.has('bot'), debug: params.has('debug') });
+  });
+}
+
+function unmountGame(): void {
+  game?.destroy();
+  game = undefined;
+  if (!gameScreen.querySelector('.game-loading')) {
+    gameScreen.insertAdjacentHTML('afterbegin', '<p class="game-loading">BOARDING…</p>');
+  }
 }
 
 function showScreen(next: Screen): void {
   if (screen === next) return;
+  if (screen === 'game') unmountGame();
   screen = next;
   title.hidden = next !== 'title';
   comingSoon.hidden = next !== 'coming-soon';
+  gameScreen.hidden = next !== 'game';
   if (next === 'coming-soon') openedAt = performance.now();
+  if (next === 'game') mountGame();
   focusCurrent();
 }
 
-function openComingSoon(): void {
-  if (screen === 'coming-soon') return;
+function openScreen(next: Exclude<Screen, 'title'>): void {
+  if (screen === next) return;
   // The entry below is always our title (marked), so BACK can safely use history.back().
-  history.pushState({ screen: 'coming-soon', fromTitle: true }, '', COMING_SOON_HASH);
-  showScreen('coming-soon');
+  history.pushState({ screen: next, fromTitle: true }, '', HASHES[next]);
+  showScreen(next);
 }
 
 function goBack(): void {
-  if (screen !== 'coming-soon' || leaving) return;
+  if (screen === 'title' || leaving) return;
   play('back');
   if (history.state?.fromTitle) {
     leaving = true;
@@ -68,12 +101,13 @@ function activate(i: number): void {
   menu.set(i);
   render();
   play('ding');
-  // Every menu option leads to Coming Soon in Stage 1; Stage 2 routes "1p" into the game.
-  openComingSoon();
+  // 1 PLAYER boards World 5; co-op ("Sit next to an Israeli") is Stage 9.
+  openScreen(items[i].dataset.action === '1p' ? 'game' : 'coming-soon');
 }
 
 function handle(action: MenuAction): void {
   unlockAudio();
+  if (screen === 'game') return; // the game reads its own input
   if (screen === 'coming-soon') {
     if (action === 'back' || action === 'confirm') goBack();
     return;
@@ -89,6 +123,7 @@ function handle(action: MenuAction): void {
 
 document.addEventListener('keydown', (e) => {
   if (e.ctrlKey || e.metaKey || e.altKey) return; // leave browser shortcuts alone
+  if (screen === 'game') return unlockAudio();
   if (e.target === muteBtn && (e.code === 'Enter' || e.code === 'Space')) return;
   const action = keyToAction(e.code);
   if (!action || e.repeat) return;
@@ -100,6 +135,7 @@ items.forEach((el, i) => {
   // Keep the cursor wherever focus goes (Tab, screen readers), so Enter activates what is focused.
   el.addEventListener('focus', () => {
     if (menu.set(i)) render();
+    if (el.dataset.action === '1p') void loadGame(); // prefetch while the player is about to pick it
   });
   el.addEventListener('pointerenter', (e) => {
     if (e.pointerType !== 'mouse' || screen !== 'title') return;
@@ -136,17 +172,18 @@ function syncMute(): void {
 // Decide from the URL, not history.state: a hash typed by hand fires popstate with null state.
 window.addEventListener('popstate', () => {
   leaving = false;
-  showScreen(location.hash === COMING_SOON_HASH ? 'coming-soon' : 'title');
+  showScreen(screenForHash(location.hash));
 });
 
 watchGamepads(handle);
 syncMute();
 render();
 
-// Deep link / reload on #coming-soon: put the title underneath so BACK never leaves the site.
-if (location.hash === COMING_SOON_HASH) {
+// Deep link / reload on #coming-soon or #play: put the title underneath so BACK never leaves the site.
+const deepLink = screenForHash(location.hash);
+if (deepLink !== 'title') {
   history.replaceState({ screen: 'title' }, '', location.pathname + location.search);
-  openComingSoon();
+  openScreen(deepLink);
 }
 
 // Warm the Coming Soon image after the title has fully loaded, so it never competes with the LCP image.

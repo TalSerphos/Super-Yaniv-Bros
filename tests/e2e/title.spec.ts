@@ -36,7 +36,8 @@ test('stage keeps 16:9 and fits the viewport', async ({ page }) => {
   expect(box.height).toBeLessThanOrEqual(vp.height + 1);
 });
 
-for (const [i, label] of MENU.entries()) {
+// 1 PLAYER boards the game (tests/e2e/game.spec.ts); 2 PLAYERS still shows Coming Soon.
+for (const [i, label] of [[1, MENU[1]]] as const) {
   test(`keyboard: "${label}" opens Coming Soon and Escape returns`, async ({ page, isMobile }) => {
     test.skip(!!isMobile, 'keyboard flow is desktop-only');
     for (let k = 0; k < i; k++) await page.keyboard.press('ArrowDown');
@@ -67,10 +68,10 @@ test('arrow keys wrap around the menu', async ({ page, isMobile }) => {
 });
 
 test('browser back closes Coming Soon', async ({ page }) => {
-  await page.getByRole('button', { name: MENU[0], exact: true }).click();
+  await page.getByRole('button', { name: MENU[1], exact: true }).click();
   await expect(page.getByRole('heading', { name: 'COMING SOON!' })).toBeVisible();
   await page.goBack();
-  await expect(page.getByRole('button', { name: MENU[0], exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: MENU[1], exact: true })).toBeVisible();
 });
 
 test('mute toggle persists across reloads', async ({ page }) => {
@@ -112,7 +113,7 @@ test.describe('QA regressions', () => {
   });
 
   test('double BACK does not leave the site', async ({ page, baseURL }) => {
-    await item(page, 0).click();
+    await item(page, 1).click();
     await expect(heading(page)).toBeVisible();
     await page.getByRole('button', { name: /BACK/ }).dblclick();
     await expect(item(page, 0)).toBeVisible();
@@ -134,6 +135,7 @@ test.describe('QA regressions', () => {
   test('after clicking mute, Enter drives the menu again', async ({ page, isMobile }) => {
     test.skip(!!isMobile, 'keyboard flow is desktop-only');
     await page.locator('#mute').click();
+    await page.keyboard.press('ArrowDown');
     await page.keyboard.press('Enter');
     await expect(heading(page)).toBeVisible();
     await expect(page.locator('#mute')).toHaveAttribute('aria-pressed', 'true');
