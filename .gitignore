@@ -9,3 +9,6 @@ tests/fidelity/out/
 .DS_Store
 .qa-*.mjs
 .shot.tmp.mjs
+
+# Throwaway local scripts (QA/bot runs)
+*.tmp.mjs
