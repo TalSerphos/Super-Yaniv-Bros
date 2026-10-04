@@ -214,6 +214,23 @@ describe('Phase C: keep him tied', () => {
     expect(k.clock).toBe(clock);
   });
 
+  it('warns 2 s before a Houdini attempt', () => {
+    const k = new Knots(() => 0);
+    const keepTied = (dt: number) => {
+      k.strength = k.strength.map(() => k.max);
+      return k.tick(dt, true);
+    };
+    const ev = run(keepTied, KNOTS.houdiniEvery + 0.1).map((e) => e.type);
+    expect(ev.indexOf('houdiniSoon')).toBeGreaterThanOrEqual(0);
+    expect(ev.indexOf('houdiniSoon')).toBeLessThan(ev.indexOf('houdini'));
+  });
+
+  it('resumes the Tabuk clock where a slip left it (zip ties already dropped past 25:00)', () => {
+    const k = new Knots(() => 0, 20 * 60);
+    expect(k.clockText).toBe('20:00');
+    expect(k.tick(0.1, true).map((e) => e.type)).not.toContain('zipties');
+  });
+
   it('zip ties raise the cap and halve the wriggle', () => {
     const k = new Knots(() => 0);
     k.upgrade();

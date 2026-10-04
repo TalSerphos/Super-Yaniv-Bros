@@ -13,6 +13,8 @@ export interface OverlayAction {
   label: string;
   run(button: HTMLButtonElement): void;
   disabled?: boolean;
+  /** Gets the initial focus (default: the first enabled button). */
+  focus?: boolean;
 }
 
 export class Hud {
@@ -116,16 +118,16 @@ export class Hud {
       gauges += `<div class="ghud-bossname">${b.name}<span class="ghud-hp" data-testid="boss-hp" aria-label="${b.hp} of ${b.maxHp}">${pips}</span></div>`;
     }
     if (b.phase === 'B' && b.pitch !== undefined) {
-      // Attitude: −35° .. +10° across the bar, a green HOLD STEADY band around 0°.
-      const pos = (deg: number) => `${Math.max(0, Math.min(100, ((deg + 35) / 45) * 100)).toFixed(1)}%`;
+      // Attitude: −60° .. +10° across the bar, a green HOLD STEADY band around 0°.
+      const pos = (deg: number) => `${Math.max(0, Math.min(100, ((deg + 60) / 70) * 100)).toFixed(1)}%`;
       const band = b.band ?? 3;
       const steady = b.steady ? ` · HOLD ${Math.max(0, 5 - b.steady).toFixed(1)}s` : '';
       gauges += `<div class="ghud-control">CONTROL RESTORED <b data-testid="control">${Math.round((b.control ?? 0) * 100)}%</b>
         <span class="ghud-bar"><span style="width:${((b.control ?? 0) * 100).toFixed(0)}%"></span></span></div>
-        <div class="ghud-attitude" data-testid="pitch">
+        <div class="ghud-attitude-label" data-testid="pitch">PITCH ${Math.round(b.pitch)}°${steady}</div>
+        <div class="ghud-attitude">
           <span class="band" style="left:${pos(-band)};width:calc(${pos(band)} - ${pos(-band)})"></span>
           <span class="mark" style="left:${pos(b.pitch)}"></span>
-          <span class="txt">PITCH ${Math.round(b.pitch)}°${steady}</span>
         </div>`;
     }
     if (b.phase === 'C' && b.knots) {
@@ -153,15 +155,17 @@ export class Hud {
     this.overlay.className = `game-overlay ${className}`;
     this.overlay.innerHTML = `<div class="card">${html}<div class="card-actions"></div></div>`;
     const row = this.overlay.querySelector('.card-actions')!;
+    let focus: HTMLButtonElement | null = null;
     for (const a of actions) {
       const btn = document.createElement('button');
       btn.textContent = a.label;
       btn.disabled = !!a.disabled;
       btn.addEventListener('click', () => a.run(btn));
       row.appendChild(btn);
+      if (a.focus) focus = btn;
     }
     this.overlay.hidden = false;
-    row.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus({ preventScroll: true });
+    (focus ?? row.querySelector<HTMLButtonElement>('button:not(:disabled)'))?.focus({ preventScroll: true });
     return () => this.hideOverlay();
   }
 

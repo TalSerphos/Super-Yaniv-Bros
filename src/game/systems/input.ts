@@ -360,9 +360,11 @@ export class BossBot implements InputSource {
       into.down = pitch < 0; // level out and hold steady
       return;
     }
-    const swat = v.threats.some((t) => t.kind === 'bathbomb' && t.dx > -6 && t.dx < 70 && t.dy > -90 && t.dy < 6);
+    // A bath bomb on its way down toward us: let go of the yoke and swat it (it is lobbed high).
+    const incoming = v.threats.some((t) => t.kind === 'bathbomb' && t.dx > -20 && t.dx < 110 && t.dy > -140 && t.dy < 10);
+    const swat = v.threats.some((t) => t.kind === 'bathbomb' && t.dx > -6 && t.dx < 72 && t.dy > -110 && t.dy < 8);
     if ((v.bossHittable && pitch > -26) || swat) into.grab = mash;
-    else into.down = pitch < 2;
+    else if (!incoming) into.down = pitch < 2;
   }
 
   private helping = false;

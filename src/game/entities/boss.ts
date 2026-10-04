@@ -83,6 +83,7 @@ export class Bubble implements Enemy {
   readonly kind = 'bubble';
   live = true;
   private age = 0;
+  private readonly x0: number;
   private readonly s: Sprite;
 
   constructor(
@@ -90,7 +91,9 @@ export class Bubble implements Enemy {
     x: number,
     y: number,
     readonly vx: number,
+    private readonly range = Infinity,
   ) {
+    this.x0 = x;
     this.s = world.stage.physics.add.sprite(x, y, 'proj.bubble', 0).setScale(ART_SCALE).setDepth(9).play('proj.bubble:float');
     const body = this.s.body as Body;
     body.setSize(22, 22).setAllowGravity(false).setVelocity(vx, 0);
@@ -106,6 +109,7 @@ export class Bubble implements Enemy {
   step(dt: number): void {
     this.age += dt;
     this.s.y += Math.sin(this.age * 14) * 0.4; // a little wobble
+    if (Math.abs(this.s.x - this.x0) > this.range) return void this.hit(); // the jet runs out of push
     if (this.age > 3 || this.s.x < -40 || this.s.x > this.world.level.width + 40) this.destroy();
   }
 

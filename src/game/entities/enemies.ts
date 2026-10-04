@@ -29,8 +29,8 @@ export interface Enemy {
 const bodyBox = (b: Body) => ({ left: b.left, right: b.right, top: b.top, bottom: b.bottom });
 
 /** Launch velocity for a ballistic lob under the (tilted) cabin gravity that lands on (tx, ty) after T s. */
-export function lobVelocity(world: GameWorld, x0: number, y0: number, tx: number, ty: number): { x: number; y: number } {
-  const T = Phaser.Math.Clamp(Math.abs(tx - x0) / 170, 0.7, 1.2);
+export function lobVelocity(world: GameWorld, x0: number, y0: number, tx: number, ty: number, minT = 0.7): { x: number; y: number } {
+  const T = Phaser.Math.Clamp(Math.abs(tx - x0) / 170, minT, Math.max(1.2, minT));
   const g = world.gravity;
   return { x: (tx - x0 - 0.5 * g.x * T * T) / T, y: (ty - y0 - 0.5 * g.y * T * T) / T };
 }

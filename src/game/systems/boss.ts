@@ -324,6 +324,7 @@ export const KNOTS = {
 
 export type BossEventC =
   | { type: 'switch'; knot: number }
+  | { type: 'houdiniSoon' }
   | { type: 'houdini' }
   | { type: 'cable'; knot: number }
   | { type: 'zipties' }
@@ -343,7 +344,18 @@ export class Knots {
   private houdiniTimer = KNOTS.houdiniEvery;
   private cableTimer = KNOTS.cableEvery;
 
-  constructor(private readonly random: () => number = Math.random) {}
+  constructor(
+    private readonly random: () => number = Math.random,
+    clock: number = KNOTS.clockStart,
+  ) {
+    this.clock = clock;
+    this.zipDropped = clock <= KNOTS.zipAt;
+  }
+
+  /** He is about to try a Houdini (a 2-second warning). */
+  get houdiniSoon(): boolean {
+    return this.houdiniTimer <= 2;
+  }
 
   get max(): number {
     return this.zip ? KNOTS.zipMax : KNOTS.max;
@@ -376,11 +388,12 @@ export class Knots {
     const rate = KNOTS.wriggle * (this.zip ? 0.5 : 1);
     this.strength[this.target] -= rate * dt;
 
+    const before = this.houdiniTimer;
     this.houdiniTimer -= dt;
+    if (before > 2 && this.houdiniTimer <= 2) out.push({ type: 'houdiniSoon' });
     if (this.houdiniTimer <= 0) {
       this.houdiniTimer = KNOTS.houdiniEvery;
-      const loss = KNOTS.houdiniLoss * (this.zip ? 0.5 : 1);
-      this.strength = this.strength.map((s) => s - loss);
+      this.strength = this.strength.map((s) => s - KNOTS.houdiniLoss);
       out.push({ type: 'houdini' });
     }
     this.cableTimer -= dt;
@@ -413,9 +426,8 @@ export class Knots {
     this.strength[knot] = Math.min(this.max, this.strength[knot] + KNOTS.tighten);
   }
 
-  /** Picked up Zvika's zip ties: knots hold twice as long and every knot is cinched up. */
+  /** Picked up Zvika's zip ties: his wriggling works knots loose half as fast, and they can be cinched tighter. */
   upgrade(): void {
     this.zip = true;
-    this.strength = this.strength.map((s) => Math.min(KNOTS.zipMax, s + 50));
   }
 }

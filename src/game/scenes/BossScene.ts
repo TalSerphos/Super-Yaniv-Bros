@@ -28,6 +28,8 @@ export interface BossInit {
   god?: boolean;
   /** Phase B restarted after a slipped knot begins with the boss at this HP. */
   bossHp?: number;
+  /** Phase C resumed after a slip: the Tabuk clock keeps its progress (game seconds left). */
+  clock?: number;
   onHud(state: HudState): void;
   onEvent(e: GameEvent): void;
 }
@@ -37,7 +39,9 @@ const FLOOR = 304;
 const W = 640;
 const SEATS = [144, 400]; // captain's and first officer's seat (left edge, 48 wide)
 const YOKE_X = 320;
-const YOKE_ZONE = { left: 282, right: 312 };
+/** Stand here (left of and at the yoke) to pull it. ▼ well away from it calls Assaf instead. */
+const YOKE_ZONE = { left: 280, right: 332 };
+const ASSAF_CALL_DISTANCE = 56;
 const BOSS_A = { min: 470, max: 580, home: 540 };
 const BOSS_B_X = 380;
 const BOSS_C_X = 320;
@@ -49,13 +53,17 @@ const CAPTAIN_X = 572;
 const ZIP_X = 170;
 /** Boss body (world units): a hulking 1.6× Yaniv. */
 const BOSS_BODY = { w: 56, h: 96 };
+/** Jet bubbles fly at shin-to-hip height (a seat-top stance clears them) and fizzle out after this range. */
+const BUBBLE_Y = FLOOR - 34;
+const BUBBLE_RANGE = 260;
+/** Standable seatback tops (the pilot seats face right, the backrest is on their left). */
+const SEAT_TOP = { dx: 2, w: 24, y: FLOOR - 58 };
 
 /** The arena as a level grid: floor, two seat tops (one-way) in the cockpit, nothing else. */
 function arenaGrid(phase: BossData['phase']): string[] {
   const rows = Array.from({ length: 22 }, () => Array<string>(W / 16).fill('.'));
   for (let r = 19; r < 22; r++) rows[r].fill('#');
-  if (phase !== 'C') for (const x of SEATS) for (let c = x / 16; c < x / 16 + 3; c++) rows[15][c] = '-';
-  rows[18][4] = 'P';
+  rows[18][phase === 'C' ? 12 : 14] = 'P'; // clear of the Bros. at the door
   rows[18][38] = 'X';
   return rows.map((r) => r.join(''));
 }
@@ -131,8 +139,9 @@ export class BossScene extends Phaser.Scene implements GameWorld {
     const terrain = this.physics.add.staticGroup();
     for (const r of this.level.solids) terrain.add(this.add.zone(r.x + r.w / 2, r.y + r.h / 2, r.w, r.h));
     const oneWays = this.physics.add.staticGroup();
+    this.level.oneWays = this.phase === 'C' ? [] : SEATS.map((x) => ({ x: x + SEAT_TOP.dx, y: SEAT_TOP.y, w: SEAT_TOP.w, h: 6 }));
     for (const r of this.level.oneWays) {
-      const z = this.add.zone(r.x + r.w / 2, r.y + r.h / 2 + 10, r.w, 6); // the seat-top cushion, 10 below the seat's top edge
+      const z = this.add.zone(r.x + r.w / 2, r.y + r.h / 2, r.w, r.h);
       oneWays.add(z);
       const body = z.body as Phaser.Physics.Arcade.StaticBody;
       body.checkCollision.down = body.checkCollision.left = body.checkCollision.right = false;
@@ -146,12 +155,14 @@ export class BossScene extends Phaser.Scene implements GameWorld {
 
     if (this.phase === 'A') this.a = new PhaseA();
     if (this.phase === 'B') this.b = new PitchControl(data.bossHp ?? BOSS_HP);
-    if (this.phase === 'C') this.c = new Knots(() => this.rng.frac());
+    if (this.phase === 'C') this.c = new Knots(() => this.rng.frac(), data.clock);
     this.createCast();
 
     const cam = this.cameras.main;
     cam.setZoom(ZOOM);
-    cam.centerOn(W / 2, FLOOR + 50 - VIEW_H / 2);
+    // On touch devices the floor sits higher, so the on-screen buttons cover the floor, not the fight.
+    const touch = window.matchMedia?.('(pointer: coarse)').matches;
+    cam.centerOn(W / 2, FLOOR + (touch ? 0 : 50) - VIEW_H / 2);
     this.applyTilt(true); // always set gravity: the arcade world starts with none
     if (this.phase !== 'C') this.createAlarmLight();
 
@@ -347,7 +358,7 @@ export class BossScene extends Phaser.Scene implements GameWorld {
   private poke(): void {
     const p = this.player;
     if (this.phase === 'C') return;
-    if (this.a?.mode === 'stagger' || this.a?.mode === 'choke') return; // GRAB is for the chokehold now
+    if (this.a?.mode === 'stagger' || this.a?.mode === 'choke') return; // GRAB is for the chokehold (stepA)
     this.sfx('thwop');
     const reach = this.add.rectangle(p.x + p.facing * 22, p.y - 30, 18, 8, 0xd61f1f).setDepth(11);
     this.tweens.add({ targets: reach, x: reach.x + p.facing * 12, alpha: 0, duration: 160, onComplete: () => reach.destroy() });
@@ -375,12 +386,12 @@ export class BossScene extends Phaser.Scene implements GameWorld {
     this.enemies = this.enemies.filter((e) => e.live);
   }
 
-  /** Lob something at Yaniv from the boss's hand; never point-blank. */
+  /** Lob something at Yaniv from the boss's raised hand; never point-blank, always a readable arc. */
   private lob(kind: string, key: string, bounces = 1): void {
     const p = this.player;
-    if (Math.abs(p.x - this.bossX) < 64) return;
-    const [x0, y0] = [this.bossX - 24, FLOOR - 100];
-    const v = lobVelocity(this, x0, y0, p.x, p.y - 24);
+    const [x0, y0] = [this.bossX - 16, FLOOR - 120];
+    if (Math.abs(p.x - x0) < 40) return;
+    const v = lobVelocity(this, x0, y0, p.x, p.y - 24, 1.1);
     this.enemies.push(new Lobbed(this, kind, key, x0, y0, v.x, v.y, bounces));
     this.sfx('bump');
   }
@@ -408,7 +419,7 @@ export class BossScene extends Phaser.Scene implements GameWorld {
       this.jetTimer -= dt;
       if (this.jetTimer <= 0) {
         this.jetTimer = 0.12;
-        this.enemies.push(new Bubble(this, this.bossX - 44, FLOOR - 50, -230));
+        this.enemies.push(new Bubble(this, this.bossX - 44, BUBBLE_Y, -230, BUBBLE_RANGE));
       }
     }
     if (a.jetWindup) this.bossFrame('jetWind');
@@ -420,6 +431,7 @@ export class BossScene extends Phaser.Scene implements GameWorld {
     if (a.mode === 'stagger') {
       // GRAB from behind (he faces left, so "behind" is to his right).
       const behind = p.x > this.bossX + 8 && p.x - this.bossX < 64 && p.grounded;
+      if (!behind && this.edges.pressed('grab') && Math.abs(p.x - this.bossX) < 90) this.popText(this.bossX, FLOOR - 130, 'FROM BEHIND!');
       if (behind && this.edges.pressed('grab') && a.grabFromBehind()) {
         p.pose = 'choke';
         p.placeAt(this.bossX + 30, FLOOR);
@@ -444,7 +456,7 @@ export class BossScene extends Phaser.Scene implements GameWorld {
           this.lob('binder', 'proj.binder');
           break;
         case 'duck':
-          this.enemies.push(new Ducky(this, W - 30, FLOOR));
+          this.enemies.push(new Ducky(this, this.bossX - 40, FLOOR)); // out from under his robe
           this.sfx('bump');
           break;
         case 'lean':
@@ -493,10 +505,10 @@ export class BossScene extends Phaser.Scene implements GameWorld {
     const atYoke = p.x >= YOKE_ZONE.left && p.x <= YOKE_ZONE.right && p.grounded;
     const pulling = atYoke && this.edges.current.down && p.hurtTimer <= 0;
     p.pose = pulling ? 'pull' : null;
-    if (pulling) p.sprite.setFlipX(true); // leaning back from the yoke
+    if (pulling) p.sprite.setFlipX(false); // facing the yoke (and Jacuzzam behind it), leaning back
     this.onB(b.tick(dt, pulling));
-    // ▼ away from the yoke calls Assaf to pin his arms.
-    if (!atYoke && this.edges.pressed('down')) this.onB(b.pin());
+    // ▼ well away from the yoke calls Assaf to pin his arms.
+    if (Math.abs(p.x - YOKE_X) > ASSAF_CALL_DISTANCE && this.edges.pressed('down')) this.onB(b.pin());
 
     this.slapTimer = Math.max(0, this.slapTimer - dt);
     if (b.subdued || b.pinned > 0) this.bossFrame('held');
@@ -504,7 +516,8 @@ export class BossScene extends Phaser.Scene implements GameWorld {
     else if (b.invulnerable > 0.6) this.bossFrame('hit');
     else if (!this.boss.anims.isPlaying) this.boss.play('boss.jacuzzam:idle');
     this.yoke?.setFrame(frameIndex('w6.yoke', pulling ? 'pulled' : this.slapTimer > 0 ? 'pushed' : 'neutral'));
-    this.touchBoss(!b.subdued && b.pinned <= 0, () => this.onB(b.hit()).length > 0);
+    // Landing on his head is always a safe bounce; it only counts as a hit while he is open.
+    this.touchBoss(!b.subdued && b.pinned <= 0, () => (this.onB(b.hit()), true));
   }
 
   private onB(events: BossEventB[]): BossEventB[] {
@@ -518,15 +531,18 @@ export class BossScene extends Phaser.Scene implements GameWorld {
           this.warn();
           break;
         case 'bomb':
-          this.lob('bathbomb', 'proj.bathbomb', 3);
+          // Wind-up first (arm raised, a fizz), then a high lob: time to let go of the yoke and swat or jump.
+          this.bossFrame('throw');
+          this.sfx('warn');
+          this.time.delayedCall(450, () => !this.finished && !b.subdued && this.lob('bathbomb', 'proj.bathbomb', 3));
           break;
         case 'pinned':
           if (e.on) {
-            this.assaf?.setFrame(frameIndex('npc.assaf', 'pin'));
-            this.tweens.add({ targets: this.assaf, x: this.bossX + 34, duration: 300 });
+            this.assaf?.setFrame(frameIndex('npc.assaf', 'pin')).setFlipX(true).setDepth(7);
+            this.tweens.add({ targets: this.assaf, x: this.bossX + 22, duration: 300 });
             this.popText(this.bossX, FLOOR - 130, 'ASSAF: FULL COVERAGE!');
           } else if (!b.subdued) {
-            this.assaf?.setFrame(frameIndex('npc.assaf', 'idle'));
+            this.assaf?.setFrame(frameIndex('npc.assaf', 'idle')).setFlipX(false).setDepth(4);
             this.tweens.add({ targets: this.assaf, x: DOOR_X, duration: 400 });
           }
           break;
@@ -535,8 +551,8 @@ export class BossScene extends Phaser.Scene implements GameWorld {
           this.addScore(1000, this.bossX, FLOOR - 120);
           if (e.hp <= 0) {
             // Out of fight: Assaf holds him down for good. Now level the plane.
-            this.assaf?.setFrame(frameIndex('npc.assaf', 'pin'));
-            this.tweens.add({ targets: this.assaf, x: this.bossX + 34, duration: 300 });
+            this.assaf?.setFrame(frameIndex('npc.assaf', 'pin')).setFlipX(true).setDepth(7);
+            this.tweens.add({ targets: this.assaf, x: this.bossX + 22, duration: 300 });
             this.popText(this.bossX, FLOOR - 130, 'NOW LEVEL HER OUT!');
             for (const en of this.enemies) en.hit('plunger');
           }
@@ -579,7 +595,12 @@ export class BossScene extends Phaser.Scene implements GameWorld {
   private onC(e: BossEventC): void {
     const c = this.c!;
     switch (e.type) {
+      case 'houdiniSoon':
+        this.popText(this.bossX, FLOOR - 110, "HE'S PLANNING SOMETHING!");
+        this.boss.anims.timeScale = 3;
+        break;
       case 'houdini':
+        this.boss.anims.timeScale = 1;
         this.cameras.main.shake(500, 0.01);
         this.popText(this.bossX, FLOOR - 110, 'HOUDINI ATTEMPT!');
         this.warn();
@@ -605,7 +626,7 @@ export class BossScene extends Phaser.Scene implements GameWorld {
         this.bossFrame('stagger');
         this.sfx('hurt');
         this.pushHud();
-        this.time.delayedCall(700, () => this.cfg.onEvent({ type: 'slip' }));
+        this.time.delayedCall(700, () => this.cfg.onEvent({ type: 'slip', clock: c.clock }));
         break;
       case 'won':
         this.win(5000 + Math.round(c.captain) * 10);
@@ -667,16 +688,23 @@ export class BossScene extends Phaser.Scene implements GameWorld {
     }
     if (this.b) {
       const atYoke = p.x >= YOKE_ZONE.left && p.x <= YOKE_ZONE.right;
-      if (this.b.subdued) return this.b.inBand ? 'HOLD STEADY!' : atYoke ? '▼ LEVEL HER OUT' : 'GET TO THE YOKE!';
+      if (this.b.subdued) {
+        if (this.b.inBand) return 'HOLD STEADY!';
+        if (this.b.pitch > 0) return 'LET GO OF ▼: EASE THE NOSE DOWN';
+        return atYoke ? '▼ LEVEL HER OUT' : 'GET TO THE YOKE!';
+      }
       if (this.b.open) return 'PLUNGE HIS GOGGLES!';
       if (this.b.pitch < -20) return atYoke ? '▼ PULL UP!' : 'PULL UP! GET TO THE YOKE';
       if (this.b.assistReady && !atYoke) return '▼ CALL ASSAF';
       return undefined;
     }
     const c = this.c!;
-    if (c.captain < 30) return '▼ HELP SHOTA WITH THE CAPTAIN';
+    // A slipping knot loses the phase; a fading Captain only stops the clock, so knots come first.
+    const weakest = c.strength.indexOf(Math.min(...c.strength));
+    if (c.strength[weakest] < c.max * 0.35) return `GRAB: TIGHTEN THE ${KNOTS.names[weakest]}!`;
+    if (c.captain < 30) return c.captain <= 0 ? 'CLOCK STOPPED: ▼ HELP SHOTA!' : '▼ HELP SHOTA WITH THE CAPTAIN';
     if (this.zip) return 'GRAB THE ZIP TIES!';
-    if (c.strength[c.target] < c.max * 0.35) return `TIGHTEN THE ${KNOTS.names[c.target]}!`;
+    if (c.houdiniSoon) return "HE'S PLANNING SOMETHING!";
     return undefined;
   }
 
@@ -703,7 +731,7 @@ export class BossScene extends Phaser.Scene implements GameWorld {
       score: this.score,
       alt: this.altitude?.format() ?? '',
       altLabel: this.c ? `TABUK IN ${this.c.clockText}` : undefined,
-      bank: Math.round(this.tiltDeg),
+      bank: this.b ? Math.round(Math.max(0, -this.b.pitch)) : Math.round(this.tiltDeg),
       bankWarning: this.leanTilt > 0,
       label: `${this.cfg.level.id}  ${this.cfg.level.name}`,
       boss: this.bossHud(),

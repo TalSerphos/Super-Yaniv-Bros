@@ -54,7 +54,7 @@ export type GameEvent =
   | { type: 'clear'; run: RunState; seconds: number; door: boolean }
   | { type: 'gameover'; reason: 'hearts' | 'altitude'; score: number }
   /** World 6 Phase C: a knot fully slipped, back to Phase B. */
-  | { type: 'slip' };
+  | { type: 'slip'; clock: number };
 
 export interface LevelInit {
   level: LevelData;

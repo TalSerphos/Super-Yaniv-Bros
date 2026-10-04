@@ -95,10 +95,10 @@
 .ghud-bar > span { display: block; height: 100%; background: #ffb347; }
 .ghud-bar.heart > span { background: #e5262b; }
 .ghud-control b { color: var(--gold); font-weight: normal; }
-.ghud-attitude { position: relative; width: 26cqw; height: 2.6cqh; background: #26304a; border: 0.12cqw solid #3a4767; }
+.ghud-attitude-label { font-size: 0.95cqw; }
+.ghud-attitude { position: relative; width: 26cqw; height: 1.8cqh; background: #26304a; border: 0.12cqw solid #3a4767; }
 .ghud-attitude .band { position: absolute; top: 0; bottom: 0; background: rgba(74, 222, 128, 0.55); }
 .ghud-attitude .mark { position: absolute; top: -0.4cqh; bottom: -0.4cqh; width: 0.5cqw; margin-left: -0.25cqw; background: #fff8e7; }
-.ghud-attitude .txt { position: absolute; inset: 0; display: grid; place-items: center; font-size: 0.95cqw; }
 .ghud-knots { display: flex; gap: 1.4cqw; }
 .ghud-knots .knot { display: flex; flex-direction: column; align-items: center; gap: 0.4cqh; color: #c9c2b4; }
 .ghud-knots .knot .ghud-bar { width: 9cqw; }
@@ -107,14 +107,15 @@
 .ghud-prompt {
   position: absolute;
   left: 50%;
-  bottom: 22cqh;
+  top: 31cqh; /* under the boss panel, above the fight */
   transform: translateX(-50%);
-  font-size: 2.4cqw;
+  font-size: 2.2cqw;
   color: #ffd23f;
   text-shadow: 0.2cqw 0.2cqw 0 #8a1d0a;
   white-space: nowrap;
-  animation: warn-blink 0.8s steps(1) infinite;
+  animation: prompt-pulse 0.5s ease-in-out infinite alternate; /* always readable, never blinks out */
 }
+@keyframes prompt-pulse { to { opacity: 0.6; transform: translateX(-50%) scale(0.96); } }
 .ghud-prompt[hidden] { display: none; }
 
 /* Touch controls: only on touch-first devices. */
@@ -181,7 +182,8 @@
   font: 1.5cqw/1 var(--font-hud);
   cursor: pointer;
 }
-.card-actions button:hover, .card-actions button:focus-visible { color: var(--gold); outline: 0.2cqw dashed var(--gold); outline-offset: 0.3cqw; }
+.card-actions button:hover { color: var(--gold); }
+.card-actions button:focus-visible { color: var(--gold); outline: 0.2cqw dashed var(--gold); outline-offset: 0.3cqw; }
 .game-overlay.intro { background: #0b0816; }
 .game-overlay.intro .card { background: none; border: 0; box-shadow: none; }
 

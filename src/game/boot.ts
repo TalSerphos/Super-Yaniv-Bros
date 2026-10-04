@@ -52,6 +52,8 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
   let current: Stage = levelById(opts.level ?? '') ?? STAGES[0];
   /** Boss HP to start Phase B with (half after a slipped knot in Phase C). */
   let bossHp: number | undefined;
+  /** The Tabuk clock kept across a slip (Phase C → B → C). */
+  let tabukClock: number | undefined;
   let run: RunState = freshRun(RULES.hearts);
   /** Run state at the start of the current level (what RETRY goes back to). */
   let runAtStart: RunState = run;
@@ -104,6 +106,7 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
           run: () => {
             run = { ...run, hearts: Math.max(run.hearts, RULES.hearts) }; // every level starts with at least 3
             bossHp = undefined;
+            if (!isBoss(next!) || next.phase !== 'C') tabukClock = undefined;
             playLevel(next!);
           },
         });
@@ -167,6 +170,7 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
               run: () => {
                 run = { ...run, hearts: Math.max(run.hearts, RULES.hearts) };
                 bossHp = Math.ceil(BOSS_HP / 2);
+                tabukClock = e.clock;
                 playLevel(phaseB);
               },
             },
@@ -207,14 +211,16 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
         music.stop();
         game.scene.stop(activeKey);
         run = freshRun(RULES.hearts);
-        bossHp = undefined;
+        bossHp = tabukClock = undefined;
         playLevel(l);
       },
     }));
+    // One column per world (4 rows): World 6's fourth slot is the Tabuk Approach, coming next.
+    const soon = { label: '6-4 TABUK · SOON', disabled: true, run: () => undefined };
     hud.showOverlay(
       `<p class="world">FLIGHT 1073</p><h2>THE MAP</h2>
        <p class="sub">${WORLDS.map((w) => `WORLD ${w.id}: ${w.name}`).join(' · ')}</p>`,
-      [...levels, ...(fromPause ? [{ label: 'RESUME', run: resume }] : []), { label: 'TITLE', run: opts.onQuit }],
+      [...levels, soon, ...(fromPause ? [{ label: 'RESUME', run: resume, focus: true }] : []), { label: 'TITLE', run: opts.onQuit }],
       'map',
     );
   }
@@ -242,7 +248,8 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
       const onHud = (s: HudState) => hud.update(s);
       if (isBoss(level)) {
         activeKey = 'boss';
-        const init: BossInit = { level, run: { ...run }, inputs, bot: bossBot, god: opts.god, bossHp, onHud, onEvent };
+        const clock = level.phase === 'C' ? tabukClock : undefined;
+        const init: BossInit = { level, run: { ...run }, inputs, bot: bossBot, god: opts.god, bossHp, clock, onHud, onEvent };
         if (game.scene.getScene('boss')) game.scene.start('boss', init);
         else game.scene.add('boss', BossScene, true, init);
         music.play(level.phase === 'C' ? 'calm' : 'boss');

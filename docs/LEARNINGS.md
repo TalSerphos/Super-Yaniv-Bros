@@ -136,3 +136,28 @@ Tuning from the same pass:
 **Testing**
 - Edge-detected buttons need a released frame between presses. A synthetic "mash" that presses again in the frame right after a release reads as still held, so every other tap is lost. Mash inside the page (`dispatchEvent` + `requestAnimationFrame`) with a gap frame, and wait for each tap to count: test-side round trips are too slow for a 4-second window.
 - The bot needs hysteresis for juggling tasks. Helping Shota until the Captain was just above the threshold made it bounce between Shota and the knots and lose both. Help until 90%, unless a knot is about to slip.
+
+**QA agent (Stage 4):** 11 bugs, all fixed.
+- **Controls**
+  - After pulling the yoke Yaniv faced away, so GRAB poked backwards.
+  - The yoke zone was offset from the yoke art, and ▼ just beside the zone spent Assaf.
+- **Hazards**
+  - Bath bombs were effectively point-blank at the yoke. They now have a wind-up and a 1.1 s minimum arc.
+  - Jet bubble streams were a wall nobody could dodge. They now fly low with a 260-unit range, so you can clear them from a seat top or by backing off.
+  - Ducks spawned in the corner behind the boss. They now come out from under his robe.
+- **Prompts**
+  - The prompt said "▼" when the pitch was above the band.
+  - Phase C put helping Shota ahead of a slipping knot.
+  - The prompt covered the yoke.
+  - The prompt blinked out half the time.
+- **Layout**
+  - Yaniv hovered over the seat cushion. Seatback tops are now the standing platforms.
+  - The map from pause focused 5-1 (RESUME now) and left TITLE alone in a column.
+  - On phones the touch buttons covered actors, so the camera now sits higher on touch devices.
+
+Feel changes from the same pass:
+- Stomps in 6-2 never hurt.
+- Houdini gets a 2 s warning.
+- Zip ties no longer refill the knots.
+- The Tabuk clock survives a slip.
+- The attitude bar shows −60..+10°, with its label outside the bar.
