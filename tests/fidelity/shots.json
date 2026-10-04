@@ -22,8 +22,8 @@
     "waitMs": 5000,
     "reference": "art/reference/w6-cockpit.webp",
     "gate": 5,
-    "notes": "World 6 boss fight (6-2 FIGHT + FLY): the cockpit with the windscreen over a desert coastline, overhead and instrument panels, two pilot seats, the yoke in the middle; Yaniv at the yoke, Jacuzzam (big co-pilot, dark uniform, goggles, cap) on the right, Assaf and Zvika by the door on the left. HUD: hearts, nut counter, CONTROL RESTORED bar, phase tracker CONTAIN / LEVEL / HANDOFF, ALT. First boss pass: judge whether it reads as the same scene and style.",
-    "minPalette": 0.5,
+    "notes": "World 6 boss fight (6-2 FIGHT + FLY): the cockpit with the windscreen over a desert coastline, overhead and instrument panels, two pilot seats, the yoke in the middle; Yaniv at the yoke, Jacuzzam (big co-pilot, dark uniform, goggles, cap) on the right, Assaf and Zvika by the door on the left. HUD: hearts, nut counter, CONTROL RESTORED bar, phase tracker CONTAIN / LEVEL / HANDOFF, ALT. First boss pass: judge whether it reads as the same scene and style. The capture lands at a varying moment of the dive (the cabin rolls with the pitch), so its palette floor is lower than the aisle's.",
+    "minPalette": 0.4,
     "minComposition": 0.0
   }
 ]
