@@ -225,9 +225,12 @@ test.describe('QA regressions', () => {
     await expect.poll(async () => (await state(page))!.y, { timeout: 10_000 }).toBeLessThan(316); // airborne (the block stops the head ~14 units up)
     await expect.poll(async () => (await state(page))!.y, { timeout: 10_000 }).toBe(320); // landed after the bump
     await page.keyboard.up('Space');
+    // Step just past the block and wait: the hummus slides right off the block and into him. (Chasing it is a
+    // race: at full speed he gets ahead before it drops to the floor, and it never catches up.)
     await page.keyboard.down('ArrowRight');
-    await expect.poll(async () => (await state(page))!.power, { timeout: 20_000 }).toBe('big');
+    await expect.poll(async () => (await state(page))!.x, { timeout: 10_000 }).toBeGreaterThan(530);
     await page.keyboard.up('ArrowRight');
+    await expect.poll(async () => (await state(page))!.power, { timeout: 20_000 }).toBe('big');
   });
 
   test('after the galley checkpoint, GAME OVER offers RETRY FROM GALLEY', async ({ page }) => {
