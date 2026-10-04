@@ -247,11 +247,18 @@ test.describe('QA regressions', () => {
     test.setTimeout(120_000);
     await page.goto('./?level=5-2#play');
     await waitForLevel(page, '5-2');
-    // Past 5-2's galley (column 142, x 2272), just before the third hatch (x 2400-2464): walk in until out of hearts.
-    await page.evaluate(`(${syb})().clearEnemies(); (${syb})().teleport(2380, 320)`);
-    await page.keyboard.down('ArrowRight');
-    await expect(page.getByRole('heading', { name: 'GAME OVER' })).toBeVisible({ timeout: 90_000 });
-    await page.keyboard.up('ArrowRight');
+    // Past 5-2's galley (column 142, x 2272), just before the third hatch (x 2400-2464): walk in until out of
+    // hearts. (A key held through a respawn is ignored, so press it again for each fall.)
+    const over = page.getByRole('heading', { name: 'GAME OVER' });
+    for (let i = 0; i < 3 && !(await over.isVisible()); i++) {
+      const before = (await state(page))!.hurts.length;
+      await page.evaluate(`(${syb})().clearEnemies(); (${syb})().teleport(2380, 320)`);
+      await page.keyboard.down('ArrowRight');
+      await expect.poll(async () => (await over.isVisible()) || (await state(page))!.hurts.length > before, { timeout: 20_000 }).toBe(true);
+      await page.keyboard.up('ArrowRight');
+      await page.waitForTimeout(700); // the respawn's control lock
+    }
+    await expect(over).toBeVisible({ timeout: 20_000 });
     await page.getByRole('button', { name: 'RETRY FROM GALLEY' }).click();
     await expect.poll(async () => (await state(page))?.hearts, { timeout: 20_000 }).toBe(3);
     const s = (await state(page))!;

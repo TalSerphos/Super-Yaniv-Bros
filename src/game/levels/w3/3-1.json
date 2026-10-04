@@ -2,7 +2,7 @@
  "id": "3-1",
  "name": "SECURITY LINE",
  "theme": "terminal",
- "timer": 160,
+ "timer": 120,
  "beltSpeed": 50,
  "intro": "Through security! Belts carry you; the metal detectors know a plumber when they see one.",
  "clear": {

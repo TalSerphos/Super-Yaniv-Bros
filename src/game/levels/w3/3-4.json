@@ -2,7 +2,7 @@
  "id": "3-4",
  "name": "GATE CLOSING",
  "theme": "gate",
- "timer": 75,
+ "timer": 50,
  "beltSpeed": 80,
  "intro": "Final call for Flight 1073! Gate B32 is closing. RUN!",
  "tilt": [

@@ -439,6 +439,18 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
       if (r.kind === 'belt') {
         const belt = this.level.belts.find((b) => b.x === r.x && b.y === r.y)!;
         this.beltArt.push({ sprite: art, speed: belt.speed });
+        // Travelators: yellow chevrons show which way they run, and steel caps mark where they end.
+        if (r.y === this.floorTop) {
+          const g = this.add.graphics().setDepth(1);
+          const dir = Math.sign(belt.speed);
+          g.fillStyle(0xffd23f, 0.9);
+          for (let x = r.x + 40; x < r.x + r.w - 24; x += 80) {
+            const tip = x + dir * 5;
+            g.fillTriangle(tip, r.y + 8, tip - dir * 8, r.y + 3, tip - dir * 8, r.y + 13);
+          }
+          g.fillStyle(0x3a3f4a, 1).fillRect(r.x, r.y - 2, 4, 18).fillRect(r.x + r.w - 4, r.y - 2, 4, 18);
+          g.fillStyle(0xd9dde3, 1).fillRect(r.x, r.y - 2, 4, 2).fillRect(r.x + r.w - 4, r.y - 2, 4, 2);
+        }
         // Security trays ride the raised conveyors (they vanish into the X-ray machines).
         if (r.y < this.floorTop) {
           for (let x = r.x + 6; x < r.x + r.w - 30; x += 58) {
@@ -493,7 +505,11 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
   private createForeground(): void {
     if (this.airport) {
       // Blue queue-barrier tape on chrome posts along the front, as in the concept art (not over the gaps).
-      for (const r of this.level.solids.filter((k) => (k.kind === 'floor' || k.kind === 'belt') && k.y === this.floorTop)) {
+      const ends = [
+        { x: -VIEW_W, w: VIEW_W },
+        { x: this.level.width, w: VIEW_W },
+      ];
+      for (const r of [...this.level.solids.filter((k) => (k.kind === 'floor' || k.kind === 'belt') && k.y === this.floorTop), ...ends]) {
         this.add.tileSprite(r.x, this.floorTop + FLOOR_SLAB + 2, r.w, 32, 'w3.rope').setOrigin(0, 1).setTileScale(ART_SCALE * 1.5).setDepth(15);
       }
       return;
@@ -544,6 +560,14 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
       // A boarding gate door; in 3-3 it stays shut while Mr. Spritz guards the duty-free.
       const shut = !!this.level.mascot;
       this.gate = this.add.sprite(e.x, e.y + EXIT.h, 'w3.gate', frameIndex('w3.gate', shut ? 'closed' : 'open')).setOrigin(0, 1).setScale(ART_SCALE);
+      if (this.cfg.level.theme === 'gate') {
+        // Gate B32 (in-engine lettering: the art has none).
+        this.add.rectangle(e.x + EXIT.w / 2, e.y - 14, 40, 16, 0x101826).setStrokeStyle(1, 0xffd23f);
+        this.add
+          .text(e.x + EXIT.w / 2, e.y - 14, 'B32', { fontFamily: '"Press Start 2P", monospace', fontSize: '16px', color: '#ffd23f' })
+          .setOrigin(0.5)
+          .setScale(0.5);
+      }
     } else if (this.ground) {
       // The gate is shut while 7-1's drains are still clogged.
       const shut = this.level.drains.length > 0;
@@ -564,6 +588,7 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
       this.add.image(d.x, d.y, 'w3.detector').setOrigin(0.5, 1).setScale(ART_SCALE).setDepth(11);
       this.detectors.push({ x: d.x, beeped: false });
     }
+    // Behind Yaniv (in front, the taller machine hid him completely as he rode through); trays pass behind it.
     for (const x of this.level.xrays) this.add.image(x.x, x.y + 4, 'w3.xray').setOrigin(0.5, 1).setScale(ART_SCALE).setDepth(7);
     if (gateAgent) this.gateAgent = this.add.sprite(gateAgent.x, gateAgent.y, 'npc.gateagent', 0).setOrigin(0.5, 1).setScale(ART_SCALE).setDepth(5);
     if (president) this.president = this.add.sprite(president.x, president.y, 'npc.president', 0).setOrigin(0.5, 1).setScale(ART_SCALE).setDepth(5);
@@ -827,6 +852,8 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
       if (tx > x + w - 30) tx = x;
       else if (tx < x) tx = x + w - 30;
       t.sprite.x = tx;
+      // Fade in and out at the belt's ends instead of jumping from one end to the other.
+      t.sprite.setAlpha(Phaser.Math.Clamp(Math.min(tx - x, x + w - 30 - tx) / 16, 0, 1));
     }
   }
 
@@ -1030,6 +1057,7 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     if (this.finished) return;
     p.placeAt(p.lastSafe.x, p.lastSafe.y - 1);
     p.controlLock = 0.6;
+    p.heldThroughRespawn = true;
     this.cameras.main.flash(200, 20, 16, 34);
   }
 

@@ -64,7 +64,7 @@ def l31():
     l.put(FEET, 196, 'd'); l.put(FEET, 200, 'u'); l.put(BLOCKROW, 206, 'U')
     l.nuts(17, range(210, 218, 2))
     l.put(FEET, 222, 'X')
-    return l.dump({"id": "3-1", "name": "SECURITY LINE", "theme": "terminal", "timer": 160, "beltSpeed": 50,
+    return l.dump({"id": "3-1", "name": "SECURITY LINE", "theme": "terminal", "timer": 120, "beltSpeed": 50,
                    "intro": "Through security! Belts carry you; the metal detectors know a plumber when they see one.",
                    "clear": {"title": "SECURITY CLEAR!", "sub": "The plunger was cleared as a hand-held tool."}})
 
@@ -85,7 +85,7 @@ def l32():
     l.travelator(186, 210, '<'); l.put(FEET, 206, 'c')
     l.nuts(17, range(212, 220, 2))
     l.put(FEET, 222, 'X')
-    return l.dump({"id": "3-2", "name": "TRAVELATOR RUSH", "theme": "terminal", "timer": 120, "beltSpeed": 70,
+    return l.dump({"id": "3-2", "name": "TRAVELATOR RUSH", "theme": "terminal", "timer": 100, "beltSpeed": 70,
                    "intro": "Ride the moving walkways, and mind the gap!",
                    "clear": {"title": "STAGE CLEAR!", "sub": "Gate B32 is that way. Duty-free first, of course."}})
 
@@ -96,19 +96,20 @@ def l33():
     l.put(FEET, 32, 'S')                                     # perfume cannons fire Duty-Free Bills to the left
     l.counter(40, 43); l.nuts(16, range(40, 44))
     l.put(BLOCKROW, 50, '?'); l.put(FEET, 58, 'C')
-    l.counter(66, 69); l.put(17, 68, 'S')                    # a cannon up on a display counter
+    l.counter(66, 69); l.put(FEET, 74, 'S')                  # a cannon behind a display counter (shots at chest height)
     l.put(BLOCKROW, 78, 'H'); l.put(FEET, 88, 'C')
     l.shelf(16, 96, 99, nuts=True)
     l.put(FEET, 108, 'S'); l.put(FEET, 118, 'G')
     l.counter(126, 129); l.put(BLOCKROW, 134, 'A')
     l.put(FEET, 144, 'S'); l.put(FEET, 152, 'C')
-    l.counter(158, 161); l.put(17, 160, 'S'); l.nuts(17, range(164, 170, 2))
+    l.counter(158, 161); l.put(FEET, 166, 'S'); l.nuts(16, range(158, 162))
+    l.put(FEET, 174, 'G')                                    # a checkpoint just before Mr. Spritz's stage
     # Mr. Spritz's stage: two low display shelves to jump from (one-way: he waddles under them) and the gate
     # behind him; he follows Yaniv right up to the gate.
     l.shelf(17, 184, 187, nuts=True); l.shelf(17, 206, 209)
     l.put(FEET, 200, 'm')
     l.put(FEET, 222, 'X')
-    return l.dump({"id": "3-3", "name": "DUTY-FREE", "theme": "dutyfree", "timer": 150,
+    return l.dump({"id": "3-3", "name": "DUTY-FREE", "theme": "dutyfree", "timer": 120,
                    "intro": "Duty-Free Bills fly at chest height: jump, stomp or plunge them. Beware the mascot!",
                    "clear": {"title": "THANK YOU YANIV!", "sub": "But the cockpit is in another cabin!"}})
 
@@ -127,7 +128,7 @@ def l34():
     l.travelator(180, 212, '>'); l.put(BLOCKROW, 192, 'U')
     l.put(FEET, 217, 'g')                                    # the gate agent waves you on
     l.put(FEET, 222, 'X')
-    return l.dump({"id": "3-4", "name": "GATE CLOSING", "theme": "gate", "timer": 75, "beltSpeed": 80,
+    return l.dump({"id": "3-4", "name": "GATE CLOSING", "theme": "gate", "timer": 50, "beltSpeed": 80,
                    "intro": "Final call for Flight 1073! Gate B32 is closing. RUN!"})
 
 out = sys.argv[1]

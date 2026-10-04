@@ -250,11 +250,12 @@ export class Mascot implements Enemy {
     }
     if (this.state === 'wind') {
       body.setVelocityX(0);
+      this.s.setTint(Math.floor(this.timer * 14) % 2 ? 0xff4fa8 : 0xffffff);
       if (this.timer <= 0) {
         this.state = 'spray';
         this.timer = 0.45;
         this.s.setFrame(frameIndex('boss.mascot', 'spray')).clearTint();
-        this.spawn(new PerfumeCloud(this.world, this.s.x + this.facing * 34, this.s.y - 46, this.facing));
+        this.spawn(new PerfumeCloud(this.world, this.s.x + this.facing * 38, this.s.y - 40, this.facing));
         this.world.sfx('thwop');
       }
       return;
@@ -279,13 +280,17 @@ export class Mascot implements Enemy {
       this.sprayTimer = MASCOT.sprayEvery - (MASCOT.hp - this.hp) * 0.4;
       this.state = 'wind';
       this.timer = MASCOT.windup;
+      // The tell (unlike the spray frame, which already shows the puff): he stops and flashes hot pink
+      // (blinking in step(); a scale tween would resize his hitbox mid-fight).
       this.s.anims.stop();
-      this.s.setFrame(frameIndex('boss.mascot', 'spray')).setTint(0xffb0d8);
+      this.s.setFrame(frameIndex('boss.mascot', 'walk0'));
       this.world.popText?.(this.s.x, this.s.y - 96, 'SPRITZ?');
     }
   }
 
   private toWalk(): void {
+    // Never straight from a stun into a spray: a moment to get clear.
+    if (this.state === 'hurt') this.sprayTimer = Math.max(this.sprayTimer, 0.9);
     this.state = 'walk';
     this.s.clearTint().play('boss.mascot:walk', true);
   }

@@ -19,7 +19,7 @@ describe('World 3 levels (DXB Airport)', () => {
     for (const { level } of parsed) {
       expect(['terminal', 'dutyfree', 'gate']).toContain(level.theme);
       expect(level.tilt.every((k) => k.deg === 0)).toBe(true);
-      expect(level.timer).toBeGreaterThanOrEqual(70);
+      expect(level.timer).toBeGreaterThanOrEqual(45); // 3-4 is a sprint: about twice a fast run
       expect(level.intro).toBeTruthy();
     }
   });

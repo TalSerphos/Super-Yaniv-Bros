@@ -222,7 +222,7 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
         music.stop();
         hud.showOverlay(
           `<h2>${e.reason === 'altitude' ? 'ALTITUDE ZERO' : e.reason === 'time' ? "TIME'S UP!" : 'GAME OVER'}</h2>
-           <p class="sub">${e.reason === 'altitude' ? 'Pull up faster next time!' : e.reason === 'time' ? 'The motorcade waits for no one.' : 'Even plumbers need a second try.'}</p>
+           <p class="sub">${e.reason === 'altitude' ? 'Pull up faster next time!' : e.reason === 'time' ? (worldOf(current.id).id === 3 ? 'Gate B32 has closed! Maybe skip the duty-free next time.' : 'The motorcade waits for no one.') : 'Even plumbers need a second try.'}</p>
            <dl><dt>SCORE</dt><dd>${pad6(e.score)}</dd></dl>`,
           [
             { label: checkpoint ? (!isBoss(current) && (current.theme ?? 'cabin') !== 'cabin' ? 'RETRY FROM CHECKPOINT' : 'RETRY FROM GALLEY') : 'RETRY', run: retry },

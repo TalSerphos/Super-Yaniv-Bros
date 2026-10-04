@@ -2,7 +2,7 @@
  "id": "3-2",
  "name": "TRAVELATOR RUSH",
  "theme": "terminal",
- "timer": 120,
+ "timer": 100,
  "beltSpeed": 70,
  "intro": "Ride the moving walkways, and mind the gap!",
  "clear": {

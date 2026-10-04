@@ -61,6 +61,29 @@ test.describe('World 3 mechanics', () => {
     await expect.poll(async () => (await syb(page))!.x, { timeout: 5_000 }).toBeLessThan(1740);
   });
 
+  test('holding → into a gap costs one heart, not all three (the held key is ignored after the respawn)', async ({ page }) => {
+    test.setTimeout(150_000);
+    await page.goto('./?level=3-2#play');
+    await waitForLevel(page, '3-2');
+    // QA repro: a forward travelator (columns 21-50) runs into the first gap (x 816). Start on plain floor just
+    // before it (teleport also sets the respawn point, and a real one is never on a moving belt).
+    await page.evaluate(() => {
+      const syb = (window as unknown as { __syb: Syb }).__syb;
+      syb.clearEnemies();
+      syb.teleport(270, 320);
+    });
+    await page.keyboard.down('ArrowRight');
+    // (Timeouts are generous and the wait is in game seconds: parallel software-rendered CI browsers can run
+    // the game several times slower than real time.)
+    await expect.poll(async () => (await syb(page))!.hurts.length, { timeout: 60_000 }).toBe(1);
+    const t1 = (await syb(page))!.time!;
+    await expect.poll(async () => (await syb(page))!.time!, { timeout: 60_000 }).toBeLessThanOrEqual(t1 - 4); // still holding →
+    await page.keyboard.up('ArrowRight');
+    const s = (await syb(page))!;
+    expect(s.hurts.length, JSON.stringify(s.hurts)).toBe(1);
+    expect(s.hearts).toBe(2);
+  });
+
   test('the metal detector beeps at the plunger', async ({ page }) => {
     await page.goto('./?level=3-1&god=1#play');
     await waitForLevel(page, '3-1');

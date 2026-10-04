@@ -18,6 +18,9 @@ const SHEET = 'yaniv.small';
  * Yaniv: movement (run, variable jump, coyote time, jump buffer), power states (small / big / golden),
  * Bamba Rush, invulnerability after hits, and hanging from oxygen-mask vines.
  */
+/** Offsets checked for solid ground before a spot counts as a safe respawn point. */
+const SAFE_PROBES = [-64, -48, -32, -16, 0, 16, 32, 48, 64];
+
 export class Player {
   readonly sprite: Sprite;
   power: Power = 'small';
@@ -29,6 +32,11 @@ export class Player {
   controlLock = 0;
   /** Speed of the surface under the feet (World 3 belts and travelators), set by the scene every step. */
   carry = 0;
+  /**
+   * After a pit respawn, a direction still held from before the fall is ignored until it is let go (holding ▶
+   * through the respawn ran Yaniv straight back into the same pit, over and over).
+   */
+  heldThroughRespawn = false;
   plungeCooldown = 0;
   swing: MaskVine | null = null;
   /** Can't grab any vine until this runs out (after letting go). */
@@ -155,12 +163,13 @@ export class Player {
     this.coyote = grounded ? PHYS.coyoteTime : Math.max(0, this.coyote - dt);
     this.jumpBuffer = edges.pressed('jump') ? PHYS.jumpBuffer : Math.max(0, this.jumpBuffer - dt);
 
-    const dir = this.controlLock > 0 ? 0 : (b.right ? 1 : 0) - (b.left ? 1 : 0);
+    if (this.heldThroughRespawn && !b.left && !b.right) this.heldThroughRespawn = false;
+    const dir = this.controlLock > 0 || this.heldThroughRespawn ? 0 : (b.right ? 1 : 0) - (b.left ? 1 : 0);
     // Running downhill (toward the cockpit) is a little faster, uphill a little slower. Bamba: faster still.
     const slope = Math.sin(degToRad(this.world.tiltDeg));
     const speed = PHYS.runSpeed * (this.bamba > 0 ? 1.35 : 1);
     // On a belt the ground itself moves: Yaniv's running speed adds to it (he keeps the momentum in the air).
-    const carry = grounded ? this.carry : 0;
+    const carry = grounded && this.controlLock <= 0 ? this.carry : 0;
     const target = dir * speed * (1 + 0.6 * slope * dir) + carry;
     const accel = (grounded ? PHYS.groundAccel : PHYS.airAccel) * dt;
     if (this.hurtTimer <= 0.9) body.setVelocityX(body.velocity.x + Phaser.Math.Clamp(target - body.velocity.x, -accel, accel));
@@ -181,7 +190,11 @@ export class Player {
     if (dir) this.sprite.setFlipX(dir < 0);
     this.animate(grounded);
 
-    if (grounded && body.blocked.down && this.world.standableAt(this.x - 40, this.y) && this.world.standableAt(this.x + 40, this.y)) {
+    // A safe respawn point has solid ground well to both sides (at least 64 units from any edge), and it
+    // stands still (a travelator would carry a freshly respawned Yaniv straight back into the gap).
+    // (Sampled every 16 units: two far points alone would let a hatch between them pass as solid.)
+    const safe = this.carry === 0 && SAFE_PROBES.every((dx) => this.world.standableAt(this.x + dx, this.y));
+    if (grounded && body.blocked.down && safe) {
       this.lastSafe = { x: this.x, y: this.y };
     }
     const fire = edges.pressed('grab') && this.plungeCooldown <= 0;
