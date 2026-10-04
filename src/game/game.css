@@ -65,6 +65,58 @@
 .ghud-warn.blink { animation: warn-blink 0.25s steps(1) 5; }
 @keyframes warn-blink { 50% { opacity: 0; } }
 
+/* Boss panel (World 6; concept: art/reference/w6-cockpit.webp): under the HUD bar, centred. */
+.ghud-boss {
+  position: absolute;
+  top: 9.5cqh;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8cqh;
+  padding: 0.8cqh 1.4cqw;
+  background: rgba(10, 15, 30, 0.78);
+  border: 0.18cqw solid #3a4767;
+  border-radius: 0.6cqw;
+  font-size: 1.05cqw;
+  text-shadow: 0.1cqw 0.1cqw 0 #000;
+}
+.ghud-boss[hidden] { display: none; }
+.ghud-phases { display: flex; gap: 2.2cqw; margin: 0; padding: 0; list-style: none; color: #6b7593; }
+.ghud-phases li.done { color: #4ade80; }
+.ghud-phases li.done::before { content: '✓ '; }
+.ghud-phases li.now { color: var(--gold); }
+.ghud-bossname { display: flex; align-items: center; gap: 1cqw; color: #e9edf7; }
+.ghud-hp { display: flex; gap: 0.3cqw; }
+.ghud-hp i { width: 1.6cqw; height: 1.4cqh; background: #3b3f55; }
+.ghud-hp i.on { background: #e5262b; }
+.ghud-bar { display: inline-block; vertical-align: middle; width: 14cqw; height: 1.4cqh; background: #26304a; border: 0.12cqw solid #3a4767; }
+.ghud-bar > span { display: block; height: 100%; background: #ffb347; }
+.ghud-bar.heart > span { background: #e5262b; }
+.ghud-control b { color: var(--gold); font-weight: normal; }
+.ghud-attitude { position: relative; width: 26cqw; height: 2.6cqh; background: #26304a; border: 0.12cqw solid #3a4767; }
+.ghud-attitude .band { position: absolute; top: 0; bottom: 0; background: rgba(74, 222, 128, 0.55); }
+.ghud-attitude .mark { position: absolute; top: -0.4cqh; bottom: -0.4cqh; width: 0.5cqw; margin-left: -0.25cqw; background: #fff8e7; }
+.ghud-attitude .txt { position: absolute; inset: 0; display: grid; place-items: center; font-size: 0.95cqw; }
+.ghud-knots { display: flex; gap: 1.4cqw; }
+.ghud-knots .knot { display: flex; flex-direction: column; align-items: center; gap: 0.4cqh; color: #c9c2b4; }
+.ghud-knots .knot .ghud-bar { width: 9cqw; }
+.ghud-knots .knot.target { color: #ffd23f; }
+.ghud-knots .knot.target .ghud-bar { border-color: #ffd23f; }
+.ghud-prompt {
+  position: absolute;
+  left: 50%;
+  bottom: 22cqh;
+  transform: translateX(-50%);
+  font-size: 2.4cqw;
+  color: #ffd23f;
+  text-shadow: 0.2cqw 0.2cqw 0 #8a1d0a;
+  white-space: nowrap;
+  animation: warn-blink 0.8s steps(1) infinite;
+}
+.ghud-prompt[hidden] { display: none; }
+
 /* Touch controls: only on touch-first devices. */
 .touch { display: none; }
 @media (pointer: coarse) {
@@ -84,7 +136,8 @@
 .touch button.pressed { background: rgba(255, 210, 63, 0.45); }
 .touch-pad button { bottom: 4cqh; width: 9cqw; height: 15cqh; }
 .touch-pad button[data-btn='left'] { left: 2cqw; }
-.touch-pad button[data-btn='right'] { left: 12.5cqw; }
+.touch-pad button[data-btn='right'] { left: 23cqw; }
+.touch-pad button[data-btn='down'] { left: 12.5cqw; }
 .touch-actions button { bottom: 4cqh; height: 15cqh; width: 12cqw; font-size: 1.7cqw; }
 .touch-actions button[data-btn='jump'] { right: 2cqw; bottom: 9cqh; }
 .touch-actions button[data-btn='grab'] { right: 15.5cqw; }
@@ -136,6 +189,10 @@
 .ghud-bank.warning { animation: bank-warn 0.3s steps(1) infinite; }
 @keyframes bank-warn { 50% { border-color: #ffb347; box-shadow: 0 0 0.6cqw #ffb347; } }
 
-/* World map / level select */
-.game-overlay.map .card-actions { flex-direction: column; align-items: stretch; gap: 1.2cqh; }
+/* Map / level select: two columns (World 5 left, World 6 and the way out right), compact buttons. */
+.game-overlay.map .card { padding: 2.2cqh 2.4cqw; }
+.game-overlay.map .card-actions { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; grid-template-rows: repeat(4, auto); gap: 1cqh 1.6cqw; }
+.game-overlay.map .card-actions button { font-size: 1.25cqw; padding: 1cqh 1.2cqw; text-align: left; }
+.game-overlay.map h2 { margin-bottom: 1cqh; }
+.game-overlay.map .sub { margin-bottom: 1.4cqh; font-size: 1.4cqw; }
 .card-actions button:disabled { opacity: 0.4; cursor: default; }

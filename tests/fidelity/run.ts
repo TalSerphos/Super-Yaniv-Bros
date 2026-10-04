@@ -25,6 +25,8 @@ interface Shot {
   notes?: string;
   /** Game shots: wait until the player (driven by ?bot=1) has reached this x before capturing. */
   untilX?: number;
+  /** Game shots without a run to follow (the boss arena): wait this long after the level starts. */
+  waitMs?: number;
   /** Per-shot regression floors (gameplay frames never match a composed painting pixel-for-pixel). */
   minPalette?: number;
   minComposition?: number;
@@ -107,6 +109,10 @@ async function main() {
           shot.untilX,
           { timeout: 60_000, polling: 50 },
         );
+      }
+      if (shot.waitMs !== undefined) {
+        await page.waitForFunction(() => !!(window as unknown as { __syb?: unknown }).__syb, null, { timeout: 60_000 });
+        await page.waitForTimeout(shot.waitMs);
       }
       const png = await page.locator('#stage').screenshot();
       const refPath = join(ROOT, shot.reference);

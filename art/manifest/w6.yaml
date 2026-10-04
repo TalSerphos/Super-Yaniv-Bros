@@ -1,0 +1,412 @@
+# World 6 (cockpit boss) assets. Contract: docs/levels/w6-boss-assets.md. Schema: tools/assets/README.md.
+# Sprites are painted on flat magenta and keyed out; frames are built at 2x world units.
+# Scale targets (2x px): Yaniv's idle is 107 tall (fit 118 is his median), Jacuzzam's idle about 1.65x that
+# (~178, cap included), the Bros match Yaniv, items about his head (~28).
+
+# Character bible: the master is used as the first reference for every Jacuzzam pose sheet. Not built.
+- id: char.jacuzzam.sheet
+  kind: reference
+  refs: [art/reference/w6-cockpit.webp, art/masters/char.yaniv.sheet.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  prompt: >
+    Character model sheet for the cartoon villain "Jacuzzam": the hulking man in the dark pilot uniform on the
+    RIGHT of the first reference image (big pilot cap, black goggles, white gloves, reaching for the controls).
+    Ignore everyone else in that image. Use the second reference image only for the model-sheet layout, the
+    pixel style and the scale of a normal hero (do NOT draw the plumber): the villain is towering, more than
+    one and a half times as tall as that plumber and twice as wide, about four and a half heads tall. Draw the villain four times in a row at exactly the same scale,
+    all standing on one common baseline, full body from cap to shoes: (1) front view, (2) side profile facing
+    LEFT, (3) back view, (4) three-quarter view facing LEFT. Hulking, top-heavy clown proportions: a huge barrel
+    chest and broad shoulders, a round belly, short sturdy legs, big white-gloved hands, a big round chin.
+    Exact outfit in every view: a dark blue-black navy pilot uniform jacket and trousers (much darker than
+    navy blue, almost black) with three bright gold stripes on each sleeve cuff and gold buttons, black shoes;
+    an OVERSIZED dark pilot cap with a gold braid on the peak and a small round gold rubber-duck badge on the
+    front; big mirrored black aviator goggles with a shiny white glint that completely hide his eyes; a smug
+    toothy grin, clean-shaven, no moustache, no beard; a fluffy white spa bathrobe worn as a cape over his
+    shoulders, hanging down his back to his knees, tied at the neck with its white belt; white gloves; on BOTH
+    wrist cuffs a chunky chrome jacuzzi-jet nozzle (a short shiny silver tube with a round spout). A silly,
+    pompous cartoon clown, not scary. No weapon, no flags, no emblems other than the duck badge, no headdress.
+    Perfectly flat, solid, uniform magenta (#FF00FF) background, no gradient, no floor, no shadows on the
+    background, no text, no letters, no labels, no grid lines.
+
+# The boss sheet is painted as two pose sheets (.a and .b, below) that share the bible as their first ref.
+# Their chosen candidates are cut, brought to one common scale and composed into the 4x4 master of
+# boss.jacuzzam (rows 1-2 = sheet a, rows 3-4 = sheet b), which is then `select`ed and built as one strip.
+- id: boss.jacuzzam.a
+  kind: reference
+  refs: [art/masters/char.jacuzzam.sheet.webp, art/reference/w6-cockpit.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  prompt: >
+    Sprite sheet for a platformer boss: the SAME villain as the character sheet in the first reference image
+    (Jacuzzam: hulking, dark blue-black navy pilot uniform with three gold sleeve stripes, oversized dark pilot
+    cap with a small gold rubber-duck badge, mirrored black aviator goggles hiding the eyes, smug toothy grin,
+    clean-shaven, a fluffy white spa bathrobe worn as a cape, white gloves, a chrome jacuzzi-jet nozzle on each
+    wrist cuff), same proportions, same colors, same size in every pose. Full-body side view facing LEFT in
+    every pose (his face, chest and feet point to the left). The bathrobe cape hangs close behind his back and
+    never flares wide. Layout: an invisible grid of 4 columns by 2 rows of equal cells (no grid lines). Each
+    pose sits in the middle of its cell, fully inside it with a clear margin, all at exactly the same scale,
+    feet on a common baseline in each row.
+    Row 1: (1) idle: standing tall and smug, gloved fists on his hips, chest puffed out; (2) idle, the same pose
+    with his chest and belly slightly lower as he breathes out; (3) throw: one arm raised high above his cap
+    gripping a thick plain red ring binder (no letters on it), about to hurl it forward to the left, the other
+    arm out for balance, leaning back; (4) jet wind-up: knees bent and braced, BOTH arms stretched straight
+    forward to the left at chest height, the two wrist nozzles side by side, glowing bright aqua-blue.
+    Row 2: (5) jet fire: recoiling backwards from the blast, leaning back, both arms still pointing forward to
+    the left, a few small round soap bubbles just leaving the wrist nozzles (no long stream); (6) lean: bent
+    forward at the waist, both gloved hands pressing down on something low in front of him at hip height (not
+    drawn), grinning; (7) slap: one big arm swinging down and forward to the left in a wide arc with a few white
+    swoosh lines, the other arm pulled back; (8) leave this last cell completely empty.
+    Slapstick cartoon, no weapon, no blood. Perfectly flat, solid, uniform magenta (#FF00FF) background, no
+    gradient, no floor, no shadows on the background, no text, no letters, no labels.
+
+- id: boss.jacuzzam.b
+  kind: reference
+  refs: [art/masters/char.jacuzzam.sheet.webp, art/reference/w6-cockpit.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  prompt: >
+    Sprite sheet for a platformer boss being defeated: the SAME villain as the character sheet in the first
+    reference image (Jacuzzam: hulking, dark blue-black navy pilot uniform with three gold sleeve stripes,
+    oversized dark pilot cap with a small gold rubber-duck badge, mirrored black aviator goggles, clean-shaven,
+    a fluffy white spa bathrobe worn as a cape, white gloves, a chrome jacuzzi-jet nozzle on each wrist cuff),
+    same proportions, same colors, same size in every pose. Full-body side view facing LEFT in every pose. The
+    bathrobe cape stays close to his body. Layout: an invisible grid of 4 columns by 2 rows of equal cells (no
+    grid lines). Each pose sits in the middle of its cell, fully inside it with a clear margin, all at exactly
+    the same scale, on a common baseline in each row.
+    Row 1: (1) hit: knocked backwards, his goggles knocked sideways and hanging diagonally across his face so
+    one round dazed cartoon eye peeks out, mouth open in an "ouch", a few soap bubbles popping around him; (2) stagger: dizzy and wobbling on his feet, his cap tilted sideways, a
+    ring of small yellow stars and soap bubbles circling his head, tongue out; (3) held: standing upright, NOT walking,
+    both elbows clamped tight against his sides and his forearms squeezed across his belly, as if invisible
+    arms were wrapped around him from behind in a bear hug (that person is NOT drawn), struggling, shoulders
+    hunched, one foot lifted and kicking, gritting his teeth; (4) tied: sitting on the floor with his
+    legs stretched out in front of him to the left, his body wrapped round and round from chest to knees in
+    tangled white headphone cables with a few small white earbuds dangling, arms trapped, sulking.
+    Row 2: (5) tied and squirming: the same sitting tied pose leaning to the left, wriggling, a sweat drop;
+    (6) tied and squirming: the same sitting tied pose leaning back to the right, wriggling, cap slipping;
+    (7) and (8) leave these two cells completely empty.
+    Slapstick cartoon, nobody is hurt, no weapon, no blood. Perfectly flat, solid, uniform magenta (#FF00FF)
+    background, no gradient, no floor, no shadows on the background, no text, no letters, no labels.
+
+# Master composed from boss.jacuzzam.a + .b (see above). The prompt documents the full set; it is not used
+# directly unless someone regenerates this id on its own.
+- id: boss.jacuzzam
+  kind: spritesheet
+  refs: [art/masters/char.jacuzzam.sheet.webp, art/reference/w6-cockpit.webp]
+  size: 1024x1536
+  chroma: '#ff00ff'
+  candidates: 1
+  grid: {cols: 4, rows: 4}
+  cells: [0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13]
+  frame: {w: 96, h: 112}
+  fit: {height: 176}
+  prompt: >
+    Sprite sheet for a platformer boss, the SAME villain as the character sheet in the first reference image,
+    side view facing LEFT, in an invisible 4 by 4 grid: idle, idle breathing out, throw (binder overhead), jet
+    wind-up (both wrists forward, nozzles glowing), jet fire (recoil, bubbles at the wrists), lean (hands on
+    something low in front), slap, empty; hit (goggles askew), stagger (dizzy, cap tilted), held (arms pinned),
+    tied (sitting, wrapped in white headphone cables), tied squirming left, tied squirming right, empty, empty.
+    Perfectly flat, solid, uniform magenta (#FF00FF) background, no text.
+  out: {dir: w6, colors: 64}
+
+- id: enemy.ducky
+  kind: spritesheet
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 3, rows: 1}
+  cells: [0, 1, 2]
+  frame: {w: 24, h: 24}
+  fit: {height: 40}
+  prompt: >
+    Sprite sheet for a small platformer enemy, the "Rubber Ducky": a chunky bright yellow rubber bath duck with
+    an orange beak, wearing a tiny dark blue-black pilot cap with a gold peak, with two small orange webbed
+    feet, a cheeky determined expression, thick dark outline, readable at a tiny size. Strict side view facing
+    LEFT (beak pointing left). Three equal columns in a row (no grid lines), one duck per column, centered, same
+    size, on a common baseline: (1) waddling, left foot forward, body tipped a little forward; (2) waddling,
+    right foot forward, body tipped a little back; (3) squashed: the same duck flattened like a pancake to a
+    third of its height, wider, cap squashed on top, swirly dazed eyes.
+    Perfectly flat, solid, uniform magenta (#FF00FF) background, no gradient, no floor, no shadows on the
+    background, no text.
+  out: {dir: w6, colors: 32}
+
+- id: proj.binder
+  kind: spritesheet
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 2, rows: 1}
+  cells: [0, 1]
+  frame: {w: 24, h: 24}
+  fit: {mode: common, height: 38}
+  valign: middle
+  prompt: >
+    Two sprites of the same thick red ring binder (a fat office folder of paper) for a thrown platformer
+    projectile, in two equal columns (no grid lines), each centered in its column at the same size, bold and
+    simple with a thick dark outline so it reads at a tiny size: glossy red plastic covers, a rounded spine,
+    a thick block of white pages showing between the covers, three silver rings at the spine. Plain covers: NO
+    letters, NO words, NO label, NO logo. (1) tumbling, tilted diagonally, spine at the lower left, the covers
+    slightly open like a wedge; (2) the same binder rotated a quarter turn further, spine at the upper left.
+    Perfectly flat, solid, uniform magenta (#FF00FF) background, no shadows on the background, no text.
+  out: {dir: w6, colors: 24}
+
+- id: proj.bubble
+  kind: spritesheet
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 2, rows: 1}
+  cells: [0, 1]
+  frame: {w: 16, h: 16}
+  fit: {mode: common, height: 28}
+  valign: middle
+  prompt: >
+    Two sprites of a small cluster of soap bubbles for a platformer projectile (a segment of a jacuzzi-jet
+    stream), in two equal columns (no grid lines), each centered in its column at the same size. Each cluster
+    is four or five round bubbles of different sizes touching each other in one compact clump: solid pale
+    aqua-cyan bubbles with a thick dark teal outline, a bright white crescent highlight on each, a hint of
+    pink and lilac sheen; opaque, not see-through, readable at a tiny size. (1) one arrangement; (2) the same
+    clump shifted, bubbles wobbled into a slightly different arrangement.
+    Perfectly flat, solid, uniform magenta (#FF00FF) background, no shadows on the background, no text.
+  out: {dir: w6, colors: 24}
+
+- id: proj.bathbomb
+  kind: spritesheet
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 2, rows: 1}
+  cells: [0, 1]
+  frame: {w: 16, h: 16}
+  fit: {mode: common, height: 26}
+  valign: middle
+  prompt: >
+    Two sprites of the same bath bomb for a platformer projectile, in two equal columns (no grid lines), each
+    centered in its column at the same size, bold and simple with a thick dark outline so it reads at a tiny
+    size: a round pastel bath-bomb ball, swirled mint green and lavender with sprinkles of pink, fizzing, a
+    few tiny white fizz specks and two or three small bubbles touching its edge. (1) fizzing, specks on the
+    upper right; (2) the same ball turned a little, specks on the upper left.
+    Perfectly flat, solid, uniform magenta (#FF00FF) background, no shadows on the background, no text.
+  out: {dir: w6, colors: 24}
+
+- id: yaniv.action
+  kind: spritesheet
+  refs: [art/masters/char.yaniv.sheet.webp, art/masters/yaniv.small.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 4, rows: 1}
+  cells: [0, 1, 2]
+  frame: {w: 48, h: 64}
+  fit: {height: 104}
+  prompt: >
+    Sprite sheet for a side-scrolling platformer. The SAME hero as in both reference images (Yaniv: short dark
+    brown hair, short dark beard, NO hat, navy polo with a small white wrench logo, brown tool belt, blue jeans,
+    brown boots), same proportions, same colors, and the same size as the sprites in the second reference image.
+    He is NOT holding a plunger in any pose: no plunger anywhere in the picture. Full-body side view facing
+    RIGHT in every pose. Layout: four equal columns in a row (no grid lines), one pose per column, all at
+    exactly the same scale, feet on a common baseline.
+    (1) pull: leaning far back with his heels dug in, both fists together gripping something at chest height
+    in front of him (nothing drawn in his hands), straining, teeth gritted;
+    (2) bear hug: both arms reaching straight forward to the right at chest height and locked together in a big
+    ring, as if hugging a huge invisible barrel, feet braced wide, determined face;
+    (3) tighten: yanking a short length of white cable taut between his two fists, one fist high and pulled
+    back, the other low and forward, a loose end of the white cable dangling;
+    (4) standing idle, relaxed, arms at his sides, exactly like the first pose of the second reference image
+    but with empty hands.
+    Perfectly flat, solid, uniform magenta (#FF00FF) background, no gradient, no floor, no shadows on the
+    background, no text, no labels, no grid lines.
+  out: {dir: w6, colors: 64}
+
+- id: npc.assaf
+  kind: spritesheet
+  refs: [art/masters/char.yaniv.sheet.webp, art/reference/w6-cockpit.webp, art/masters/yaniv.small.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 2, rows: 1}
+  cells: [0, 1]
+  frame: {w: 48, h: 64}
+  fit: {height: 95}
+  prompt: >
+    Sprite sheet for a heroic platformer ally, "Assaf", an insurance agent turned action hero. Draw him with the
+    SAME compact proportions, size and pixel style as the hero in the first and third reference images (about
+    4 heads tall), and in the style of the passengers in the second reference image. Ignore the plumber's
+    outfit. He is a different man: very broad shoulders and a thick neck, a strong square jaw, close-cropped
+    black hair with grey at the temples, clean-shaven, a crisp white shirt with the sleeves rolled up to the
+    elbows, the collar open, no tie, dark charcoal trousers, black shoes. Full-body side view facing RIGHT in
+    both poses, on a common baseline, at the same scale. Layout: two equal columns (no grid lines), one pose per
+    column. (1) idle: standing firm, arms folded across his broad chest, confident nod;
+    (2) pin: a SHORT, compact lunge to the right: feet only a small step apart, front knee bent, body leaning
+    forward, both arms reaching forward at chest height with the elbows slightly bent and open hands, ready to
+    grab someone, determined face. He holds nothing. Keep this pose compact: its total width is no more than
+    three quarters of his standing height.
+    Perfectly flat, solid, uniform magenta (#FF00FF) background, no gradient, no floor, no shadows on the
+    background, no text, no labels.
+  out: {dir: w6, colors: 64}
+
+- id: npc.zvika
+  kind: spritesheet
+  refs: [art/masters/char.yaniv.sheet.webp, art/reference/w6-cockpit.webp, art/masters/yaniv.small.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 2, rows: 1}
+  cells: [0, 1]
+  frame: {w: 48, h: 64}
+  fit: {height: 105}
+  prompt: >
+    Sprite sheet for a heroic platformer ally, "Zvika", a banker. Draw him with the SAME compact proportions,
+    size and pixel style as the hero in the first and third reference images (about 4 heads tall); his face is
+    like the bearded man with glasses on the right of the second reference image. Ignore the plumber's outfit.
+    He is a different man: slim, curly dark hair, a neat short dark beard, round black-framed glasses, a white
+    shirt with the sleeves buttoned, a fitted navy waistcoat with silver buttons, a red tie, grey trousers,
+    black shoes. Over one shoulder he carries a big coil of tangled white headphone cables with small white
+    earbuds. Full-body side view facing RIGHT in both poses, on a common baseline, at the same scale. Layout:
+    two equal columns (no grid lines), one pose per column. (1) idle: standing, pushing his glasses up with one
+    finger, the cable coil on his shoulder; (2) throw: a short step forward, tossing the white cable coil
+    underarm with both hands: he still HOLDS the coil in both hands right in front of his chest, the coil
+    overlapping his hands, a few loops of cable flopping loose. Keep this pose compact: feet only a small step
+    apart, and its total width is no more than three quarters of his standing height.
+    Perfectly flat, solid, uniform magenta (#FF00FF) background, no gradient, no floor, no shadows on the
+    background, no text, no labels.
+  out: {dir: w6, colors: 64}
+
+- id: npc.shota
+  kind: spritesheet
+  refs: [art/masters/char.yaniv.sheet.webp, art/reference/w6-cockpit.webp, art/masters/yaniv.small.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 2, rows: 1}
+  cells: [0, 1]
+  frame: {w: 48, h: 64}
+  fit: {height: 106}
+  prompt: >
+    Sprite sheet for a heroic platformer ally, "Shota", a dentist. Draw him with the SAME compact proportions,
+    size and pixel style as the hero in the first and third reference images (about 4 heads tall), and in the
+    style of the passengers in the second reference image. Ignore the plumber's outfit. He is a different man:
+    tall and lanky, short neat black hair, clean-shaven, a big friendly smile, a bright green polo shirt, blue
+    jeans, white sneakers; a small silver dental mirror on a thin handle sticking out of his shirt pocket; he
+    carries a small white first-aid case with a GREEN plus sign on it. Full-body side view facing RIGHT in both
+    poses, on a common baseline, at the same scale. Layout: two equal columns (no grid lines), one pose per
+    column. (1) idle: standing calmly, holding the white first-aid case at his side;
+    (2) help: kneeling on one knee, the open first-aid case on the floor beside him, leaning forward to the
+    right and holding out a white bandage roll with both hands as if tending someone lying in front of him
+    (that person is NOT drawn).
+    Perfectly flat, solid, uniform magenta (#FF00FF) background, no gradient, no floor, no shadows on the
+    background, no text, no labels.
+  out: {dir: w6, colors: 64}
+
+- id: w6.yoke
+  kind: spritesheet
+  refs: [art/reference/w6-cockpit.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 3, rows: 1}
+  cells: [0, 1, 2]
+  frame: {w: 32, h: 48}
+  fit: {mode: common, height: 92}
+  anchor: bbox
+  prompt: >
+    Three sprites of the same airliner cockpit control column for a platformer, in strict side view, in three
+    equal columns (no grid lines), each centered in its column at exactly the same size, all on a common
+    baseline. A dark gunmetal-grey control column rising from a wide, low, boxy floor housing, topped with a
+    ram's-horn yoke (two curved black grips like horns) with a small glowing amber light on its hub, like the
+    glowing yoke in the reference image but seen from the side. The floor housing is a wide flat dark-grey box
+    at the bottom, much wider than the column, and it is exactly the same shape, size and position in all
+    three. Only the column above it pivots at its foot, like a lever: (1) neutral: the column stands perfectly
+    straight up and down; (2) pulled: the whole column clearly leans to the LEFT, its top with the yoke further
+    LEFT than its foot, about 15 degrees off vertical; (3) pushed: the mirror image, the whole column clearly
+    leans to the RIGHT, its top with the yoke further RIGHT than its foot, about 15 degrees off vertical. The
+    yoke never reaches past the left or right edge of the floor housing.
+    Perfectly flat, solid, uniform magenta (#FF00FF) background, no gradient, no floor, no shadows on the
+    background, no text, no letters.
+  out: {dir: w6, colors: 32}
+
+- id: w6.seat.pilot
+  kind: image
+  refs: [art/reference/w6-cockpit.webp, art/masters/w5.seat.webp]
+  size: 1024x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  frame: {w: 48, h: 64}
+  fit: {height: 120}
+  prompt: >
+    A single sprite of an airliner pilot seat for a platformer, in strict side view facing RIGHT (the seat back
+    on the left, the cushion pointing right), drawn flat side-on and not tilted, in the same pixel style as the
+    seats in the reference images: a tall, chunky pilot seat in dark teal-grey upholstery with a cream fleecy
+    sheepskin cover draped over the backrest and cushion, a headrest, a padded armrest, and a dark grey metal
+    base on a short floor rail. Empty, no people. Perfectly flat, solid, uniform magenta (#FF00FF) background
+    around it, no floor, no shadows on the background, no text, no letters.
+  out: {dir: w6, colors: 48}
+
+- id: item.zipties
+  kind: image
+  size: 1024x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  frame: {w: 16, h: 16}
+  fit: {height: 26}
+  valign: middle
+  prompt: >
+    A single chunky collectible item for a platformer: a small bundle of five black plastic zip ties (cable
+    ties) held together in the middle by one wrapped zip tie, their long thin straps fanning out a little, a
+    small square head on each tie, glossy dark grey highlights, a thick outline, bold and simple so it reads at
+    a tiny size. Centered. Perfectly flat, solid, uniform magenta (#FF00FF) background, no shadows on the
+    background, no text.
+  out: {dir: w6, colors: 24}
+
+- id: prop.cable
+  kind: image
+  size: 1024x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  frame: {w: 16, h: 16}
+  fit: {height: 26}
+  valign: middle
+  prompt: >
+    A single chunky collectible item for a platformer: a loose round coil of tangled white headphone cable with
+    two small white earbuds dangling from it and a short plug end, soft light-grey shading and a thick dark
+    grey outline, bold and simple so it reads at a tiny size. Centered. Perfectly flat, solid, uniform magenta
+    (#FF00FF) background, no shadows on the background, no text.
+  out: {dir: w6, colors: 24}
+
+- id: w6.bg.cockpit
+  kind: background
+  refs: [art/reference/w6-cockpit.webp]
+  size: 1536x1024
+  candidates: 2
+  prompt: >
+    Recreate the cockpit interior from the reference image as an EMPTY background plate for a platformer boss
+    fight, seen straight ahead from the middle of the flight deck, symmetric, filling the whole image edge to
+    edge. Remove ALL text, the HUD, every person, both pilot seats, the control yoke, the door and the signs.
+    Top: the overhead switch panel with rows of small blank switches and amber and red indicator lights.
+    Middle: the wide windscreen in several panes divided by dark frame posts, showing a bright blue sky with
+    small white clouds and, far below, a sunlit sandy desert coastline meeting a turquoise sea. Bottom third:
+    the dark charcoal instrument panel with glowing display screens (an artificial horizon with a blue sky and
+    brown ground half, a green radar sweep, simple lines and arcs) and rows of small blank buttons and amber
+    lights, with the centre pedestal in the middle. The displays and buttons show NO numbers, NO letters, NO
+    words, NO symbols that look like writing. Rich detail continues all the way to every edge and corner.
+  out: {dir: w6, width: 1280, height: 720, fit: cover, quality: 82}
+
+- id: w6.bg.galley
+  kind: background
+  refs: [art/masters/w5.galley.webp, art/reference/w6-cockpit.webp]
+  size: 1536x1024
+  candidates: 2
+  prompt: >
+    Background for a platformer: the forward galley of an airliner in calm daylight, a flat straight-on side
+    view of the galley wall, filling the whole image edge to edge, in the same pixel style and palette as the
+    galley in the first reference image. Cream walls and ceiling panels with warm soft light; a long run of
+    stainless-steel galley units: stowed metal trolley carts in their bays along the bottom, a counter above
+    them, two built-in steel ovens with dark glass doors, a coffee maker with a small amber light, steel
+    drawers and latches, a row of white cups. On one side, a small rounded airliner window showing a clear
+    blue daytime sky over sunlit desert mountains, like the landscape in the second reference image. A grey
+    floor strip along the bottom edge. No people, no faces on anything, NO text, NO letters, NO numbers, NO
+    signs, NO labels, NO logos.
+  out: {dir: w6, width: 1280, height: 720, fit: cover, quality: 82}

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { play, type Sfx } from '../../audio/sfx.ts';
-import { ensurePlaceholders, frameIndex, preloadAssets } from '../assets.ts';
+import { createAnimations, ensurePlaceholders, frameIndex, preloadAssets } from '../assets.ts';
 import { ART_SCALE, PHYS, RULES, VIEW_H, VIEW_W, ZOOM } from '../config.ts';
 import { BabyBomber, BinBiter, LuggageRain, Suitcase, Trolley, type Enemy } from '../entities/enemies.ts';
 import { Blocks, PowerItem, ThrownPlunger } from '../entities/items.ts';
@@ -23,6 +23,28 @@ export interface HudState {
   /** A tilt change is coming: the BANK gauge flashes. */
   bankWarning: boolean;
   label: string;
+  /** Replaces "ALT …" in the top-right box (e.g. the Tabuk clock in 6-3). */
+  altLabel?: string;
+  /** Boss fights (World 6): the boss panel under the HUD bar. */
+  boss?: BossHud;
+}
+
+export interface BossHud {
+  name: string;
+  phase: 'A' | 'B' | 'C';
+  hp: number;
+  maxHp: number;
+  /** Big centred hint: "MASH GRAB!", "▼ PULL THE YOKE"… */
+  prompt?: string;
+  /** Phase B: pitch (°), CONTROL RESTORED 0..1, seconds held steady in the band (of 5). */
+  pitch?: number;
+  control?: number;
+  steady?: number;
+  band?: number;
+  /** Phase C. */
+  knots?: { name: string; value: number; max: number; target: boolean }[];
+  clock?: string;
+  captain?: number;
 }
 
 export type GameEvent =
@@ -30,7 +52,9 @@ export type GameEvent =
   | { type: 'pause' }
   | { type: 'checkpoint'; at: Point }
   | { type: 'clear'; run: RunState; seconds: number; door: boolean }
-  | { type: 'gameover'; reason: 'hearts' | 'altitude'; score: number };
+  | { type: 'gameover'; reason: 'hearts' | 'altitude'; score: number }
+  /** World 6 Phase C: a knot fully slipped, back to Phase B. */
+  | { type: 'slip' };
 
 export interface LevelInit {
   level: LevelData;
@@ -102,7 +126,7 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     this.level = parseLevel(data.level);
     this.resetState(data.run);
     ensurePlaceholders(this);
-    this.createAnimations();
+    createAnimations(this);
     this.rng = new Phaser.Math.RandomDataGenerator([data.level.id]);
 
     const { width, height } = this.level;
@@ -158,22 +182,6 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
   }
 
   // ---------- world construction ----------
-
-  private createAnimations(): void {
-    const sheet = (key: string, names: string[], frameRate: number, repeat = -1) => {
-      if (this.anims.exists(key)) return;
-      const [tex] = key.split(':');
-      this.anims.create({ key, frames: names.map((n) => ({ key: tex, frame: frameIndex(tex, n) })), frameRate, repeat });
-    };
-    sheet('yaniv.small:idle', ['idle0', 'idle1'], 2);
-    sheet('yaniv.small:run', ['run0', 'run1', 'run2', 'run3', 'run4', 'run5'], 12);
-    sheet('enemy.trolley:roll', ['roll0', 'roll1', 'roll2'], 10);
-    sheet('enemy.suitcase:walk', ['walk0', 'walk1'], 5);
-    sheet('item.nut:spin', ['spin0', 'spin1', 'spin2', 'spin3'], 8);
-    sheet('proj.plunger:fly', ['fly0', 'fly1'], 14);
-    sheet('proj.pacifier:spin', ['spin0', 'spin1'], 10);
-    sheet('npc.screamer:scream', ['scream0', 'scream1'], 8);
-  }
 
   private get floorTop(): number {
     return floorTopOf(this.level);
@@ -604,6 +612,7 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
   private pushHud(): void {
     this.hudTimer = 0.1;
     this.cfg.onHud({
+      boss: undefined,
       hearts: Math.max(0, this.hearts),
       maxHearts: Math.max(RULES.hearts, this.hearts),
       nuts: this.nutCount,

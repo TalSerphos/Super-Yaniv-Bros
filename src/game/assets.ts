@@ -1,12 +1,12 @@
 /**
- * Asset registry for World 5 (contract: docs/levels/w5-assets.md). Files found under src/assets/w5/ are
- * loaded; any id without a file gets a procedural placeholder, so the game always runs while art is in
+ * Asset registry (contracts: docs/levels/w5-assets.md, w5-stage3-assets.md, w6-boss-assets.md). Files found
+ * under src/assets/w5/ and src/assets/w6/ are loaded; any id without a file gets a procedural placeholder, so the game always runs while art is in
  * progress. Art is 2× resolution and drawn at ART_SCALE.
  */
 import type Phaser from 'phaser';
 
-const FILES = import.meta.glob<string>('../assets/w5/*.webp', { eager: true, query: '?url', import: 'default' });
-const urlFor = (id: string): string | undefined => FILES[`../assets/w5/${id}.webp`];
+const FILES = import.meta.glob<string>(['../assets/w5/*.webp', '../assets/w6/*.webp'], { eager: true, query: '?url', import: 'default' });
+const urlFor = (id: string): string | undefined => FILES[`../assets/w5/${id}.webp`] ?? FILES[`../assets/w6/${id}.webp`];
 
 export interface SheetSpec {
   frame: [number, number];
@@ -36,6 +36,20 @@ export const SHEETS: Record<string, SheetSpec> = {
   'npc.captain': { frame: [48, 64], frames: ['idle', 'thumbsUp', 'hurt'] },
   'npc.screamer': { frame: [48, 64], frames: ['calm', 'scream0', 'scream1'] },
   'w5.door': { frame: [64, 128], frames: ['closed', 'open'] },
+  // World 6, the cockpit boss (docs/levels/w6-boss-assets.md)
+  'boss.jacuzzam': {
+    frame: [96, 112],
+    frames: ['idle0', 'idle1', 'throw', 'jetWind', 'jetFire', 'lean', 'slap', 'hit', 'stagger', 'held', 'tied', 'wriggle0', 'wriggle1'],
+  },
+  'enemy.ducky': { frame: [24, 24], frames: ['walk0', 'walk1', 'squash'] },
+  'proj.binder': { frame: [24, 24], frames: ['spin0', 'spin1'] },
+  'proj.bubble': { frame: [16, 16], frames: ['b0', 'b1'] },
+  'proj.bathbomb': { frame: [16, 16], frames: ['fizz0', 'fizz1'] },
+  'yaniv.action': { frame: [48, 64], frames: ['pull', 'choke', 'tighten'] },
+  'npc.assaf': { frame: [48, 64], frames: ['idle', 'pin'] },
+  'npc.zvika': { frame: [48, 64], frames: ['idle', 'throw'] },
+  'npc.shota': { frame: [48, 64], frames: ['idle', 'help'] },
+  'w6.yoke': { frame: [32, 48], frames: ['neutral', 'pulled', 'pushed'] },
 };
 
 export const IMAGES: Record<string, [number, number]> = {
@@ -44,6 +58,11 @@ export const IMAGES: Record<string, [number, number]> = {
   'w5.tex.floor': [64, 32],
   'w5.tex.bin': [64, 32],
   'w5.galley': [96, 128],
+  'w6.seat.pilot': [48, 64],
+  'item.zipties': [16, 16],
+  'prop.cable': [16, 16],
+  'w6.bg.cockpit': [640, 360],
+  'w6.bg.galley': [640, 360],
 };
 
 /** Frame index by name, e.g. frameIndex('yaniv.small', 'jump'). */
@@ -51,6 +70,29 @@ export function frameIndex(sheet: string, name: string): number {
   const i = SHEETS[sheet].frames.indexOf(name);
   if (i < 0) throw new Error(`${sheet} has no frame ${name}`);
   return i;
+}
+
+/** Every sprite animation, for both worlds (idempotent: a scene may be the first to need them). */
+export function createAnimations(scene: Phaser.Scene): void {
+  const sheet = (key: string, names: string[], frameRate: number, repeat = -1) => {
+    if (scene.anims.exists(key)) return;
+    const [tex] = key.split(':');
+    scene.anims.create({ key, frames: names.map((n) => ({ key: tex, frame: frameIndex(tex, n) })), frameRate, repeat });
+  };
+  sheet('yaniv.small:idle', ['idle0', 'idle1'], 2);
+  sheet('yaniv.small:run', ['run0', 'run1', 'run2', 'run3', 'run4', 'run5'], 12);
+  sheet('enemy.trolley:roll', ['roll0', 'roll1', 'roll2'], 10);
+  sheet('enemy.suitcase:walk', ['walk0', 'walk1'], 5);
+  sheet('item.nut:spin', ['spin0', 'spin1', 'spin2', 'spin3'], 8);
+  sheet('proj.plunger:fly', ['fly0', 'fly1'], 14);
+  sheet('proj.pacifier:spin', ['spin0', 'spin1'], 10);
+  sheet('npc.screamer:scream', ['scream0', 'scream1'], 8);
+  sheet('boss.jacuzzam:idle', ['idle0', 'idle1'], 3);
+  sheet('boss.jacuzzam:wriggle', ['wriggle0', 'wriggle1'], 4);
+  sheet('enemy.ducky:walk', ['walk0', 'walk1'], 6);
+  sheet('proj.binder:spin', ['spin0', 'spin1'], 10);
+  sheet('proj.bubble:float', ['b0', 'b1'], 8);
+  sheet('proj.bathbomb:spin', ['fizz0', 'fizz1'], 10);
 }
 
 /** URL of a HUD/DOM icon strip, if the art exists (the DOM HUD falls back to CSS shapes). */
@@ -109,6 +151,16 @@ const COLORS: Record<string, string> = {
   'block.call': '#f59e0b',
   'w5.seat': '#0f766e',
   'hud.icons': '#dc2626',
+  'boss.jacuzzam': '#1e2a4a',
+  'enemy.ducky': '#facc15',
+  'proj.binder': '#b91c1c',
+  'proj.bubble': '#bae6fd',
+  'proj.bathbomb': '#f0abfc',
+  'yaniv.action': '#1f3a8a',
+  'npc.assaf': '#e2e8f0',
+  'npc.zvika': '#334155',
+  'npc.shota': '#15803d',
+  'w6.yoke': '#475569',
 };
 
 function drawPlaceholderFrame(ctx: CanvasRenderingContext2D, id: string, name: string, x: number, w: number, h: number) {

@@ -15,5 +15,15 @@
     "notes": "World 5 cabin aisle tilted nose-down about 12 degrees: teal seats with passengers, purple-orange sunset windows, overhead bins with amber lights, brass hex nuts, a Trolley Troll drink cart rolling from behind, Yaniv running with his plunger. HUD bar: SUPER YANIV logo, 3 hearts, nut counter, BANK gauge, level label. Level 5-2 of the full World 5: judge whether it reads as the same scene and style.",
     "minPalette": 0.5,
     "minComposition": 0.0
+  },
+  {
+    "id": "w6-cockpit",
+    "url": "/?level=6-2&bot=1#play",
+    "waitMs": 5000,
+    "reference": "art/reference/w6-cockpit.webp",
+    "gate": 5,
+    "notes": "World 6 boss fight (6-2 FIGHT + FLY): the cockpit with the windscreen over a desert coastline, overhead and instrument panels, two pilot seats, the yoke in the middle; Yaniv at the yoke, Jacuzzam (big co-pilot, dark uniform, goggles, cap) on the right, Assaf and Zvika by the door on the left. HUD: hearts, nut counter, CONTROL RESTORED bar, phase tracker CONTAIN / LEVEL / HANDOFF, ALT. First boss pass: judge whether it reads as the same scene and style.",
+    "minPalette": 0.5,
+    "minComposition": 0.0
   }
 ]

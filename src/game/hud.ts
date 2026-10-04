@@ -2,7 +2,7 @@
  * DOM HUD, touch controls and overlays. The HUD lives outside the canvas, so it is crisp at any size and
  * never rotates with the cabin (spec: "HUD text never tilts").
  */
-import type { HudState } from './scenes/LevelScene.ts';
+import type { BossHud, HudState } from './scenes/LevelScene.ts';
 
 const HEART = (full: boolean) =>
   `<svg viewBox="0 0 7 6" class="ghud-heart${full ? '' : ' empty'}" aria-hidden="true"><path d="M1 0h2v1h1V0h2v1h1v2H6v1H5v1H4v1H3V5H2V4H1V3H0V1h1z"/></svg>`;
@@ -28,7 +28,10 @@ export class Hud {
   private alt: HTMLElement;
   private warn: HTMLElement;
   private overlay: HTMLElement;
+  private boss: HTMLElement;
+  private prompt: HTMLElement;
   private last = '';
+  private lastBoss = '';
 
   constructor(host: HTMLElement) {
     this.root = document.createElement('div');
@@ -42,10 +45,12 @@ export class Hud {
         <div class="ghud-bank">${PLANE}<div><div class="ghud-bank-label">BANK <b>0°</b></div><div class="ghud-bars"></div></div></div>
         <div class="ghud-right"><div class="ghud-label"></div><div class="ghud-alt" data-testid="alt"></div></div>
       </header>
+      <div class="ghud-boss" hidden data-testid="boss-hud"></div>
+      <div class="ghud-prompt" hidden data-testid="boss-prompt"></div>
       <div class="ghud-warn" hidden aria-hidden="true">!</div>
       <div class="touch" aria-hidden="true">
         <div class="touch-pad">
-          <button data-btn="left" tabindex="-1">◀</button><button data-btn="right" tabindex="-1">▶</button>
+          <button data-btn="left" tabindex="-1">◀</button><button data-btn="down" tabindex="-1">▼</button><button data-btn="right" tabindex="-1">▶</button>
         </div>
         <div class="touch-actions">
           <button data-btn="grab" tabindex="-1">GRAB</button><button data-btn="jump" tabindex="-1">JUMP</button>
@@ -65,6 +70,8 @@ export class Hud {
     this.alt = q('.ghud-alt');
     this.warn = q('.ghud-warn');
     this.overlay = q('.game-overlay');
+    this.boss = q('.ghud-boss');
+    this.prompt = q('.ghud-prompt');
     this.touch = q('.touch');
     this.bankBars.innerHTML = '<i></i>'.repeat(10);
   }
@@ -83,7 +90,54 @@ export class Hud {
     const lit = Math.min(10, Math.round(Math.abs(s.bank) / 3));
     [...this.bankBars.children].forEach((el, i) => (el.className = i < lit ? (i >= 3 ? 'hot' : 'on') : ''));
     this.label.textContent = s.label;
-    this.alt.textContent = `ALT ${s.alt}`;
+    this.alt.textContent = s.altLabel ?? `ALT ${s.alt}`;
+    this.updateBoss(s.boss);
+  }
+
+  /** The boss panel: phase tracker, name + HP, and the phase's own gauges (matches the cockpit concept art). */
+  private updateBoss(b: BossHud | undefined): void {
+    const key = JSON.stringify(b ?? null);
+    if (key === this.lastBoss) return;
+    this.lastBoss = key;
+    this.boss.hidden = !b;
+    this.prompt.hidden = !b?.prompt;
+    if (!b) return;
+    this.prompt.textContent = b.prompt ?? '';
+    const steps = [
+      ['A', 'CONTAIN'],
+      ['B', 'LEVEL'],
+      ['C', 'HANDOFF'],
+    ]
+      .map(([p, name]) => `<li class="${p < b.phase ? 'done' : p === b.phase ? 'now' : ''}">${name}</li>`)
+      .join('');
+    let gauges = '';
+    if (b.phase !== 'C') {
+      const pips = Array.from({ length: b.maxHp }, (_, i) => `<i class="${i < b.hp ? 'on' : ''}"></i>`).join('');
+      gauges += `<div class="ghud-bossname">${b.name}<span class="ghud-hp" data-testid="boss-hp" aria-label="${b.hp} of ${b.maxHp}">${pips}</span></div>`;
+    }
+    if (b.phase === 'B' && b.pitch !== undefined) {
+      // Attitude: −35° .. +10° across the bar, a green HOLD STEADY band around 0°.
+      const pos = (deg: number) => `${Math.max(0, Math.min(100, ((deg + 35) / 45) * 100)).toFixed(1)}%`;
+      const band = b.band ?? 3;
+      const steady = b.steady ? ` · HOLD ${Math.max(0, 5 - b.steady).toFixed(1)}s` : '';
+      gauges += `<div class="ghud-control">CONTROL RESTORED <b data-testid="control">${Math.round((b.control ?? 0) * 100)}%</b>
+        <span class="ghud-bar"><span style="width:${((b.control ?? 0) * 100).toFixed(0)}%"></span></span></div>
+        <div class="ghud-attitude" data-testid="pitch">
+          <span class="band" style="left:${pos(-band)};width:calc(${pos(band)} - ${pos(-band)})"></span>
+          <span class="mark" style="left:${pos(b.pitch)}"></span>
+          <span class="txt">PITCH ${Math.round(b.pitch)}°${steady}</span>
+        </div>`;
+    }
+    if (b.phase === 'C' && b.knots) {
+      gauges += `<div class="ghud-knots">${b.knots
+        .map(
+          (k) =>
+            `<div class="knot${k.target ? ' target' : ''}"><span>${k.name}</span><span class="ghud-bar"><span style="width:${Math.max(0, (k.value / k.max) * 100).toFixed(0)}%"></span></span></div>`,
+        )
+        .join('')}</div>
+        <div class="ghud-captain">CAPTAIN <span class="ghud-bar heart"><span style="width:${(b.captain ?? 0).toFixed(0)}%"></span></span></div>`;
+    }
+    this.boss.innerHTML = `<ol class="ghud-phases">${steps}</ol>${gauges}`;
   }
 
   flashWarning(): void {

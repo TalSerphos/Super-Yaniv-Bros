@@ -8,12 +8,14 @@ import { isMuted, play, setMuted } from '../audio/sfx.ts';
 import { CANVAS_H, CANVAS_W } from './config.ts';
 import { Hud } from './hud.ts';
 import { RULES } from './config.ts';
-import { WORLD5, WORLD5_ORDER, levelById } from './levels/index.ts';
-import type { LevelData, Point } from './levels/loader.ts';
+import { ORDER, STAGES, WORLDS, isBoss, levelById, worldOf, type Stage } from './levels/index.ts';
+import type { Point } from './levels/loader.ts';
 import { freshRun, loadProgress, recordClear, saveProgress, type RunState } from './systems/progress.ts';
 import { music } from '../audio/music.ts';
-import { LevelScene, type GameEvent, type LevelInit } from './scenes/LevelScene.ts';
-import { BotInput, GamepadInput, KeyboardInput, TouchInput, type InputSource } from './systems/input.ts';
+import { BossScene, type BossInit } from './scenes/BossScene.ts';
+import { LevelScene, type GameEvent, type HudState, type LevelInit } from './scenes/LevelScene.ts';
+import { BOSS_HP } from './systems/boss.ts';
+import { BossBot, BotInput, GamepadInput, KeyboardInput, TouchInput, type InputSource } from './systems/input.ts';
 import './game.css';
 
 export interface GameOptions {
@@ -23,7 +25,7 @@ export interface GameOptions {
   /** Bot/test mode without damage, to prove every level's geometry is completable. */
   god?: boolean;
   debug?: boolean;
-  /** Start straight into this level (tests, deep links), e.g. "5-3". */
+  /** Start straight into this level (tests, deep links), e.g. "5-3" or "6-2". */
   level?: string;
 }
 
@@ -42,11 +44,14 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
   const keyboard = new KeyboardInput();
   const inputs: InputSource[] = [keyboard, new GamepadInput(), new TouchInput(hud.touch)];
   const bot = opts.bot ? new BotInput() : undefined;
+  const bossBot = opts.bot ? new BossBot() : undefined;
   let destroyed = false;
   let introTimer = 0;
 
-  let progress = loadProgress(WORLD5_ORDER[0]);
-  let current: LevelData = levelById(opts.level ?? '') ?? WORLD5[0];
+  let progress = loadProgress(ORDER[0]);
+  let current: Stage = levelById(opts.level ?? '') ?? STAGES[0];
+  /** Boss HP to start Phase B with (half after a slipped knot in Phase C). */
+  let bossHp: number | undefined;
   let run: RunState = freshRun(RULES.hearts);
   /** Run state at the start of the current level (what RETRY goes back to). */
   let runAtStart: RunState = run;
@@ -68,8 +73,10 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
     scene: [],
   });
 
-  const scene = () => game.scene.getScene('level') as LevelScene | null;
-  const isLast = () => WORLD5_ORDER.indexOf(current.id) === WORLD5_ORDER.length - 1;
+  /** The scene playing the current stage: 'level' (platform levels) or 'boss' (World 6). */
+  let activeKey: 'level' | 'boss' = 'level';
+  const scene = () => game.scene.getScene(activeKey) as LevelScene | BossScene | null;
+  const nextStage = (): Stage | undefined => STAGES[ORDER.indexOf(current.id) + 1];
 
   const onEvent = (e: GameEvent) => {
     switch (e.type) {
@@ -82,47 +89,93 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
       case 'checkpoint':
         checkpoint = e.at;
         break;
-      case 'clear':
+      case 'clear': {
         run = e.run;
         // A level's best is the points scored in it, not the run total carried in from earlier levels.
-        progress = recordClear(progress, WORLD5_ORDER, current.id, e.run.score - runAtStart.score);
+        progress = recordClear(progress, ORDER, current.id, e.run.score - runAtStart.score);
         saveProgress(progress);
         music.stop();
-        if (isLast()) {
+        const next = nextStage();
+        const score = `<dl><dt>SCORE</dt><dd data-testid="final-score">${pad6(e.run.score)}</dd><dt>NUTS</dt><dd>${e.run.nuts}</dd>${
+          e.seconds ? `<dt>TIME</dt><dd>${e.seconds}s</dd>` : ''
+        }</dl>`;
+        const goNext = (label: string) => ({
+          label,
+          run: () => {
+            run = { ...run, hearts: Math.max(run.hearts, RULES.hearts) }; // every level starts with at least 3
+            bossHp = undefined;
+            playLevel(next!);
+          },
+        });
+        if (!next) {
+          hud.showOverlay(
+            `<p class="world">WORLD 6 COMPLETE</p>
+             <h2>TABUK!</h2>
+             <p class="sub">The off-duty pilots touch down. 174 passengers are safe, and Jacuzzam is still tied up.</p>
+             ${score}
+             <p class="soon">6-4 Tabuk Approach and World 7: The White House are coming soon.</p>`,
+            [
+              { label: 'MAP', run: () => showMap() },
+              { label: 'TITLE', run: opts.onQuit },
+            ],
+            'clear',
+          );
+        } else if (worldOf(next.id) !== worldOf(current.id)) {
           hud.showOverlay(
             `<p class="world">WORLD 5 COMPLETE</p>
              <h2>THE CAPTAIN OPENED THE DOOR!</h2>
              <p class="sub">Wounded but brave, he lets the Bros. onto the flight deck.</p>
-             <dl><dt>SCORE</dt><dd data-testid="final-score">${pad6(e.run.score)}</dd><dt>NUTS</dt><dd>${e.run.nuts}</dd></dl>
-             <p class="soon">World 6: The Dive is coming soon.</p>`,
-            [
-              { label: 'WORLD 5 MAP', run: () => showMap() },
-              { label: 'TITLE', run: opts.onQuit },
-            ],
+             ${score}
+             <p class="soon">Next: World 6, the cockpit. Jacuzzam is at the controls.</p>`,
+            [goNext('INTO THE COCKPIT'), { label: 'MAP', run: () => showMap() }, { label: 'TITLE', run: opts.onQuit }],
+            'clear',
+          );
+        } else if (isBoss(current)) {
+          hud.showOverlay(
+            `<h2>${current.phase === 'A' ? 'GOT HIM!' : 'LEVEL FLIGHT!'}</h2>
+             <p class="sub">${
+               current.phase === 'A'
+                 ? 'The chokehold holds... for now. The plane is still diving!'
+                 : 'Zvika ties him up with headphone cables. 50 minutes to Tabuk.'
+             }</p>
+             ${score}
+             <p class="soon">Next: ${next.id} ${next.name}</p>`,
+            [goNext('NEXT PHASE'), { label: 'TITLE', run: opts.onQuit }],
             'clear',
           );
         } else {
-          const next = WORLD5[WORLD5_ORDER.indexOf(current.id) + 1];
           hud.showOverlay(
             `<h2>CABIN CLEARED!</h2>
              <p class="sub">Ding! The seatbelt sign is off.</p>
-             <dl><dt>SCORE</dt><dd data-testid="final-score">${pad6(e.run.score)}</dd>
-                 <dt>NUTS</dt><dd>${e.run.nuts}</dd><dt>TIME</dt><dd>${e.seconds}s</dd></dl>
+             ${score}
              <p class="soon">Next: ${next.id} ${next.name}</p>`,
-            [
-              {
-                label: 'NEXT LEVEL',
-                run: () => {
-                  run = { ...run, hearts: Math.max(run.hearts, RULES.hearts) }; // every level starts with at least 3
-                  playLevel(next);
-                },
-              },
-              { label: 'TITLE', run: opts.onQuit },
-            ],
+            [goNext('NEXT LEVEL'), { label: 'TITLE', run: opts.onQuit }],
             'clear',
           );
         }
         break;
+      }
+      case 'slip': {
+        // Phase C failed: back to Phase B with the boss at half HP.
+        music.stop();
+        const phaseB = levelById('6-2')!;
+        hud.showOverlay(
+          `<h2>HE SLIPPED A KNOT!</h2><p class="sub">Jacuzzam is loose and lunging for the yoke. Get him again!</p>`,
+          [
+            {
+              label: 'BACK TO THE YOKE',
+              run: () => {
+                run = { ...run, hearts: Math.max(run.hearts, RULES.hearts) };
+                bossHp = Math.ceil(BOSS_HP / 2);
+                playLevel(phaseB);
+              },
+            },
+            { label: 'TITLE', run: opts.onQuit },
+          ],
+          'over',
+        );
+        break;
+      }
       case 'gameover':
         play('hurt');
         music.stop();
@@ -141,63 +194,72 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
   };
 
   /**
-   * World 5 map: replay any unlocked level. Opened from the pause card, the level stays paused behind it
-   * and RESUME (or Esc) goes back to it; TITLE is always a way out.
+   * The flight map: replay any unlocked level of World 5 or World 6. Opened from the pause card, the level
+   * stays paused behind it and RESUME (or Esc) goes back to it; TITLE is always a way out.
    */
   function showMap(fromPause = false): void {
     if (!fromPause) music.stop();
-    const unlockedIdx = WORLD5_ORDER.indexOf(progress.unlocked);
-    const levels = WORLD5.map((l, i) => ({
+    const unlockedIdx = ORDER.indexOf(progress.unlocked);
+    const levels = STAGES.map((l, i) => ({
       label: i <= unlockedIdx ? `${l.id} ${l.name}${l.id in progress.best ? ` · ${pad6(progress.best[l.id])}` : ''}` : `${l.id} LOCKED`,
       disabled: i > unlockedIdx,
       run: () => {
         music.stop();
-        game.scene.stop('level');
+        game.scene.stop(activeKey);
         run = freshRun(RULES.hearts);
+        bossHp = undefined;
         playLevel(l);
       },
     }));
     hud.showOverlay(
-      `<p class="world">WORLD 5</p><h2>THE ATTACK</h2>
-       <p class="sub">Pick a cabin. Your best scores are saved on this device.</p>`,
+      `<p class="world">FLIGHT 1073</p><h2>THE MAP</h2>
+       <p class="sub">${WORLDS.map((w) => `WORLD ${w.id}: ${w.name}`).join(' · ')}</p>`,
       [...levels, ...(fromPause ? [{ label: 'RESUME', run: resume }] : []), { label: 'TITLE', run: opts.onQuit }],
       'map',
     );
   }
 
-  function playLevel(level: LevelData, fromCheckpoint = false): void {
+  /** What each boss phase asks of you, for its intro card. */
+  const BOSS_GOALS = {
+    A: 'Plunge his jets or stomp his cap 5 times, then grab him from behind!',
+    B: 'Hold ▼ at the yoke to pull up, plunge his goggles, then level her out.',
+    C: 'Keep him tied until Tabuk: GRAB the knot he is working loose.',
+  };
+
+  function playLevel(level: Stage, fromCheckpoint = false): void {
     if (level.id !== current.id || !fromCheckpoint) checkpoint = undefined;
     current = level;
     runAtStart = { ...run };
-    hud.showOverlay(
-      `<p class="world">WORLD ${level.id}</p><h2>${level.name}</h2><p class="sub">ALT ${level.altitude.start.toLocaleString('en-US')} FT · BANK ${level.tilt[0]?.deg ?? 0}°</p>`,
-      [],
-      'intro',
-    );
+    const intro = isBoss(level)
+      ? `<p class="world">WORLD ${level.id} · PHASE ${level.phase}</p><h2>${level.name}</h2><p class="sub">${BOSS_GOALS[level.phase]}</p>`
+      : `<p class="world">WORLD ${level.id}</p><h2>${level.name}</h2><p class="sub">ALT ${level.altitude.start.toLocaleString('en-US')} FT · BANK ${level.tilt[0]?.deg ?? 0}°</p>`;
+    hud.showOverlay(intro, [], 'intro');
     window.clearTimeout(introTimer);
     introTimer = window.setTimeout(() => {
       if (destroyed) return;
       hud.hideOverlay();
-      const init: LevelInit = {
-        level,
-        run: { ...run },
-        checkpoint,
-        inputs,
-        bot,
-        god: opts.god,
-        onHud: (s) => hud.update(s),
-        onEvent,
-      };
-      if (game.scene.getScene('level')) game.scene.start('level', init);
-      else game.scene.add('level', LevelScene, true, init);
-      music.play(level.mood === 'alarm' ? 'alarm' : 'cabin');
+      for (const key of ['level', 'boss']) if (game.scene.getScene(key)) game.scene.stop(key);
+      const onHud = (s: HudState) => hud.update(s);
+      if (isBoss(level)) {
+        activeKey = 'boss';
+        const init: BossInit = { level, run: { ...run }, inputs, bot: bossBot, god: opts.god, bossHp, onHud, onEvent };
+        if (game.scene.getScene('boss')) game.scene.start('boss', init);
+        else game.scene.add('boss', BossScene, true, init);
+        music.play(level.phase === 'C' ? 'calm' : 'boss');
+      } else {
+        activeKey = 'level';
+        const init: LevelInit = { level, run: { ...run }, checkpoint, inputs, bot, god: opts.god, onHud, onEvent };
+        if (game.scene.getScene('level')) game.scene.start('level', init);
+        else game.scene.add('level', LevelScene, true, init);
+        music.play(level.mood === 'alarm' ? 'alarm' : 'cabin');
+      }
       if (portrait.matches) window.setTimeout(pause, 50);
     }, INTRO_MS);
   }
 
   function retry(): void {
     hud.hideOverlay();
-    game.scene.stop('level');
+    game.scene.stop(activeKey);
     // A retry keeps the score but starts small with full hearts.
     run = { ...runAtStart, hearts: RULES.hearts, power: 'small' };
     playLevel(current, true);
@@ -205,14 +267,14 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
 
   function begin(): void {
     // Returning players with more than 5-1 unlocked pick from the map; first-timers board 5-1 directly.
-    if (!opts.level && progress.unlocked !== WORLD5_ORDER[0]) showMap();
+    if (!opts.level && progress.unlocked !== ORDER[0]) showMap();
     else playLevel(current);
   }
 
   function pause(): void {
     const s = scene();
     if (!s || hud.overlayOpen) return;
-    game.scene.pause('level');
+    game.scene.pause(activeKey);
     music.pause();
     const soundLabel = () => `SOUND: ${isMuted() ? 'OFF' : 'ON'}`;
     hud.showOverlay('<h2>PAUSED</h2><p class="sub">Please remain seated.</p>', [
@@ -224,7 +286,7 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
           btn.textContent = soundLabel();
         },
       },
-      { label: 'WORLD 5 MAP', run: () => showMap(true) },
+      { label: 'MAP', run: () => showMap(true) },
       { label: 'QUIT TO TITLE', run: opts.onQuit },
     ]);
   }
@@ -232,11 +294,11 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
   function resume(): void {
     hud.hideOverlay();
     inputs.forEach((i) => i.reset?.()); // keys pressed on the card must not fire in play
-    game.scene.resume('level');
+    game.scene.resume(activeKey);
     music.resume();
   }
 
-  const paused = () => !!scene() && game.scene.isPaused('level');
+  const paused = () => !!scene() && game.scene.isPaused(activeKey);
 
   // Cards are driven by keyboard and gamepad too: Space/Z/Enter/A confirm, arrows/d-pad move,
   // Esc/P/Start resume from pause (the paused scene can't see input).

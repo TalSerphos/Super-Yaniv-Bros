@@ -100,19 +100,18 @@ for (const id of ['5-1', '5-2', '5-3', '5-4']) {
     expect(s.nuts).toBeGreaterThan(10);
     expect(s.x).toBeGreaterThan(s.width - 300);
     expect(errors).toEqual([]);
-    if (last) return;
-    // The clear unlocks the next level, saves it, and NEXT LEVEL boards it.
+    // The clear unlocks the next level, saves it, and the card boards it (5-4 leads into the cockpit, World 6).
     const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('syb.progress.v1') ?? '{}'));
     expect(saved.best[id]).toBe(s.score);
-    await page.getByRole('button', { name: 'NEXT LEVEL' }).click();
-    await waitForLevel(page, `5-${Number(id[2]) + 1}`);
+    await page.getByRole('button', { name: last ? 'INTO THE COCKPIT' : 'NEXT LEVEL' }).click();
+    await waitForLevel(page, last ? '6-1' : `5-${Number(id[2]) + 1}`);
   });
 }
 
 test('returning players pick an unlocked level from the World 5 map', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('syb.progress.v1', JSON.stringify({ unlocked: '5-2', best: { '5-1': 1234 } })));
   await page.goto('./#play');
-  await expect(page.getByRole('heading', { name: 'THE ATTACK' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'THE MAP' })).toBeVisible();
   await expect(page.getByRole('button', { name: '5-1 THE SCREAM · 001234' })).toBeEnabled();
   await expect(page.getByRole('button', { name: '5-3 LOCKED' })).toBeDisabled();
   await page.getByRole('button', { name: /^5-2 THE AISLE/ }).click();
@@ -280,17 +279,17 @@ test.describe('QA regressions', () => {
     await page.goto('./?level=5-1#play');
     await waitForLevel(page, '5-1');
     await page.keyboard.press('Escape');
-    await page.getByRole('button', { name: 'WORLD 5 MAP' }).click();
-    await expect(page.getByRole('heading', { name: 'THE ATTACK' })).toBeVisible();
+    await page.getByRole('button', { name: 'MAP', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'THE MAP' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'TITLE' })).toBeVisible();
     await page.getByRole('button', { name: 'RESUME' }).click();
-    await expect(page.getByRole('heading', { name: 'THE ATTACK' })).toBeHidden();
+    await expect(page.getByRole('heading', { name: 'THE MAP' })).toBeHidden();
     const start = (await state(page))!;
     await page.keyboard.down('ArrowRight');
     await expect.poll(async () => (await state(page))!.x, { timeout: 5_000 }).toBeGreaterThan(start.x + 40);
     await page.keyboard.up('ArrowRight');
     await page.keyboard.press('Escape');
-    await page.getByRole('button', { name: 'WORLD 5 MAP' }).click();
+    await page.getByRole('button', { name: 'MAP', exact: true }).click();
     await page.getByRole('button', { name: 'TITLE' }).click();
     await expect(page.getByRole('button', { name: '1 PLAYER', exact: true })).toBeVisible();
   });

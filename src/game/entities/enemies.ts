@@ -28,8 +28,15 @@ export interface Enemy {
 
 const bodyBox = (b: Body) => ({ left: b.left, right: b.right, top: b.top, bottom: b.bottom });
 
+/** Launch velocity for a ballistic lob under the (tilted) cabin gravity that lands on (tx, ty) after T s. */
+export function lobVelocity(world: GameWorld, x0: number, y0: number, tx: number, ty: number): { x: number; y: number } {
+  const T = Phaser.Math.Clamp(Math.abs(tx - x0) / 170, 0.7, 1.2);
+  const g = world.gravity;
+  return { x: (tx - x0 - 0.5 * g.x * T * T) / T, y: (ty - y0 - 0.5 * g.y * T * T) / T };
+}
+
 /** Shared stomp/hurt contact rule for walking enemies. */
-function contact(world: GameWorld, player: Player, jumpHeld: boolean, top: number, fromX: number, onStomp: () => void): void {
+export function contact(world: GameWorld, player: Player, jumpHeld: boolean, top: number, fromX: number, onStomp: () => void): void {
   if (player.bamba > 0) return onStomp();
   if (player.canStomp(top)) {
     onStomp();
@@ -37,13 +44,13 @@ function contact(world: GameWorld, player: Player, jumpHeld: boolean, top: numbe
   } else world.hurtPlayer(fromX, 'enemy');
 }
 
-function physicsSprite(world: GameWorld, x: number, y: number, key: string): Sprite {
+export function physicsSprite(world: GameWorld, x: number, y: number, key: string): Sprite {
   const s = world.stage.physics.add.sprite(x, y, key, 0).setOrigin(0.5, 1).setScale(ART_SCALE).setDepth(8);
   world.stage.physics.add.collider(s, world.terrain);
   return s;
 }
 
-function knockOff(world: GameWorld, sprite: Phaser.GameObjects.Sprite, dir: number): void {
+export function knockOff(world: GameWorld, sprite: Phaser.GameObjects.Sprite, dir: number): void {
   const body = sprite.body as Body | null;
   if (body) body.checkCollision.none = true;
   sprite.setFlipY(true);
@@ -251,23 +258,33 @@ export class Suitcase implements Enemy {
 }
 
 // ---------------------------------------------------------------------------------------------------------
-/** A pacifier lobbed by a Baby Bomber: hurts on contact, bounces once and fades. */
-class Pacifier implements Enemy {
-  readonly kind = 'pacifier';
+/**
+ * Something lobbed at Yaniv (a Baby Bomber's pacifier, Jacuzzam's QRH binders and bath bombs): hurts on
+ * contact while flying, and fades after `bounces` landings. Swat it with the plunger.
+ */
+export class Lobbed implements Enemy {
   live = true;
-  private bounced = false;
+  private landings = 0;
   private readonly s: Sprite;
 
   constructor(
     private readonly world: GameWorld,
+    readonly kind: string,
+    key: string,
     x: number,
     y: number,
     vx: number,
     vy: number,
+    private readonly bounces = 1,
   ) {
-    this.s = world.stage.physics.add.sprite(x, y, 'proj.pacifier', 0).setScale(ART_SCALE).setDepth(9).play('proj.pacifier:spin');
-    (this.s.body as Body).setSize(16, 16).setVelocity(vx, vy).setBounce(0.4);
-    world.stage.physics.add.collider(this.s, world.terrain, () => this.land());
+    this.s = world.stage.physics.add.sprite(x, y, key, 0).setScale(ART_SCALE).setDepth(9);
+    if (world.stage.anims.exists(`${key}:spin`)) this.s.play(`${key}:spin`);
+    (this.s.body as Body).setSize(16, 16).setVelocity(vx, vy).setBounce(bounces > 1 ? 0.75 : 0.4);
+    world.stage.physics.add.collider(this.s, world.terrain, () => this.bounce());
+  }
+
+  private bounce(): void {
+    if (++this.landings >= this.bounces) this.land();
   }
 
   get x() {
@@ -281,8 +298,7 @@ class Pacifier implements Enemy {
   }
 
   private land(): void {
-    if (this.bounced) return;
-    this.bounced = true;
+    if (!this.live) return;
     this.live = false;
     this.world.stage.tweens.add({ targets: this.s, alpha: 0, delay: 300, duration: 300, onComplete: () => this.destroy() });
   }
@@ -297,7 +313,7 @@ class Pacifier implements Enemy {
 
   touch(player: Player): void {
     if (player.bamba > 0) return void this.hit();
-    this.world.hurtPlayer(this.s.x, 'pacifier');
+    this.world.hurtPlayer(this.s.x, this.kind);
     this.land();
   }
 
@@ -364,14 +380,10 @@ export class BabyBomber implements Enemy {
     }
   }
 
-  /** Ballistic lob under the (tilted) cabin gravity, landing on the target after T seconds. */
   private throwAt(tx: number, ty: number): void {
     const [x0, y0] = [this.x + 8, this.s.y - 40];
-    const T = Phaser.Math.Clamp(Math.abs(tx - x0) / 170, 0.7, 1.2);
-    const g = this.world.gravity;
-    const vx = (tx - x0 - 0.5 * g.x * T * T) / T;
-    const vy = (ty - y0 - 0.5 * g.y * T * T) / T;
-    this.spawn(new Pacifier(this.world, x0, y0, vx, vy));
+    const v = lobVelocity(this.world, x0, y0, tx, ty);
+    this.spawn(new Lobbed(this.world, 'pacifier', 'proj.pacifier', x0, y0, v.x, v.y));
     this.world.sfx('bump');
   }
 

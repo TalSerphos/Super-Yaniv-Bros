@@ -6,12 +6,14 @@
 export interface Buttons {
   left: boolean;
   right: boolean;
+  /** ▼: pull the yoke (World 6) and other "use" actions. */
+  down: boolean;
   jump: boolean;
   grab: boolean;
   pause: boolean;
 }
 
-export const noButtons = (): Buttons => ({ left: false, right: false, jump: false, grab: false, pause: false });
+export const noButtons = (): Buttons => ({ left: false, right: false, down: false, jump: false, grab: false, pause: false });
 
 /** Current and previous step's buttons, for edge detection ("pressed this step"). */
 export class ButtonEdges {
@@ -47,6 +49,8 @@ const KEYMAP: Record<string, keyof Buttons> = {
   KeyA: 'left',
   ArrowRight: 'right',
   KeyD: 'right',
+  ArrowDown: 'down',
+  KeyS: 'down',
   ArrowUp: 'jump',
   KeyW: 'jump',
   Space: 'jump',
@@ -112,6 +116,7 @@ export class GamepadInput implements InputSource {
       const x = p.axes[0] ?? 0;
       if (p.buttons[14]?.pressed || x < -0.4) into.left = true;
       if (p.buttons[15]?.pressed || x > 0.4) into.right = true;
+      if (p.buttons[13]?.pressed || (p.axes[1] ?? 0) > 0.5) into.down = true;
       if (p.buttons[0]?.pressed || p.buttons[12]?.pressed) into.jump = true;
       if (p.buttons[1]?.pressed || p.buttons[2]?.pressed) into.grab = true;
       if (p.buttons[9]?.pressed) into.pause = true;
@@ -254,5 +259,129 @@ export class BotInput implements InputSource {
       this.jumpHeld = 18; // hold for a full-height jump
       into.jump = true;
     }
+  }
+}
+
+// ---------------------------------------------------------------------------------------------------------
+
+/** What the boss bot sees each step (world units; boss x/top are his body's centre and head). */
+export interface BossBotView {
+  phase: 'A' | 'B' | 'C';
+  x: number;
+  y: number;
+  grounded: boolean;
+  facing: 1 | -1;
+  threats: BotThreat[];
+  boss: { x: number; top: number; mode: string; jetWindup: boolean; jetFiring: boolean; staggered: boolean; choking: boolean };
+  /** Phase B: where to stand to pull the yoke, and whether a hit can land now. */
+  yokeX?: number;
+  atYoke?: boolean;
+  pitch?: number;
+  bossHittable?: boolean;
+  subdued?: boolean;
+  /** Phase C: knot positions and strengths, the knot he is working on, Shota, the Captain, zip ties. */
+  knots?: { x: number; value: number }[];
+  target?: number;
+  shotaX?: number;
+  captain?: number;
+  zipX?: number | null;
+}
+
+/**
+ * Rule-based player for the three boss phases, used by e2e tests to prove each phase is winnable in a real
+ * browser. Phase A: stand off in front of him, swat what he throws, jump the bubble stream, plunge a jet
+ * during its wind-up, then grab him from behind and mash. Phase B: hold the yoke, plunge his goggles when
+ * he is open, level out. Phase C: work the weakest knot, help Shota when the Captain fades, grab zip ties.
+ */
+export class BossBot implements InputSource {
+  view: BossBotView | null = null;
+  private tick = 0;
+  private jumpHeld = 0;
+
+  read(into: Buttons): void {
+    const v = this.view;
+    if (!v) return;
+    this.tick++;
+    const mash = this.tick % 4 < 2; // a fresh GRAB press every 4 steps
+    const go = (x: number, slack = 6) => {
+      if (v.x < x - slack) into.right = true;
+      else if (v.x > x + slack) into.left = true;
+    };
+    if (v.phase === 'A') return this.phaseA(v, into, go, mash);
+    if (v.phase === 'B') return this.phaseB(v, into, go, mash);
+    return this.phaseC(v, into, go, mash);
+  }
+
+  private phaseA(v: BossBotView, into: Buttons, go: (x: number, slack?: number) => void, mash: boolean): void {
+    const b = v.boss;
+    if (b.choking) {
+      into.grab = mash;
+      return;
+    }
+    if (b.staggered) {
+      // Behind him (he faces left), then GRAB.
+      const behind = b.x + 44;
+      go(behind, 4);
+      if (Math.abs(v.x - behind) < 10) {
+        if (v.facing > 0) into.left = true; // face him
+        into.grab = mash;
+      }
+      return;
+    }
+    // Stand off in front of him; step in to plunge a winding-up jet.
+    go(b.jetWindup ? b.x - 70 : b.x - 130, 6);
+    if (b.jetWindup && Math.abs(v.x - (b.x - 70)) < 14) {
+      if (v.facing < 0) into.right = true;
+      into.grab = mash;
+    }
+    if (this.jumpHeld > 0) {
+      this.jumpHeld--;
+      into.jump = true;
+    }
+    const near = (t: BotThreat) => t.dx > -20 && t.dx < 90;
+    const swat = v.threats.some((t) => (t.kind === 'binder' || t.kind === 'ducky') && t.dx * v.facing > -6 && t.dx * v.facing < 66 && t.dy > -90 && t.dy < 6);
+    if (swat) into.grab = mash;
+    const jumpIt = v.threats.some((t) => (t.kind === 'bubble' && near(t) && Math.abs(t.dy) < 50) || (t.kind === 'ducky' && t.dx > 0 && t.dx < 40));
+    if (jumpIt && v.grounded && this.jumpHeld === 0) {
+      this.jumpHeld = 18;
+      into.jump = true;
+    }
+  }
+
+  private phaseB(v: BossBotView, into: Buttons, go: (x: number, slack?: number) => void, mash: boolean): void {
+    if (!v.atYoke) {
+      go(v.yokeX!, 3);
+      return;
+    }
+    // Face him (he stands to the right of the yoke).
+    if (v.facing < 0) into.right = true;
+    const pitch = v.pitch ?? 0;
+    if (v.subdued) {
+      into.down = pitch < 0; // level out and hold steady
+      return;
+    }
+    const swat = v.threats.some((t) => t.kind === 'bathbomb' && t.dx > -6 && t.dx < 70 && t.dy > -90 && t.dy < 6);
+    if ((v.bossHittable && pitch > -26) || swat) into.grab = mash;
+    else into.down = pitch < 2;
+  }
+
+  private helping = false;
+
+  private phaseC(v: BossBotView, into: Buttons, go: (x: number, slack?: number) => void, mash: boolean): void {
+    const knots = v.knots!;
+    const weakest = knots.reduce((w, k, i) => (k.value < knots[w].value ? i : w), 0);
+    const captain = v.captain ?? 100;
+    // Help Shota once the Captain fades, until he is stable again; a knot about to slip comes first.
+    if (captain < 30) this.helping = true;
+    if (captain > 90 || knots[weakest].value < 30) this.helping = false;
+    if (v.zipX != null && knots[weakest].value > 40) return go(v.zipX, 4);
+    if (this.helping) {
+      go(v.shotaX!, 6);
+      if (Math.abs(v.x - v.shotaX!) < 20) into.down = true;
+      return;
+    }
+    const pick = knots[v.target!].value < knots[weakest].value + 25 ? v.target! : weakest;
+    go(knots[pick].x, 4);
+    if (Math.abs(v.x - knots[pick].x) < 10) into.grab = mash;
   }
 }

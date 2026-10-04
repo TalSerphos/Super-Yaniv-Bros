@@ -34,6 +34,8 @@ export class Player {
   /** The vine just let go of: not grabbable again until Yaniv lands (no instant re-grab on a hop-off). */
   releasedVine: MaskVine | null = null;
   lastSafe: { x: number; y: number };
+  /** Held action pose from the `yaniv.action` sheet (pull the yoke, chokehold, tighten a knot): no walking. */
+  pose: 'pull' | 'choke' | 'tighten' | null = null;
   private coyote = 0;
   private jumpBuffer = 0;
   private jumpCut = false;
@@ -138,6 +140,12 @@ export class Player {
     this.swingCooldown = Math.max(0, this.swingCooldown - dt);
     this.stepBamba(dt);
 
+    if (this.pose) {
+      body.setVelocityX(0);
+      this.sprite.anims.stop();
+      this.sprite.setTexture('yaniv.action', frameIndex('yaniv.action', this.pose));
+      return false;
+    }
     if (this.swing) return this.stepSwing(dt, edges);
 
     const grounded = this.grounded;
@@ -189,7 +197,7 @@ export class Player {
 
   showFrame(name: string): void {
     this.sprite.anims.stop();
-    this.sprite.setFrame(frameIndex(SHEET, name));
+    this.sprite.setTexture(SHEET, frameIndex(SHEET, name));
   }
 
   private stepBamba(dt: number): void {
