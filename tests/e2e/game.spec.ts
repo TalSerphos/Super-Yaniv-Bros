@@ -36,20 +36,20 @@ interface SybHooks {
 }
 const syb = () => (window as unknown as { __syb: SybHooks }).__syb;
 
-test('1 PLAYER boards World 5 at 5-1: intro card, then a playable level with HUD', async ({ page }) => {
+test('1 PLAYER starts the trip at 3-1 in Dubai: intro card, then a playable level with HUD', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   await page.goto('./');
   await page.getByRole('button', { name: '1 PLAYER', exact: true }).click();
   await expect(page).toHaveURL(/#play$/);
-  await expect(page.getByText('THE SCREAM').first()).toBeVisible();
-  await waitForLevel(page, '5-1');
+  await expect(page.getByText('SECURITY LINE').first()).toBeVisible();
+  await waitForLevel(page, '3-1');
   const s = (await state(page))!;
-  expect(s.tilt).toBe(0); // the plane is still level when the scream hits
+  expect(s.tilt).toBe(0); // on the ground
   expect(s.hearts).toBe(3);
   await expect(page.getByTestId('hud')).toBeVisible();
-  await expect(page.getByTestId('alt')).toHaveText(/ALT \d{2},\d{3} FT/);
+  await expect(page.getByTestId('alt')).toHaveText(/^TIME \d+$/);
   await expect(page.locator('canvas')).toBeVisible();
   expect(errors).toEqual([]);
 });
@@ -224,7 +224,7 @@ test.describe('QA regressions', () => {
 
   test('bumping a call-button block from below releases hummus: Yaniv grows Big', async ({ page }) => {
     test.setTimeout(60_000);
-    await page.goto('./#play');
+    await page.goto('./?level=5-1#play');
     await waitForLevel(page, '5-1');
     // 5-1's power block is at column 28 (x 448-480); stand just left of its centre so the hummus slides right.
     await page.evaluate(`(${syb})().teleport(458, 320)`);

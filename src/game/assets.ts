@@ -5,13 +5,13 @@
  */
 import type Phaser from 'phaser';
 
-const FILES = import.meta.glob<string>(['../assets/w5/*.webp', '../assets/w6/*.webp', '../assets/w7/*.webp'], {
+const FILES = import.meta.glob<string>(['../assets/w3/*.webp', '../assets/w5/*.webp', '../assets/w6/*.webp', '../assets/w7/*.webp'], {
   eager: true,
   query: '?url',
   import: 'default',
 });
 const urlFor = (id: string): string | undefined =>
-  FILES[`../assets/w5/${id}.webp`] ?? FILES[`../assets/w6/${id}.webp`] ?? FILES[`../assets/w7/${id}.webp`];
+  FILES[`../assets/w3/${id}.webp`] ?? FILES[`../assets/w5/${id}.webp`] ?? FILES[`../assets/w6/${id}.webp`] ?? FILES[`../assets/w7/${id}.webp`];
 
 export interface SheetSpec {
   frame: [number, number];
@@ -64,6 +64,15 @@ export const SHEETS: Record<string, SheetSpec> = {
   'w7.gate': { frame: [64, 128], frames: ['closed', 'open'] },
   'npc.president': { frame: [48, 72], frames: ['idle', 'handshake', 'photo'] },
   'yaniv.ending': { frame: [48, 64], frames: ['shake', 'pose'] },
+  // World 3, DXB Airport (docs/levels/w3-assets.md)
+  'enemy.cart': { frame: [64, 56], frames: ['roll0', 'roll1', 'roll2', 'flat'] },
+  'proj.bill': { frame: [32, 24], frames: ['fly0', 'fly1'] },
+  'proj.perfume': { frame: [32, 24], frames: ['puff0', 'puff1'] },
+  'w3.launcher': { frame: [32, 48], frames: ['idle', 'fire'] },
+  'boss.mascot': { frame: [64, 80], frames: ['walk0', 'walk1', 'spray', 'hurt', 'defeated'] },
+  'npc.officer': { frame: [48, 64], frames: ['idle', 'thumbsUp'] },
+  'npc.gateagent': { frame: [48, 64], frames: ['idle', 'wave'] },
+  'w3.gate': { frame: [64, 128], frames: ['closed', 'open'] },
 };
 
 export const IMAGES: Record<string, [number, number]> = {
@@ -82,6 +91,18 @@ export const IMAGES: Record<string, [number, number]> = {
   'w7.prop.monument': [96, 256],
   'w7.prop.whitehouse': [480, 240],
   'w7.bg.oval': [640, 360],
+  'w3.bg.terminal': [640, 360],
+  'w3.bg.sunset': [640, 360],
+  'w3.bg.dutyfree': [640, 360],
+  'w3.tex.floor': [64, 32],
+  'w3.tex.counter': [64, 32],
+  'w3.tex.belt': [64, 16],
+  'w3.tex.travelator': [64, 16],
+  'w3.xray': [112, 72],
+  'w3.detector': [48, 96],
+  'prop.tray': [32, 16],
+  'w3.rope': [64, 32],
+  'w3.checkpoint': [32, 96],
   'w7.tex.basement': [128, 64],
   'w7.prop.poker': [128, 76],
   'w7.tex.path': [64, 32],
@@ -123,6 +144,10 @@ export function createAnimations(scene: Phaser.Scene): void {
   sheet('enemy.algae:walk', ['walk0', 'walk1'], 5);
   sheet('enemy.reporter:walk', ['walk0', 'walk1'], 6);
   sheet('proj.question:float', ['q0', 'q1'], 4);
+  sheet('enemy.cart:roll', ['roll0', 'roll1', 'roll2'], 10);
+  sheet('proj.bill:fly', ['fly0', 'fly1'], 8);
+  sheet('proj.perfume:puff', ['puff0', 'puff1'], 6);
+  sheet('boss.mascot:walk', ['walk0', 'walk1'], 4);
 }
 
 /** URL of a HUD/DOM icon strip, if the art exists (the DOM HUD falls back to CSS shapes). */

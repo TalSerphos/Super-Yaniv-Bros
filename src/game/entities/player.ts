@@ -27,6 +27,8 @@ export class Player {
   hurtTimer = 0;
   /** Seconds of ignored movement input (after a respawn). */
   controlLock = 0;
+  /** Speed of the surface under the feet (World 3 belts and travelators), set by the scene every step. */
+  carry = 0;
   plungeCooldown = 0;
   swing: MaskVine | null = null;
   /** Can't grab any vine until this runs out (after letting go). */
@@ -157,11 +159,13 @@ export class Player {
     // Running downhill (toward the cockpit) is a little faster, uphill a little slower. Bamba: faster still.
     const slope = Math.sin(degToRad(this.world.tiltDeg));
     const speed = PHYS.runSpeed * (this.bamba > 0 ? 1.35 : 1);
-    const target = dir * speed * (1 + 0.6 * slope * dir);
+    // On a belt the ground itself moves: Yaniv's running speed adds to it (he keeps the momentum in the air).
+    const carry = grounded ? this.carry : 0;
+    const target = dir * speed * (1 + 0.6 * slope * dir) + carry;
     const accel = (grounded ? PHYS.groundAccel : PHYS.airAccel) * dt;
     if (this.hurtTimer <= 0.9) body.setVelocityX(body.velocity.x + Phaser.Math.Clamp(target - body.velocity.x, -accel, accel));
     // Standing still on the slope: no creeping (the slope is felt while moving, not while idle).
-    if (grounded && !dir && Math.abs(body.velocity.x) < 6) body.setVelocityX(0);
+    if (grounded && !dir && Math.abs(body.velocity.x - carry) < 6) body.setVelocityX(carry);
 
     if (this.jumpBuffer > 0 && this.coyote > 0 && this.controlLock <= 0) {
       body.setVelocityY(-PHYS.jumpVelocity);
@@ -190,7 +194,7 @@ export class Player {
     if (this.hurtTimer > 0) this.showFrame('hurt');
     else if (this.swing) this.showFrame('jump');
     else if (!grounded) this.showFrame(this.body.velocity.y < 0 ? 'jump' : 'fall');
-    else if (Math.abs(this.body.velocity.x) > 12) p.anims.play(`${SHEET}:run`, true);
+    else if (Math.abs(this.body.velocity.x - this.carry) > 12) p.anims.play(`${SHEET}:run`, true); // (riding a belt is standing)
     else p.anims.play(`${SHEET}:idle`, true);
     p.setAlpha(this.bamba <= 0 && this.invulnerable > 0 && Math.floor(this.invulnerable * 12) % 2 ? 0.35 : 1);
   }

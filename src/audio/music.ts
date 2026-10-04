@@ -158,7 +158,51 @@ const STATELY: Style = {
 const MARCH = song(132, [MARCH_A, MARCH_A, MARCH_TRIO], PARADE, { staccato: 0.7 });
 const CEREMONY = song(92, [MARCH_TRIO], STATELY);
 
-const SONGS = { cabin: CABIN, alarm: ALARM, boss: BOSS, calm: CALM, victory: VICTORY, march: MARCH, ceremony: CEREMONY };
+// =========================================================================================================
+// World 3, DXB Airport: an original, breezy "terminal lounge" tune in C major, opened by a three-note PA
+// chime, with a rolling "travelator" section; 3-4 Gate Closing plays a faster, driving last-call version.
+
+const PA_CHIME: Section = [['G5 - E5 - C5 - - .', '. . . . . . . .'], ['C', 'C']];
+const TERMINAL_A: Section = [
+  ['E5 . G5 . A5 G5 E5 .', 'D5 - E5 - C5 - . .', 'E5 . G5 . A5 G5 C6 .', 'B5 - A5 - G5 - . .', 'A5 . A5 . G5 E5 G5 .', 'E5 - D5 - C5 - A4 .', 'D5 . E5 . F5 . A5 .', 'G5 - - - . . . .'],
+  ['C', 'Am', 'F', 'G', 'F', 'Am', 'Dm', 'G'],
+];
+const TRAVELATOR: Section = [
+  ['C5 E5 G5 C6 B5 G5 E5 G5', 'A4 C5 E5 A5 G5 E5 C5 E5', 'F4 A4 C5 F5 E5 C5 A4 C5', 'G4 B4 D5 G5 F5 D5 B4 D5', 'E5 - E5 . F5 - F5 .', 'G5 - G5 . A5 - G5 .', 'F5 . E5 . D5 . B4 .', 'C5 - - - . . . .'],
+  ['C', 'Am', 'F', 'G', 'Am', 'F', 'G', 'C'],
+];
+const STABS_C = {
+  C: '. C4+E4+G4 . . C4+E4+G4 . C4+E4+G4 .',
+  Am: '. A3+C4+E4 . . A3+C4+E4 . A3+C4+E4 .',
+  F: '. F3+A3+C4 . . F3+A3+C4 . F3+A3+C4 .',
+  G: '. G3+B3+D4 . . G3+B3+D4 . G3+B3+D4 .',
+  Dm: '. D4+F4+A4 . . D4+F4+A4 . D4+F4+A4 .',
+};
+const LOUNGE: Style = {
+  // A light, syncopated bossa-ish bass and off-beat stabs: rolling-suitcase energy.
+  bass: { C: 'C2 . . G2 C3 . G2 .', Am: 'A1 . . E2 A2 . E2 .', F: 'F1 . . C2 F2 . C2 .', G: 'G1 . . D2 G2 . D2 .', Dm: 'D2 . . A2 D3 . A2 .' },
+  stabs: STABS_C,
+  drums: 'k . h s . k s h',
+};
+const LAST_CALL: Style = {
+  bass: { C: 'C2 C3 C2 C3 G2 C3 C2 C3', Am: 'A1 A2 A1 A2 E2 A2 A1 A2', F: 'F1 F2 F1 F2 C2 F2 F1 F2', G: 'G1 G2 G1 G2 D2 G2 G1 G2', Dm: 'D2 D3 D2 D3 A2 D3 D2 D3' },
+  stabs: STABS_C,
+  drums: 'k h s h k k s h',
+};
+const TERMINAL = song(144, [PA_CHIME, TERMINAL_A, TERMINAL_A, TRAVELATOR], LOUNGE, { staccato: 0.7 });
+const LASTCALL = song(176, [PA_CHIME, TERMINAL_A, TRAVELATOR, TRAVELATOR], LAST_CALL, { staccato: 0.65 });
+
+const SONGS = {
+  cabin: CABIN,
+  alarm: ALARM,
+  boss: BOSS,
+  calm: CALM,
+  victory: VICTORY,
+  march: MARCH,
+  ceremony: CEREMONY,
+  terminal: TERMINAL,
+  lastcall: LASTCALL,
+};
 export type SongName = keyof typeof SONGS;
 
 /** For tests: every song's voices and drum pattern. */

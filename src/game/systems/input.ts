@@ -213,7 +213,7 @@ export interface BotThreat {
 }
 
 /** Things the bot rolls into or jumps over at ground level (and pokes first when it can). */
-const GROUND_THREATS = new Set(['trolley', 'suitcase']);
+const GROUND_THREATS = new Set(['trolley', 'suitcase', 'cart', 'mascot']);
 
 /**
  * Rule-based bot that runs right, pokes anything in plunger reach, waits out falling bags, and jumps over
@@ -235,9 +235,13 @@ export class BotInput implements InputSource {
       if ((v.swingVx ?? 0) > 60 && (v.swingDx ?? 0) > 10) into.jump = true;
       return;
     }
+    // 3-3's fake boss: face Mr. Spritz, swat his perfume, and jump onto his cap from close range.
+    const mascot = v.threats.find((t) => t.kind === 'mascot' && Math.abs(t.dx) < 420);
+    if (mascot) return this.fightMascot(v, mascot, into);
     // Plunger poke: reaches ~70 ahead at body height and a little above the head (also calms babies and
     // stuns open bin biters). Pacifiers are lobbed, so swat them anywhere in that box, including overhead.
     const lobbed = (t: BotThreat) => t.kind === 'pacifier' || t.kind === 'question';
+    // (Duty-Free Bills and perfume clouds come at chest height: the plunger pops them too.)
     const inReach = (t: BotThreat) =>
       lobbed(t) ? t.dx > -6 && t.dx < 70 && t.dy > -90 && t.dy < 6 : t.kind !== 'luggage' && t.dx > -6 && t.dx < 66 && Math.abs(t.dy) < 38;
     if (this.pokeCooldown === 0 && v.threats.some(inReach)) {
@@ -270,6 +274,38 @@ export class BotInput implements InputSource {
     if (pitAhead || wallAhead || rushingBehind || enemyAhead) {
       this.jumpHeld = 18; // hold for a full-height jump
       into.jump = true;
+    }
+  }
+
+  private fightMascot(v: BotView, m: BotThreat, into: Buttons): void {
+    const dir = Math.sign(m.dx) || 1;
+    const toward = () => (dir > 0 ? (into.right = true) : (into.left = true));
+    const cloud = v.threats.some((t) => t.kind === 'perfume' && t.dx * dir > -6 && t.dx * dir < 70 && Math.abs(t.dy) < 44);
+    if (cloud && this.pokeCooldown === 0) {
+      into.grab = true;
+      this.pokeCooldown = 16;
+    }
+    if (this.jumpHeld > 0) {
+      this.jumpHeld--;
+      into.jump = true;
+      toward();
+      return;
+    }
+    if (!v.grounded) {
+      toward(); // steer onto his cap
+      return;
+    }
+    // Too close to jump onto him: back off first (bumping into him hurts).
+    if (Math.abs(m.dx) < 34) {
+      if (dir > 0) into.left = true;
+      else into.right = true;
+      return;
+    }
+    if (Math.abs(m.dx) > 56) toward();
+    if (Math.abs(m.dx) < 84) {
+      this.jumpHeld = 18;
+      into.jump = true;
+      toward();
     }
   }
 }

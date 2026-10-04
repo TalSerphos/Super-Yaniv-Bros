@@ -126,6 +126,8 @@ test.describe('World 7 QA regressions', () => {
     await page.addInitScript(() => localStorage.setItem('syb.progress.v1', JSON.stringify({ unlocked: '7-4', best: {} })));
     await page.goto('./#play');
     await expect(page.getByRole('heading', { name: 'THE MAP' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^3-1/ })).toBeFocused();
+    await page.keyboard.press('ArrowRight');
     await expect(page.getByRole('button', { name: /^5-1/ })).toBeFocused();
     await page.keyboard.press('ArrowRight');
     await expect(page.getByRole('button', { name: /^6-1/ })).toBeFocused();

@@ -193,9 +193,17 @@
 
 /* Map / level select: two columns (World 5 left, World 6 and the way out right), compact buttons. */
 .game-overlay.map .card { padding: 2.2cqh 2.4cqw; }
-.game-overlay.map .card { max-width: 94cqw; }
-.game-overlay.map .card-actions { display: grid; grid-auto-columns: 1fr; gap: 1cqh 1.4cqw; }
-.game-overlay.map .card-actions button { font-size: 1cqw; padding: 1cqh 1cqw; text-align: left; white-space: nowrap; min-height: max(5.5cqh, 44px); }
+.game-overlay.map .card { max-width: 96cqw; }
+/* One column per world (four now): columns share the card's width and long names shrink to fit. */
+.game-overlay.map .card-actions { display: grid; grid-auto-columns: minmax(0, 1fr); gap: 1cqh 1cqw; }
+.game-overlay.map .card-actions button {
+  font-size: 0.86cqw;
+  padding: 1cqh 0.8cqw;
+  text-align: left;
+  line-height: 1.35;
+  min-width: 0; /* a long name and its best score wrap onto a second line */
+  min-height: max(5.5cqh, 44px);
+}
 .game-overlay.map h2 { margin-bottom: 1cqh; }
 .game-overlay.map .sub { margin-bottom: 1.4cqh; font-size: 1.4cqw; }
 .card-actions button:disabled { opacity: 0.4; cursor: default; }

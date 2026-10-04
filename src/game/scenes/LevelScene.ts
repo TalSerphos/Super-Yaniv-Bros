@@ -6,6 +6,7 @@ import { BabyBomber, BinBiter, LuggageRain, Suitcase, Trolley, type Enemy } from
 import { Blocks, PowerItem, ThrownPlunger } from '../entities/items.ts';
 import { CargoHold, HOLD_H } from '../entities/hold.ts';
 import { MaskVine } from '../entities/masks.ts';
+import { BillCannon, Mascot } from '../entities/w3.ts';
 import { Drain, Paparazzo, Reporter, algaeBlob } from '../entities/w7.ts';
 import { Player } from '../entities/player.ts';
 import { BLOCK, EXIT, SEAT, floorTopOf, parseLevel, type LevelData, type ParsedLevel, type Point } from '../levels/loader.ts';
@@ -100,7 +101,12 @@ const THEMES: Record<ThemeName, Theme> = {
   mall: { bgColor: '#9fd3f2', floorTex: 'w7.tex.path', solidTex: 'w7.tex.stone', water: true },
   lawn: { bgColor: '#9fd3f2', floorTex: 'w7.tex.path', solidTex: 'w7.tex.stone', water: true },
   oval: { bgColor: '#e9dcc0', floorTex: 'w7.tex.stone', solidTex: 'w7.tex.stone', water: false },
+  // World 3, DXB Airport: the terminal (daylight), the duty-free shop, and the gates at sunset.
+  terminal: { bgColor: '#cfe3f2', floorTex: 'w3.tex.floor', solidTex: 'w3.tex.counter', water: false },
+  dutyfree: { bgColor: '#f3e2c0', floorTex: 'w3.tex.floor', solidTex: 'w3.tex.counter', water: false },
+  gate: { bgColor: '#f0a060', floorTex: 'w3.tex.floor', solidTex: 'w3.tex.counter', water: false },
 };
+const AIRPORT_BG: Partial<Record<ThemeName, string>> = { terminal: 'w3.bg.terminal', dutyfree: 'w3.bg.dutyfree', gate: 'w3.bg.sunset' };
 
 /** Walking pace through the exit (world units/s). */
 const EXIT_WALK_SPEED = 70;
@@ -133,6 +139,17 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
   private algaeLayers: Phaser.GameObjects.TileSprite[] = [];
   /** In the air: the luggage hold under the cabin floor. */
   private hold?: CargoHold;
+  /** World 3: belt surfaces scroll; security trays ride the raised conveyors; props and cannons. */
+  private beltArt: { sprite: Phaser.GameObjects.TileSprite; speed: number }[] = [];
+  private trays: { sprite: Phaser.GameObjects.Image; belt: { x: number; w: number; speed: number } }[] = [];
+  private officers: Phaser.GameObjects.Sprite[] = [];
+  private gateAgent?: Phaser.GameObjects.Sprite;
+  private detectors: { x: number; beeped: boolean }[] = [];
+  private cannons: BillCannon[] = [];
+  private pendingCarts: Point[] = [];
+  private mascot?: Mascot;
+  /** The last few pop-up texts (test hook). */
+  private popLog: string[] = [];
   private gate?: Phaser.GameObjects.Sprite;
   private president?: Phaser.GameObjects.Sprite;
   private gateNagged = 0;
@@ -240,6 +257,15 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     this.drains = [];
     this.algaeLayers = [];
     this.hold = undefined;
+    this.beltArt = [];
+    this.trays = [];
+    this.officers = [];
+    this.gateAgent = undefined;
+    this.detectors = [];
+    this.cannons = [];
+    this.pendingCarts = [];
+    this.mascot = undefined;
+    this.popLog = [];
     this.gate = this.president = undefined;
     this.gateNagged = 0;
     this.gateWall = undefined;
@@ -258,6 +284,11 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     return (this.cfg.level.theme ?? 'cabin') !== 'cabin';
   }
 
+  /** World 3: DXB airport (on the ground, no tilt, a TIME counter, the baggage hall under the floor). */
+  private get airport(): boolean {
+    return !!AIRPORT_BG[this.cfg.level.theme ?? 'cabin'];
+  }
+
   private get floorTop(): number {
     return floorTopOf(this.level);
   }
@@ -273,12 +304,21 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
       .setTileScale(ART_SCALE);
     const tint = this.cfg.level.mood === 'alarm' ? 0xffb4a8 : undefined;
     if (tint) wall.setTint(tint);
-    // The cargo hold below the floor line, packed with luggage; loose bags slide off when the plane banks hard.
+    this.createHold(tint);
+  }
+
+  /**
+   * Below the floor line: the plane's cargo hold (Worlds 5-6) or the airport's baggage hall (World 3), packed
+   * with luggage; in the air, loose bags slide off when the plane banks hard.
+   */
+  private createHold(tint?: number): void {
     const top = this.floorTop + FLOOR_SLAB;
-    const slabs = this.level.solids
-      .filter((r) => r.kind === 'floor' && r.y === this.floorTop)
-      .map((r): [number, number] => [r.x, r.x + r.w])
-      .sort((a, b) => a[0] - b[0]);
+    // (The visual floor continues past both level ends: no fake hatch there.)
+    const slabs = [
+      [-VIEW_W, 0] as [number, number],
+      ...this.level.solids.filter((r) => (r.kind === 'floor' || r.kind === 'belt') && r.y === this.floorTop).map((r): [number, number] => [r.x, r.x + r.w]),
+      [this.level.width, this.level.width + VIEW_W] as [number, number],
+    ].sort((a, b) => a[0] - b[0]);
     // Behind the open hatches (pits) it is dark from the floor line down, so they still read as holes.
     this.add.rectangle(-VIEW_W, this.floorTop, this.level.width + VIEW_W * 2, FLOOR_SLAB, HOLD_DARK).setOrigin(0);
     const holdRng = new Phaser.Math.RandomDataGenerator([`${this.cfg.level.id}:hold`]);
@@ -301,6 +341,17 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
   /** World 7: the National Mall / the White House lawn (parallax park, a landmark) or the Oval Office. */
   private createGroundBackground(theme: ThemeName): void {
     const { width } = this.level;
+    const airportBg = AIRPORT_BG[theme];
+    if (airportBg) {
+      // DXB: the terminal / duty-free / sunset gates behind (parallax), the baggage hall below the floor.
+      this.add
+        .tileSprite(-VIEW_W, this.floorTop - VIEW_H + 40, width + VIEW_W * 2, VIEW_H, airportBg)
+        .setOrigin(0)
+        .setScrollFactor(0.45, 1)
+        .setTileScale(ART_SCALE);
+      this.createHold(0x9a9ab0);
+      return;
+    }
     if (theme === 'oval') {
       // The room fills the screen above the floor line (the camera is fixed, see create()).
       this.add.image(width / 2, this.floorTop + 22, 'w7.bg.oval').setOrigin(0.5, 1).setScale(ART_SCALE);
@@ -378,9 +429,24 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
   private createTerrain() {
     const solids = this.physics.add.staticGroup();
     for (const r of this.level.solids) {
-      const tex = r.kind === 'floor' ? this.theme.floorTex : this.theme.solidTex;
+      const tex =
+        r.kind === 'floor' ? this.theme.floorTex : r.kind === 'belt' ? (r.y === this.floorTop ? 'w3.tex.travelator' : 'w3.tex.belt') : this.theme.solidTex;
       const oval = r.kind === 'floor' && this.cfg.level.theme === 'oval';
-      this.add.tileSprite(r.x, r.y, r.w, oval ? OVAL_SLAB : r.h, tex).setOrigin(0).setTileScale(ART_SCALE);
+      const beltH = 16;
+      const art = this.add.tileSprite(r.x, r.y, r.w, oval ? OVAL_SLAB : r.kind === 'belt' ? beltH : r.h, tex).setOrigin(0).setTileScale(ART_SCALE);
+      // A travelator is set into the floor slab: the slab shows under its moving surface.
+      if (r.kind === 'belt' && r.h > beltH) this.add.tileSprite(r.x, r.y + beltH, r.w, r.h - beltH, this.theme.floorTex).setOrigin(0, 0).setTileScale(ART_SCALE);
+      if (r.kind === 'belt') {
+        const belt = this.level.belts.find((b) => b.x === r.x && b.y === r.y)!;
+        this.beltArt.push({ sprite: art, speed: belt.speed });
+        // Security trays ride the raised conveyors (they vanish into the X-ray machines).
+        if (r.y < this.floorTop) {
+          for (let x = r.x + 6; x < r.x + r.w - 30; x += 58) {
+            const sprite = this.add.image(x, r.y, 'prop.tray').setOrigin(0, 1).setScale(ART_SCALE).setDepth(6);
+            this.trays.push({ sprite, belt: { x: r.x, w: r.w, speed: belt.speed } });
+          }
+        }
+      }
       if (r.kind === 'floor') this.underFloor(r.x, r.y + r.h, r.w);
       solids.add(this.add.zone(r.x + r.w / 2, r.y + r.h / 2, r.w, r.h));
     }
@@ -402,11 +468,11 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
 
   /** What's below a floor slab: the cabin's dark underside, or a marble terrace wall on the ground. */
   private underFloor(x: number, y: number, w: number): void {
-    if (this.ground && this.cfg.level.theme !== 'oval') {
+    if (this.ground && !this.airport && this.cfg.level.theme !== 'oval') {
       this.add.tileSprite(x, y, w, VIEW_H, this.theme.solidTex).setOrigin(0).setTileScale(ART_SCALE).setTint(0xd8d2c4);
       this.add.rectangle(x, y, w, 3, 0x000000, 0.25).setOrigin(0); // the walkway's shadow on the wall
     }
-    // The Oval Office has its basement (createBasement); in the air the cargo hold (createBackground) shows.
+    // The Oval Office has its basement (createBasement); in the air and at the airport the hold (createHold) shows.
   }
 
   private addOneWay(group: Phaser.Physics.Arcade.StaticGroup, x: number, y: number, w: number, h: number) {
@@ -425,6 +491,13 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
 
   /** A darker row of seatbacks in front of the floor (closer to the camera), as in the concept art. */
   private createForeground(): void {
+    if (this.airport) {
+      // Blue queue-barrier tape on chrome posts along the front, as in the concept art (not over the gaps).
+      for (const r of this.level.solids.filter((k) => (k.kind === 'floor' || k.kind === 'belt') && k.y === this.floorTop)) {
+        this.add.tileSprite(r.x, this.floorTop + FLOOR_SLAB + 2, r.w, 32, 'w3.rope').setOrigin(0, 1).setTileScale(ART_SCALE * 1.5).setDepth(15);
+      }
+      return;
+    }
     if (this.ground) {
       return; // (each paparazzo brings his own stretch of velvet rope)
     }
@@ -467,6 +540,10 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     }
     else if (this.cfg.level.theme === 'oval') {
       // The Oval Office has no exit: the visit ends with the handshake.
+    } else if (this.airport) {
+      // A boarding gate door; in 3-3 it stays shut while Mr. Spritz guards the duty-free.
+      const shut = !!this.level.mascot;
+      this.gate = this.add.sprite(e.x, e.y + EXIT.h, 'w3.gate', frameIndex('w3.gate', shut ? 'closed' : 'open')).setOrigin(0, 1).setScale(ART_SCALE);
     } else if (this.ground) {
       // The gate is shut while 7-1's drains are still clogged.
       const shut = this.level.drains.length > 0;
@@ -475,12 +552,20 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     this.exitZone = this.add.zone(e.x + e.w / 2, e.y + e.h / 2, e.w * 0.6, e.h);
     this.physics.add.existing(this.exitZone, true);
     this.checkpoints = [...this.level.checkpoints];
-    const marker = this.ground ? 'w7.checkpoint' : 'w5.galley';
+    const marker = this.airport ? 'w3.checkpoint' : this.ground ? 'w7.checkpoint' : 'w5.galley';
     for (const g of this.level.checkpoints) this.add.image(g.x, g.y, marker).setOrigin(0.5, 1).setScale(ART_SCALE).setDepth(1);
   }
 
   private createNpcs(): void {
-    const { captain, screamer, president } = this.level;
+    const { captain, screamer, president, gateAgent } = this.level;
+    // World 3: friendly security officers, metal detectors, X-ray machines over the belts, the gate agent.
+    for (const o of this.level.officers) this.officers.push(this.add.sprite(o.x, o.y, 'npc.officer', 0).setOrigin(0.5, 1).setScale(ART_SCALE).setDepth(5));
+    for (const d of this.level.detectors) {
+      this.add.image(d.x, d.y, 'w3.detector').setOrigin(0.5, 1).setScale(ART_SCALE).setDepth(11);
+      this.detectors.push({ x: d.x, beeped: false });
+    }
+    for (const x of this.level.xrays) this.add.image(x.x, x.y + 4, 'w3.xray').setOrigin(0.5, 1).setScale(ART_SCALE).setDepth(7);
+    if (gateAgent) this.gateAgent = this.add.sprite(gateAgent.x, gateAgent.y, 'npc.gateagent', 0).setOrigin(0.5, 1).setScale(ART_SCALE).setDepth(5);
     if (president) this.president = this.add.sprite(president.x, president.y, 'npc.president', 0).setOrigin(0.5, 1).setScale(ART_SCALE).setDepth(5);
     if (captain) this.captain = this.add.sprite(captain.x, captain.y, 'npc.captain', 0).setOrigin(0.5, 1).setScale(ART_SCALE).setDepth(5);
     if (screamer) {
@@ -507,6 +592,14 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     for (const a of this.level.algae) spawn(algaeBlob(this, a.x, a.y));
     for (const r of this.level.reporters) spawn(new Reporter(this, r.x, r.y, spawn));
     for (const p of this.level.paparazzi) spawn(new Paparazzo(this, p.x, p.y));
+    for (const l of this.level.launchers) this.cannons.push(new BillCannon(this, l.x, l.y));
+    // Runaway carts roll in from ahead when Yaniv comes near (skip ones already behind a checkpoint).
+    this.pendingCarts = this.level.carts.filter((c) => c.x > (this.cfg.checkpoint?.x ?? -Infinity)).map((c) => ({ ...c }));
+    const m = this.level.mascot;
+    if (m) {
+      this.mascot = new Mascot(this, m.x, m.y, spawn, () => this.mascotBeaten());
+      spawn(this.mascot);
+    }
     // Trolleys roll in from behind once Yaniv is past their spawner (skip ones already behind a checkpoint).
     this.pendingTrolleys = this.level.trolleys.filter((t) => t.x > (this.cfg.checkpoint?.x ?? -Infinity) - 200).map((t) => ({ ...t }));
   }
@@ -521,9 +614,10 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     if (this.cfg.level.theme !== 'oval') this.physics.add.overlap(p, this.exitZone, () => this.clearLevel());
     // 7-1: the shut gate is a real barrier until the pool is clean (its zone reaches into the exit zone, so
     // walking up to it still shows the hint).
-    if (this.level.drains.length) {
+    if (this.level.drains.length || this.level.mascot) {
       const e = this.level.exit;
-      this.gateWall = this.add.zone(e.x + 24, e.y + e.h / 2, 16, e.h);
+      // Floor to well above the top of the screen: no jumping over a locked gate.
+      this.gateWall = this.add.zone(e.x + 24, e.y + e.h - VIEW_H, 16, VIEW_H * 2);
       this.physics.add.existing(this.gateWall, true);
       this.physics.add.collider(p, this.gateWall, () => this.clearLevel());
       if (this.objectiveDone) this.gateWall.destroy();
@@ -626,6 +720,7 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     this.progressX = Math.max(this.progressX, p.x);
     this.applyTilt(false);
     this.hold?.step(this.gravity, dt);
+    this.stepBelts(dt);
 
     if (p.step(dt, this.edges)) this.fire();
     this.stepVines(dt);
@@ -638,6 +733,7 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     for (const pr of this.projectiles) pr.step(dt, this.enemies);
     this.projectiles = this.projectiles.filter((pr) => pr.live);
     this.stepNpcs();
+    this.stepAirport(dt);
     this.stepDrains(dt);
     if (this.finished) return; // the 7-4 finale started
 
@@ -717,6 +813,60 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     }
   }
 
+  /** World 3: belts carry whoever stands on them; their surfaces scroll and the security trays ride along. */
+  private stepBelts(dt: number): void {
+    const p = this.player;
+    // Standing on a belt (feet on its top surface, within its span): the belt carries Yaniv along.
+    const belt = p.grounded ? this.level.belts.find((b) => p.x >= b.x - 4 && p.x <= b.x + b.w + 4 && Math.abs(b.y - p.y) < 3) : undefined;
+    p.carry = belt?.speed ?? 0;
+    // The texture is drawn at ART_SCALE: one world unit is two texture pixels.
+    for (const b of this.beltArt) b.sprite.tilePositionX -= (b.speed * dt) / ART_SCALE;
+    for (const t of this.trays) {
+      const { x, w, speed } = t.belt;
+      let tx = t.sprite.x + speed * dt;
+      if (tx > x + w - 30) tx = x;
+      else if (tx < x) tx = x + w - 30;
+      t.sprite.x = tx;
+    }
+  }
+
+  /** World 3: perfume cannons, runaway carts, metal detectors, and the friendly staff. */
+  private stepAirport(dt: number): void {
+    const p = this.player;
+    const spawn = (e: Enemy) => this.enemies.push(e);
+    for (const c of this.cannons) c.step(dt, spawn);
+    for (let i = this.pendingCarts.length - 1; i >= 0; i--) {
+      const c = this.pendingCarts[i];
+      if (c.x - p.x > 420) continue;
+      this.pendingCarts.splice(i, 1);
+      spawn(new Trolley(this, c.x, c.y, { cart: true }));
+    }
+    for (const d of this.detectors) {
+      if (d.beeped || Math.abs(p.x - d.x) > 8) continue;
+      // Every plumber's tool belt sets it off.
+      d.beeped = true;
+      this.sfx('warn');
+      this.popText(d.x, p.y - 80, 'BEEP! IT\'S JUST A PLUNGER!');
+    }
+    for (const o of this.officers) {
+      const near = Math.abs(p.x - o.x) < 90;
+      o.setFrame(frameIndex('npc.officer', near ? 'thumbsUp' : 'idle')).setFlipX(p.x > o.x);
+    }
+    if (this.gateAgent) {
+      const near = this.level.exit.x - p.x < 260;
+      this.gateAgent.setFrame(frameIndex('npc.gateagent', near ? 'wave' : 'idle'));
+    }
+  }
+
+  /** 3-3: Mr. Spritz is beaten (he was just the intern): the gate opens. */
+  private mascotBeaten(): void {
+    this.gate?.setFrame(frameIndex('w3.gate', 'open'));
+    this.gateWall?.destroy();
+    this.gateWall = undefined;
+    this.time.delayedCall(900, () => this.popText(this.player.x, this.player.y - 110, 'THANK YOU YANIV!', 1500, true));
+    this.time.delayedCall(2300, () => this.popText(this.player.x, this.player.y - 110, 'BUT THE COCKPIT IS IN ANOTHER CABIN!', 1700, true));
+  }
+
   /** All drains clear: the algae washes away and the gate swings open. */
   private poolCleared(): void {
     this.popText(this.player.x, this.player.y - 90, 'THE POOL IS CLEAN!');
@@ -730,13 +880,13 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
 
   /** Top-right of the HUD on the ground: TIME, and 7-1's drains still to clear. */
   private groundLabel(): string {
-    if (!this.altitude) return 'WASHINGTON, D.C.';
+    if (!this.altitude) return this.airport ? 'DXB AIRPORT' : 'WASHINGTON, D.C.';
     const left = this.drains.filter((d) => d.clogged).length;
     return `TIME ${Math.ceil(this.altitude.value)}${this.drains.length ? ` · DRAINS ${left}` : ''}`;
   }
 
   private get objectiveDone(): boolean {
-    return this.drains.every((d) => !d.clogged);
+    return this.drains.every((d) => !d.clogged) && (!this.mascot || this.mascot.state === 'done');
   }
 
   private stepDrains(dt: number): void {
@@ -890,11 +1040,12 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
   private clearLevel(): void {
     if (this.finished || this.cfg.level.theme === 'oval') return;
     if (!this.objectiveDone) {
-      // 7-1: the gate stays shut until the pool's drains are clear.
+      // 7-1: the gate stays shut until the pool's drains are clear; 3-3: until Mr. Spritz is beaten.
       if (this.elapsed - this.gateNagged > 2) {
         this.gateNagged = this.elapsed;
         const left = this.drains.filter((d) => d.clogged).length;
-        this.popText(this.level.exit.x, this.level.exit.y - 10, `LOCKED: ${left} DRAIN${left === 1 ? '' : 'S'} STILL CLOGGED!`, 1300, true);
+        const text = left ? `LOCKED: ${left} DRAIN${left === 1 ? '' : 'S'} STILL CLOGGED!` : 'MR. SPRITZ BLOCKS THE GATE!';
+        this.popText(this.level.exit.x, this.level.exit.y - 10, text, 1300, true);
         this.sfx('bump');
       }
       return;
@@ -944,6 +1095,8 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
   }
 
   popText(x: number, y: number, text: string, hold = 0, big = false): void {
+    this.popLog.push(text); // canvas text is invisible to the DOM: tests read it from here
+    if (this.popLog.length > 20) this.popLog.shift();
     const t = this.add.text(x, y, text, { fontFamily: '"Press Start 2P", monospace', fontSize: big ? '24px' : '16px', color: '#fff8e7' });
     t.setOrigin(0.5).setScale(0.5).setDepth(20).setStroke('#000', 4);
     this.tweens.add({ targets: t, y: y - 20, alpha: 0, delay: hold, duration: 700, onComplete: () => t.destroy() });
@@ -1012,6 +1165,7 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
         hurts: [...this.hurtLog],
         enemies: this.enemies.filter((e) => e.live).map((e) => ({ kind: e.kind, x: Math.round(e.x), y: Math.round(e.y) })),
         drains: this.drains.filter((d) => d.clogged).length,
+        pops: [...this.popLog],
         time: this.cfg.level.timer && this.altitude ? Math.ceil(this.altitude.value) : undefined,
         items: this.items
           .filter((i) => i.ready)

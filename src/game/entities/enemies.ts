@@ -28,6 +28,9 @@ export interface Enemy {
 
 const bodyBox = (b: Body) => ({ left: b.left, right: b.right, top: b.top, bottom: b.bottom });
 
+/** World 3's runaway baggage carts roll at this speed (world units/s). */
+export const CART_SPEED = 110;
+
 /** Launch velocity for a ballistic lob under the (tilted) cabin gravity that lands on (tx, ty) after T s. */
 export function lobVelocity(world: GameWorld, x0: number, y0: number, tx: number, ty: number, minT = 0.7): { x: number; y: number } {
   const T = Phaser.Math.Clamp(Math.abs(tx - x0) / 170, minT, Math.max(1.2, minT));
@@ -59,20 +62,29 @@ export function knockOff(world: GameWorld, sprite: Phaser.GameObjects.Sprite, di
 }
 
 // ---------------------------------------------------------------------------------------------------------
-/** Trolley Troll: rolls downhill from behind, gathering speed. Stomp or plunge it flat. */
+/**
+ * Trolley Troll: rolls downhill from behind, gathering speed. Stomp or plunge it flat. World 3 reuses it as the
+ * Runaway Cart (a baggage cart rolling in from ahead: its own sheet, rolling left).
+ */
 export class Trolley implements Enemy {
-  readonly kind = 'trolley';
+  readonly kind: 'trolley' | 'cart';
   live = true;
   private readonly s: Sprite;
+  private readonly key: string;
 
   constructor(
     private readonly world: GameWorld,
     x: number,
     y: number,
+    opts: { cart?: boolean } = {},
   ) {
-    this.s = physicsSprite(world, x, y, 'enemy.trolley').play('enemy.trolley:roll');
+    this.kind = opts.cart ? 'cart' : 'trolley';
+    this.key = opts.cart ? 'enemy.cart' : 'enemy.trolley';
+    this.s = physicsSprite(world, x, y, this.key).play(`${this.key}:roll`);
     const body = sizeBody(this.s, 52, 42);
-    body.setMaxVelocity(PHYS.trolleyMaxSpeed, PHYS.maxFall).setVelocityX(80).setFriction(0, 0);
+    body.setMaxVelocity(PHYS.trolleyMaxSpeed, PHYS.maxFall).setVelocityX(opts.cart ? -CART_SPEED : 80).setFriction(0, 0);
+    // The cart's sheet faces right; it rolls left, toward Yaniv.
+    if (opts.cart) this.s.setFlipX(true);
     world.sfx('warn');
     world.warn();
   }
@@ -89,7 +101,13 @@ export class Trolley implements Enemy {
 
   step(): void {
     const view = this.world.stage.cameras.main.worldView;
-    if (this.s.x > view.right + 640 || this.s.y > this.world.level.height + 200) this.destroy();
+    if (this.s.x > view.right + 640 || this.s.x < view.left - 640 || this.s.y > this.world.level.height + 200) return this.destroy();
+    // A cart that hits a counter or wall bounces back the other way (it never just parks).
+    const body = this.s.body as Body | null;
+    if (!body) return;
+    if (this.kind === 'cart' && body.blocked.left) body.setVelocityX(CART_SPEED);
+    else if (this.kind === 'cart' && body.blocked.right) body.setVelocityX(-CART_SPEED);
+    if (this.kind === 'cart') this.s.setFlipX(body.velocity.x < 0);
   }
 
   hitbox() {
@@ -109,7 +127,7 @@ export class Trolley implements Enemy {
     if (!this.live) return;
     this.live = false;
     this.s.anims.stop();
-    this.s.setFrame(frameIndex('enemy.trolley', 'flat'));
+    this.s.setFrame(frameIndex(this.key, 'flat'));
     const body = this.s.body as Body;
     body.setVelocity(0, 0).setAllowGravity(false);
     body.checkCollision.none = true;

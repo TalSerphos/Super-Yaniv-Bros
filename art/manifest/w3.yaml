@@ -1,0 +1,406 @@
+# World 3 (DXB Airport) assets. Contract: docs/levels/w3-assets.md. Schema: tools/assets/README.md.
+# Sprites are painted on flat magenta and keyed out; frames are built at 2x world units.
+# Mood: a gleaming Dubai airport terminal. 3-1..3-3 in bright golden daylight (the style prefix asks for sunset,
+# so those prompts override it); 3-4 Gate Closing is at sunset, like Tal's concept art (art/reference/w3-*.webp).
+# Scale targets (2x px): Yaniv's idle is 107 tall; adults about the same.
+
+- id: w3.bg.terminal
+  kind: background
+  refs: [art/reference/w3-security.webp, art/reference/w5-aisle.webp]
+  size: 1536x1024
+  candidates: 2
+  frame: {w: 640, h: 360}
+  seamless: x
+  prompt: >
+    Background layer for a side-scrolling platformer: the inside of a huge, gleaming modern airport terminal in
+    Dubai, drawn as a flat, straight-on side view, perfectly level, no perspective, filling the whole image edge
+    to edge. Use the first reference image for the setting and mood (its big windows, airplanes and warm
+    light) and the second only for the pixel-art technique; ignore every character, sign, text, HUD and
+    foreground object in them. Lighting: bright, warm golden DAYTIME sun, NOT sunset: a clear pale-blue sky with
+    a few small white clouds. A tall wall of glass from near the top to the lower quarter, divided by slim white
+    steel mullions every so often, under a white ceiling with gentle curved ribs and a row of small round
+    downlights. Through the glass: a sunny apron with two or three parked white airliners at jet bridges, a
+    control tower, small service vehicles, and far away on the hazy horizon a pale desert-city skyline of slim
+    towers. The bottom fifth of the image is a far-away busy concourse: a polished cream marble floor with soft
+    reflections and tiny distant silhouettes of travellers with roller bags. The pattern repeats evenly so it
+    can tile horizontally. No signs, no screens with writing, no logos, no text, no letters, no numbers.
+  out: {dir: w3, quality: 82, position: bottom}
+
+- id: w3.bg.sunset
+  kind: background
+  refs: [art/reference/w3-gate.webp, art/reference/w5-aisle.webp]
+  size: 1536x1024
+  candidates: 2
+  frame: {w: 640, h: 360}
+  seamless: x
+  prompt: >
+    Background layer for a side-scrolling platformer: the departure-gate area of a huge, gleaming airport
+    terminal in Dubai at SUNSET, drawn as a flat, straight-on side view, perfectly level, no perspective,
+    filling the whole image edge to edge. Use the first reference image for the setting, colors and mood (the
+    glowing orange-purple sunset sky, the airliners, the warm reflections) and the second only for the
+    pixel-art technique; ignore every character, sign, text, HUD and foreground object in them. A tall wall of
+    glass divided by slim dark steel mullions, a big low setting sun and purple-orange clouds outside, white
+    airliners with their tails catching the light parked at jet bridges, a control tower on the left, runway
+    lights starting to glow. Along the bottom fifth, far away inside: rows of empty dark-teal waiting seats and
+    a polished floor reflecting the orange light. The pattern repeats evenly so it can tile horizontally. No
+    signs, no screens with writing, no logos, no text, no letters, no numbers.
+  out: {dir: w3, quality: 82, position: centre}  # keep the sunset sky (the seats sit low in the master)
+
+- id: w3.bg.dutyfree
+  kind: background
+  refs: [art/reference/w3-security.webp, art/reference/w5-aisle.webp]
+  size: 1536x1024
+  candidates: 2
+  frame: {w: 640, h: 360}
+  seamless: x
+  prompt: >
+    Background layer for a side-scrolling platformer: the inside of a glittering luxury DUTY-FREE shop in a
+    Dubai airport, drawn as a flat, straight-on side view of its back wall, perfectly level, no perspective,
+    filling the whole image edge to edge, in the pixel style of the second reference image (the first only for
+    the airport mood). Tall glowing back-lit shelves of glass and gold rising almost to the ceiling, packed with
+    rows of colourful perfume bottles of many fancy shapes, gift boxes, chocolate boxes and big gold-wrapped
+    dates boxes; warm spotlights; a polished white marble floor band along the bottom fifth with soft
+    reflections; small crystal chandeliers hanging along the top; a few tall gold pillars every so often. Rich
+    gold, cream, rose and amber colours, bright and inviting. The pattern repeats evenly so it can tile
+    horizontally. No people, no signs, no price tags with writing, no logos, no brand names, no text, no
+    letters, no numbers.
+  out: {dir: w3, quality: 82, position: bottom}
+
+- id: w3.tex.floor
+  kind: texture
+  refs: [art/reference/w5-aisle.webp]
+  size: 1536x1024
+  candidates: 2
+  frame: {w: 64, h: 32}
+  seamless: x
+  prompt: >
+    A flat, straight-on texture swatch that fills the entire image edge to edge, no perspective, no border, in
+    the pixel style of the reference image (ignore its content and colors): the cut edge of a polished airport
+    terminal floor used as the ground in a platformer, warm daylight. Along the top edge, a thin bright
+    brushed-steel strip with a white highlight, about one twentieth of the image height. Directly below it,
+    ONE course of big glossy cream-and-sand marble floor slabs seen from the edge, the course about one third
+    of the image height, with thin dark joints about every quarter of the image width and soft warm
+    reflections. Everything below that course, down to the bottom edge, is a plain smooth warm-grey stone face
+    in soft shade with faint veining and NO joints. Even and horizontally tileable, no text.
+  out: {dir: w3, colors: 48, position: top, span: 0.5}
+
+- id: w3.tex.counter
+  kind: texture
+  refs: [art/reference/w3-security.webp]
+  size: 1536x1024
+  candidates: 2
+  frame: {w: 64, h: 32}
+  seamless: x
+  prompt: >
+    A flat, straight-on texture swatch that fills the entire image edge to edge, no perspective, no border, in
+    the 16-bit pixel style of the reference image (ignore its characters and text): the side panel of an
+    airport security conveyor and check-in counter used as platforms in a platformer, filling the WHOLE image
+    from the top edge to the bottom edge (no empty, white or dark margins anywhere). A bright brushed
+    stainless-steel top rim with a white highlight touching the very top edge, about one eighth of the image
+    height;
+    below it, light-grey enamelled metal panels with thin dark seams about every half of the image width, a
+    narrow deep-blue stripe with a small simple pale wing emblem shape in the middle of each panel (no
+    letters), small round bolts, and a darker shaded bottom edge. Even and horizontally tileable, no text.
+  out: {dir: w3, colors: 48, position: top}
+
+- id: w3.tex.belt
+  kind: texture
+  refs: [art/reference/w3-security.webp]
+  size: 1536x1024
+  candidates: 2
+  frame: {w: 64, h: 16}
+  seamless: x
+  prompt: >
+    A flat, straight-on texture swatch that fills the entire image edge to edge, no perspective, no border, in
+    the 16-bit pixel style of the reference image (ignore its characters and text): the side of a moving
+    airport conveyor belt, used as a platform, filling the WHOLE image from the top edge to the bottom edge
+    (no empty, white or dark margins anywhere). Along the top edge, a thin black rubber belt surface seen from
+    the side with evenly spaced small raised ribs; under it, a row of shiny round steel rollers seen end-on,
+    evenly spaced, each with a bright highlight and a dark axle dot, set in a dark grey steel channel; along
+    the bottom edge a bright brushed-steel lip. Evenly repeating, horizontally tileable, no text.
+  out: {dir: w3, colors: 48, position: top}
+
+- id: w3.tex.travelator
+  kind: texture
+  refs: [art/reference/w3-gate.webp]
+  size: 1536x1024
+  candidates: 2
+  frame: {w: 64, h: 16}
+  seamless: x
+  prompt: >
+    A flat, straight-on texture swatch that fills the entire image edge to edge, no perspective, no border, in
+    the 16-bit pixel style of the reference image (ignore its characters and text): the side of an airport
+    moving walkway (travelator) set into the floor, used as the ground in a platformer. Along the top edge a
+    band of bright grooved aluminium pallets seen from the side, with fine evenly spaced vertical grooves and a
+    narrow bright safety-yellow line along their front; under it a dark charcoal channel with small evenly
+    spaced amber guide lights; along the bottom edge a polished steel strip. Evenly repeating, horizontally
+    tileable, no text.
+  out: {dir: w3, colors: 48, position: centre}
+
+- id: w3.xray
+  kind: image
+  refs: [art/reference/w3-security.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  frame: {w: 112, h: 72}
+  prompt: >
+    A single prop for a platformer, strict side view, perfectly level, not tilted, in the 16-bit pixel style of
+    the reference image (ignore its characters and text): an airport security X-RAY baggage scanner. A boxy
+    light-grey machine housing about one and a half times as wide as it is tall, with a rounded top, a dark
+    square tunnel opening in its lower middle with a curtain of hanging dark-grey rubber flaps, a small blue
+    glowing scanner screen mounted on top at the left showing a simple outline of a suitcase (no letters),
+    small green and amber status lights, and a deep-blue stripe along its side. NO conveyor belt and NO legs:
+    the bottom edge of the housing is flat. Bright warm daylight. Perfectly flat, solid, uniform magenta
+    (#FF00FF) background around it, no shadow on the background, no text, no letters, no logos.
+  out: {dir: w3, quality: 90, despill: true}
+
+- id: w3.detector
+  kind: image
+  refs: [art/reference/w3-security.webp]
+  size: 1024x1536
+  chroma: '#ff00ff'
+  candidates: 2
+  frame: {w: 48, h: 96}
+  prompt: >
+    A single prop for a platformer, straight-on side view, not tilted, in the 16-bit pixel style of the
+    reference image (ignore its characters and text): a walk-through airport METAL DETECTOR arch, a tall narrow
+    rectangular doorway frame made of two slim light-grey panels joined at the top, about twice as tall as it
+    is wide, with a small round green indicator light on top and a thin column of small LED dots down the
+    inside of each panel. The opening in the middle is empty. Bright warm daylight. Perfectly flat, solid,
+    uniform magenta (#FF00FF) background around it and inside the opening, no floor, no shadow on the
+    background, no text, no letters, no logos.
+  out: {dir: w3, quality: 90, despill: true}
+
+- id: prop.tray
+  kind: image
+  refs: [art/reference/w3-security.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  frame: {w: 32, h: 16}
+  prompt: >
+    A single small prop for a platformer, strict side view, perfectly level, in the 16-bit pixel style of the
+    reference image (ignore its characters and text): one grey plastic airport security tray seen from the
+    side, a low wide shallow open box with slightly sloped ends, a light top rim highlight and a darker inside
+    shadow, with a small brown leather shoe and a pair of sunglasses peeking over its rim. The tray fills the
+    image width. Perfectly flat, solid, uniform magenta (#FF00FF) background, no shadow, no text, no letters.
+  out: {dir: w3, quality: 90, despill: true}
+
+- id: w3.rope
+  kind: texture
+  refs: [art/reference/w3-security.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  frame: {w: 64, h: 32}
+  seamless: x
+  prompt: >
+    A strict side view, perfectly level, no perspective, in the 16-bit pixel style of the reference image
+    (ignore its characters and text): a long straight row of airport queue barriers for the foreground decor of
+    a platformer. Exactly three identical SHORT chrome stanchion posts, evenly spaced exactly one third of the
+    image width apart (at one sixth, one half and five sixths of the width): each a slim shiny chrome post with
+    a round cap on a heavy round black base, only one sixth of the image height tall, all standing on one
+    horizontal line at the very bottom edge. Between each pair of posts a flat navy-blue retractable belt tape
+    stretched straight and level near the top of the posts, with a small pale wing shape printed in the middle
+    of each span (no letters); the tape continues past the left and right edges as if to the next posts. The
+    top five sixths of the image are empty. Perfectly flat, solid, uniform magenta (#FF00FF) background
+    everywhere else, no floor, no shadow, no text, no letters.
+  out: {dir: w3, quality: 90, position: bottom, span: 0.5, alphaThreshold: 128}
+
+- id: enemy.cart
+  kind: spritesheet
+  refs: [art/reference/w3-gate.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 2, rows: 2}
+  cells: [0, 1, 2, 3]
+  frame: {w: 64, h: 56}
+  fit: {height: 108}
+  prompt: >
+    Sprite sheet for a platformer enemy, the "Runaway Cart": an airport luggage trolley come to life, in the
+    16-bit pixel style of the reference image (ignore its characters and text). Side view facing RIGHT. A
+    chrome-and-grey airport baggage cart on four small black wheels, a tall curved push handle at the back
+    (left), piled high with two suitcases: a big teal hard-shell case and a small orange duffel on top, with
+    two cartoon eyes peeking angrily from between the bags and a grumpy mouth on the front panel. Layout: four
+    equal cells in a 2×2 grid (no grid lines), the same cart in each, same size, same baseline: (1) roll A,
+    wheels turning; (2) roll B, wheels turned a quarter turn, the bags bouncing a little; (3) roll C, leaning
+    forward eagerly, a few small dust puffs behind it; (4) flat: the cart squashed flat and wide like a
+    pancake, the bags flattened on top, dizzy swirl eyes. Perfectly flat, solid, uniform magenta (#FF00FF)
+    background, no shadow, no text, no letters, no logos.
+  out: {dir: w3, quality: 90, despill: true}
+
+- id: proj.bill
+  kind: spritesheet
+  refs: [art/reference/w3-security.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 2, rows: 1}
+  cells: [0, 1]
+  frame: {w: 32, h: 24}
+  fit: {height: 40}
+  anchor: bbox
+  valign: middle
+  prompt: >
+    Sprite sheet for a platformer projectile, the "Duty-Free Bill": a giant fancy perfume bottle flying
+    sideways through the air like a cannonball, in the 16-bit pixel style of the reference image (ignore its
+    characters and text). The bottle lies on its side pointing LEFT: a faceted pink-crystal glass body full of
+    rose-gold perfume, a big shiny gold cap at the front (left), two angry cartoon eyes and a frown on the
+    glass, a few small pink sparkles and a short streak of pink perfume mist trailing behind it (right). Two
+    equal columns (no grid lines), the same bottle at the same size and position: (1) fly A; (2) fly B, the
+    trailing mist puffs shifted and the sparkles in different places. Perfectly flat, solid, uniform magenta
+    (#FF00FF) background, no shadow, no text, no letters, no logos, no brand names.
+  out: {dir: w3, quality: 90, despill: true}
+
+- id: w3.launcher
+  kind: spritesheet
+  refs: [art/reference/w3-security.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 2, rows: 1}
+  cells: [0, 1]
+  frame: {w: 32, h: 48}
+  fit: {mode: common, height: 96}
+  anchor: bbox
+  prompt: >
+    Sprite sheet for a platformer hazard, in the 16-bit pixel style of the reference image (ignore its
+    characters and text): a duty-free PERFUME CANNON, a big brass-and-crystal perfume atomizer turned into a
+    little cannon on a short round white marble display pedestal, its gold nozzle pointing LEFT, a red rubber
+    squeeze bulb on its right side with a tassel. Two equal columns (no grid lines), the same cannon at the
+    same size and position: (1) idle; (2) fire: the bulb squeezed flat and a puff of pink mist bursting from
+    the nozzle. Perfectly flat, solid, uniform magenta (#FF00FF) background, no shadow, no text, no letters, no
+    logos.
+  out: {dir: w3, quality: 90, despill: true}
+
+- id: boss.mascot
+  kind: spritesheet
+  refs: [art/masters/char.yaniv.sheet.webp, art/masters/yaniv.small.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 5, rows: 1}
+  cells: [0, 1, 2, 3, 4]
+  frame: {w: 64, h: 80}
+  fit: {mode: common, height: 150}
+  prompt: >
+    Sprite sheet for a comic platformer mini-boss, "Mr. Spritz, the Duty-Free Mascot": a person inside a huge,
+    goofy foam costume shaped like a fat gold perfume bottle, drawn in the same 16-bit pixel style as the hero
+    in the reference images (do NOT draw the plumber), about one and a half times the hero's height. The
+    costume: a round, faceted pink-and-gold glass bottle body, a big shiny gold bottle cap as a hat, huge
+    friendly-but-pushy cartoon eyes and a wide salesman grin painted on the bottle, little stubby foam arms in
+    white gloves, short legs in gold tights and big floppy gold shoes, a red velvet sash (no letters), a squeeze
+    bulb atomizer held in one glove. Full-body side view facing LEFT. Five equal columns in a row (no grid
+    lines), one pose each, all on a common baseline: (1) walk A, a big waddling step; (2) walk B, the other
+    foot forward; (3) spray: leaning forward and squeezing the atomizer at the viewer's left, a big pink mist
+    cloud bursting out; (4) hurt: squashed down, the cap knocked crooked, eyes shut tight, small stars;
+    (5) defeated: the costume's bottle head popped off and lying at his feet, revealing a sweaty, tired,
+    friendly young man with messy hair underneath, shrugging with a sheepish smile. Slapstick cartoon, no
+    weapon, no blood, no ethnic or national markers. Perfectly flat, solid, uniform magenta (#FF00FF)
+    background, no shadow, no text, no letters, no logos.
+  out: {dir: w3, quality: 90, despill: true}
+
+- id: proj.perfume
+  kind: spritesheet
+  refs: [art/reference/w3-security.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 2, rows: 1}
+  cells: [0, 1]
+  frame: {w: 32, h: 24}
+  fit: {height: 44}
+  anchor: bbox
+  valign: middle
+  prompt: >
+    Sprite sheet for a platformer projectile, in the 16-bit pixel style of the reference image (ignore its
+    characters and text): a puffy cloud of thick pink perfume mist drifting LEFT, with small hearts and gold
+    sparkles inside it and a few curly scent wisps. Two equal columns (no grid lines), the same cloud at the
+    same size: (1) puff A; (2) puff B, a little rounder, the sparkles moved. Opaque solid colours only (no
+    transparency effects), outlined in darker pink. Perfectly flat, solid, uniform magenta (#FF00FF)
+    background, no shadow, no text, no letters.
+  out: {dir: w3, quality: 90, despill: true}
+
+- id: npc.officer
+  kind: spritesheet
+  refs: [art/reference/w3-security.webp, art/masters/yaniv.small.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 2, rows: 1}
+  cells: [0, 1]
+  frame: {w: 48, h: 64}
+  fit: {height: 108}
+  prompt: >
+    Sprite sheet for a friendly platformer NPC, "the Security Officer": the cheerful airport security officer
+    from the first reference image (the woman with her hair in a bun at the X-ray machine), drawn with the SAME
+    compact proportions, size and pixel style as the hero in the second reference image (do NOT draw the
+    plumber). A friendly smiling woman, brown hair in a neat bun, a crisp white short-sleeved uniform shirt with
+    dark epaulettes and a small badge, a navy tie, navy trousers, black shoes, a handheld metal-detector wand on
+    her belt. Full-body side view facing LEFT. Two equal columns (no grid lines), same size, same baseline:
+    (1) idle, standing politely with her hands behind her back; (2) thumbs up: grinning and giving a big thumbs
+    up with one hand, holding a security tray with a red plunger in it under the other arm. Perfectly flat,
+    solid, uniform magenta (#FF00FF) background, no shadow, no text, no letters, no logos.
+  out: {dir: w3, quality: 90, despill: true}
+
+- id: npc.gateagent
+  kind: spritesheet
+  refs: [art/reference/w3-gate.webp, art/masters/yaniv.small.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 2, rows: 1}
+  cells: [0, 1]
+  frame: {w: 48, h: 64}
+  fit: {height: 108}
+  prompt: >
+    Sprite sheet for a friendly platformer NPC, "the Gate Agent": the cheerful airline gate agent from the
+    first reference image (the woman waving at the gate), drawn with the SAME compact proportions, size and
+    pixel style as the hero in the second reference image (do NOT draw the plumber). A smiling young woman,
+    brown hair in a ponytail, a teal-and-navy airline uniform jacket with a small gold wing pin, a light scarf,
+    a navy skirt, dark shoes, a walkie-talkie in one hand. Full-body side view facing LEFT. Two equal columns
+    (no grid lines), same size, same baseline: (1) idle, checking her watch with a worried look; (2) wave:
+    waving her arm high and wide with a big relieved smile, the walkie-talkie raised. Perfectly flat, solid,
+    uniform magenta (#FF00FF) background, no shadow, no text, no letters, no logos.
+  out: {dir: w3, quality: 90, despill: true}
+
+- id: w3.gate
+  kind: spritesheet
+  refs: [art/reference/w3-gate.webp]
+  size: 1024x1536
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 2, rows: 1}
+  cells: [0, 1]
+  frame: {w: 64, h: 128}
+  fit: {mode: common, height: 256}
+  anchor: bbox
+  prompt: >
+    Two sprites of the same airport boarding gate door for a platformer level exit, side by side in two equal
+    columns (no grid lines), each straight-on and not tilted, in the 16-bit pixel style of the reference image
+    (ignore its characters and text), warm sunset light. Each is TALL and NARROW: exactly twice as tall as it
+    is wide, filling its column from near the top to the bottom edge; both have exactly the same outline, size
+    and position. A brushed-steel door frame set in a white wall panel, a small dark display box above it
+    with a glowing amber airplane symbol (no letters, no numbers), a teal-lit doorway leading into the jet
+    bridge. (1) closed: two grey sliding glass doors shut in the middle. (2) open: the doors slid aside,
+    showing the bright teal-lit jet bridge corridor beyond. Perfectly flat, solid, uniform magenta (#FF00FF)
+    background around it, no floor, no shadow, no text, no letters, no numbers, no logos.
+  out: {dir: w3, quality: 90, despill: true}
+
+- id: w3.checkpoint
+  kind: image
+  refs: [art/reference/w3-security.webp]
+  size: 1024x1536
+  chroma: '#ff00ff'
+  candidates: 2
+  frame: {w: 32, h: 96}
+  prompt: >
+    A single tall object for a platformer checkpoint, straight-on and not tilted, in the 16-bit pixel style of
+    the reference image (ignore its characters and text), warm daylight: a slim brushed-steel airport
+    information pillar about three times as tall as it is wide, standing on a round base, with a glowing
+    flight-information screen near its top showing a simple white airplane symbol and a big green check mark
+    (no letters, no numbers), and a small green light on its cap. Perfectly flat, solid, uniform magenta
+    (#FF00FF) background around it, no floor, no shadow, no text, no letters, no numbers.
+  out: {dir: w3, quality: 90, despill: true}

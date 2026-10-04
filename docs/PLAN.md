@@ -28,7 +28,8 @@ Decisions already made with the user:
   - Ground themes (no tilt, TIME instead of ALT, time bonus, HURRY UP at 30 s), drains that gate the 7-1 exit, Reporters with boom mics and question bubbles, Paparazzi flashes (with a cooldown and a reduced-motion veil), and the 7-4 handshake + photo finale card.
   - 18 new assets (`docs/levels/w7-assets.md`); the President rendered without a refusal. Levels come from `tools/levels/gen-w7.py`. The plain bot clears 7-1..7-3 in e2e; a QA pass found 9 bugs, all fixed.
   - The map is a grid (one column per world) with spatial arrow-key and gamepad navigation.
-- **Next (candidates):** 5-5 Freefall, the 6-4 Tabuk Terminal breather, Worlds 1–4. Carry over:
+- **Stage 7a (World 3 DXB Airport: 3-1 Security Line, 3-2 Travelator Rush, 3-3 Duty-Free, 3-4 Gate Closing): built 2026-10-04.** The game now starts at 3-1 (story order); progress saved by id keeps returning players' unlocks. 20 new assets (`docs/levels/w3-assets.md`), levels from `tools/levels/gen-w3.py`, belts/travelators, Duty-Free Bills, runaway carts, Mr. Spritz (fake boss). The plain bot clears all four levels in e2e. Also: cookie consent (EEA/UK/CH by time zone), version on the title (v0.7.0).
+- **Next (candidates):** 5-5 Freefall, the 6-4 Tabuk Terminal breather, Worlds 1, 2 and 4. Carry over:
   - denser passengers in the play layer
   - a larger Yaniv frame (about 56×72)
   - touch buttons in the phone letterbox bars

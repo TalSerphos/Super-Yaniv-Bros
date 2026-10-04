@@ -46,4 +46,11 @@ describe('music by world', () => {
     expect(s.boss.lead).not.toBe(s.cabin.lead);
     expect(s.victory.drums).toContain('c');
   });
+
+  it('World 3 has its own airport tune, opened by the PA chime, and a faster last call for 3-4', () => {
+    const s = songsForTest();
+    expect(s.terminal.lead.startsWith('G5 - E5 - C5')).toBe(true);
+    expect(s.lastcall.bpm).toBeGreaterThan(s.terminal.bpm);
+    expect(s.terminal.lead).not.toBe(s.march.lead);
+  });
 });

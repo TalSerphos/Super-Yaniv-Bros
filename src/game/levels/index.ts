@@ -1,5 +1,12 @@
-/** Level registry, in play order: World 5, World 6 (the three boss phases) and World 7 (The White House). */
+/**
+ * Level registry, in story order: World 3 (DXB Airport), World 5 (the attack), World 6 (the three boss phases)
+ * and World 7 (The White House). Worlds 1, 2 and 4 come later.
+ */
 import type { LevelData } from './loader.ts';
+import l31 from './w3/3-1.json';
+import l32 from './w3/3-2.json';
+import l33 from './w3/3-3.json';
+import l34 from './w3/3-4.json';
 import l51 from './w5/5-1.json';
 import l52 from './w5/5-2.json';
 import l53 from './w5/5-3.json';
@@ -22,6 +29,7 @@ export interface BossData {
 export type Stage = LevelData | BossData;
 export const isBoss = (s: Stage): s is BossData => (s as BossData).kind === 'boss';
 
+export const WORLD3: LevelData[] = [l31, l32, l33, l34] as LevelData[];
 export const WORLD5: LevelData[] = [l51, l52, l53, l54] as LevelData[];
 export const WORLD5_ORDER = WORLD5.map((l) => l.id);
 
@@ -40,6 +48,7 @@ export interface World {
 }
 
 export const WORLDS: World[] = [
+  { id: 3, name: 'DXB AIRPORT', stages: WORLD3 },
   { id: 5, name: 'THE ATTACK', stages: WORLD5 },
   { id: 6, name: 'THE COCKPIT', stages: WORLD6 },
   { id: 7, name: 'THE WHITE HOUSE', stages: WORLD7 },

@@ -1,15 +1,51 @@
 import { describe, expect, it } from 'vitest';
-import { ORDER, WORLD5, WORLD5_ORDER, WORLD7 } from '../../src/game/levels/index.ts';
+import { ORDER, WORLD3, WORLD5, WORLD5_ORDER, WORLD7 } from '../../src/game/levels/index.ts';
 import { floorTopOf, parseLevel } from '../../src/game/levels/loader.ts';
 import { PHYS, TILE } from '../../src/game/config.ts';
 
 /** Max gap a running jump clears on flat floor, with a safety margin (world units). */
 const MAX_GAP = ((2 * PHYS.jumpVelocity) / PHYS.gravity) * PHYS.runSpeed * 0.85;
 
-describe('the flight order', () => {
-  it('runs World 5, the three boss phases of World 6, then World 7', () => {
+describe('the story order', () => {
+  it('runs World 3 (DXB Airport), World 5, the three boss phases of World 6, then World 7', () => {
     expect(WORLD5_ORDER).toEqual(['5-1', '5-2', '5-3', '5-4']);
-    expect(ORDER).toEqual(['5-1', '5-2', '5-3', '5-4', '6-1', '6-2', '6-3', '7-1', '7-2', '7-3', '7-4']);
+    expect(ORDER).toEqual(['3-1', '3-2', '3-3', '3-4', '5-1', '5-2', '5-3', '5-4', '6-1', '6-2', '6-3', '7-1', '7-2', '7-3', '7-4']);
+  });
+});
+
+describe('World 3 levels (DXB Airport)', () => {
+  const parsed = WORLD3.map((l) => ({ level: l, p: parseLevel(l) }));
+  it('are on the ground in the terminal, the duty-free or at the gates, with a TIME counter', () => {
+    for (const { level } of parsed) {
+      expect(['terminal', 'dutyfree', 'gate']).toContain(level.theme);
+      expect(level.tilt.every((k) => k.deg === 0)).toBe(true);
+      expect(level.timer).toBeGreaterThanOrEqual(70);
+      expect(level.intro).toBeTruthy();
+    }
+  });
+  it('3-1 has raised conveyors with X-ray machines on their belts, metal detectors and friendly officers', () => {
+    const { p } = parsed[0];
+    const raised = p.belts.filter((b) => b.y < floorTopOf(p));
+    expect(raised.length).toBeGreaterThanOrEqual(3);
+    expect(raised.some((b) => b.speed < 0)).toBe(true); // one runs against you
+    for (const x of p.xrays) expect(raised.some((b) => b.y === x.y && x.x > b.x && x.x < b.x + b.w)).toBe(true);
+    expect(p.detectors.length).toBeGreaterThanOrEqual(2);
+    expect(p.officers.length).toBeGreaterThanOrEqual(2);
+  });
+  it('3-2 and 3-4 are travelator runs: only the top row of a travelator moves', () => {
+    for (const { p, level } of [parsed[1], parsed[3]]) {
+      const floorTop = floorTopOf(p);
+      const travelators = p.belts.filter((b) => b.y === floorTop);
+      expect(travelators.length, level.id).toBeGreaterThanOrEqual(4);
+      expect(p.belts.every((b) => b.y <= floorTop)).toBe(true);
+      expect(Math.abs(travelators[0].speed)).toBe(level.beltSpeed);
+    }
+  });
+  it('3-3 has Duty-Free Bill cannons and Mr. Spritz guarding the gate; 3-4 ends at the gate agent', () => {
+    expect(parsed[2].p.launchers.length).toBeGreaterThanOrEqual(4);
+    expect(parsed[2].p.mascot!.x).toBeGreaterThan(parsed[2].p.exit.x - 400);
+    expect(parsed[2].level.clear?.sub).toBe('But the cockpit is in another cabin!');
+    expect(parsed[3].p.gateAgent!.x).toBeGreaterThan(parsed[3].p.exit.x - 120);
   });
 });
 
@@ -38,8 +74,8 @@ describe('World 7 levels (on the ground)', () => {
   });
 });
 
-describe('platform levels (Worlds 5 and 7)', () => {
-  for (const level of [...WORLD5, ...WORLD7]) {
+describe('platform levels (Worlds 3, 5 and 7)', () => {
+  for (const level of [...WORLD3, ...WORLD5, ...WORLD7]) {
     describe(level.id, () => {
       const p = parseLevel(level);
       const floorTop = floorTopOf(p);
@@ -79,7 +115,8 @@ describe('platform levels (Worlds 5 and 7)', () => {
       });
 
       it('has no floor gap wider than a running jump (vines only make it easier)', () => {
-        const floors = p.solids.filter((s) => s.kind === 'floor' && s.y === floorTop).sort((a, b) => a.x - b.x);
+        // (A travelator is floor you can run on.)
+        const floors = p.solids.filter((s) => (s.kind === 'floor' || s.kind === 'belt') && s.y === floorTop).sort((a, b) => a.x - b.x);
         for (let i = 1; i < floors.length; i++) {
           const gap = floors[i].x - (floors[i - 1].x + floors[i - 1].w);
           expect(gap, `gap at x=${floors[i - 1].x + floors[i - 1].w}`).toBeLessThanOrEqual(MAX_GAP);

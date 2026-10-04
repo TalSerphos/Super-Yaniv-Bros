@@ -100,7 +100,7 @@ There are 7 worlds of 4 levels each (28 levels). The trip runs Nes Ziona → Dub
 | --- | --- | --- | --- | --- | --- |
 | 1 | Nes Ziona | Morning Call (job site, pipe platforms) | Under the Sink (underground pipe maze) | Rooftop Boilers (solar-heater tanks as platforms) | The Boiler Room, vs. a giant Clog |
 | 2 | Dubai | Souk Run | Tower Climb (vertical) | Dune Bash | Mall Spa, vs. the Hot-Tub Salesman (a jacuzzi teaser) |
-| 3 | DXB Airport | Security Line (trays, belts) | Travelator Rush | Duty-Free (Duty-Free Bills) | Gate Closing, a race against the clock |
+| 3 | DXB Airport | Security Line (trays, belts, X-ray machines, metal detectors) | Travelator Rush (moving walkways, mind the gap) | Duty-Free (Duty-Free Bills; fake boss: Mr. Spritz, the duty-free mascot) | Gate Closing, a race against the clock to Gate B32 |
 | 4 | Cruise, 37,000 ft | Boarding (bin wars) | Meal Service (Trolley Trolls) | Wing Dream (Yaniv naps, a sky level) | The Lav (a water level inside the plumbing) |
 | 5 | The Attack | The Scream (a woman shouts and the plane shakes) | The Aisle (tilt 0° → 15°) | Bin Avalanche | Cockpit Door: the wounded Captain opens it |
 | 5 (maybe) | — | *5-5 Freefall Cabin* (vertical, 14,000 ft in 29 s), the last level of World 5, if we add it | | | |
@@ -110,6 +110,8 @@ There are 7 worlds of 4 levels each (28 levels). The trip runs Nes Ziona → Dub
 *World 6 has three levels.* A 6-4 may come back later as a funny breather with no challenge: **Tabuk Terminal**, walking around the terminal while kind Saudis treat the passengers warmly and offer support and coffee.
 
 **Ending (7-4):** the President waits just right of the room's middle; the handshake, the camera flash, the photo framed on the screen, then: “Thank you Yaniv! But your next client is waiting in Nes Ziona!” and a thank-you to Yaniv, Assaf, Zvika, Shota and Captain Machchhar by name. Gag: under the Oval Office floor, a secret basement where past presidents of history (Washington, Lincoln, Teddy Roosevelt, Taft, FDR) play poker, smoke cigars and drink.
+
+**World 3 (built Oct 4):** the trip now starts here. Ground rules like World 7 (no tilt, a TIME counter). Conveyor belts and travelators carry Yaniv (run with them or against them); runaway baggage carts roll in from ahead; perfume cannons fire Duty-Free Bills at chest height (jump, stomp or plunge them). At the end of 3-3, **Mr. Spritz** (a man in a giant perfume-bottle costume) guards the gate: stomp his cap three times; his costume head pops off ("I'm just the intern!") and the card reads "Thank you Yaniv! But the cockpit is in another cabin!". 3-4 ends at the gate agent: *Boarding complete*, then World 5. Under the terminal floor: the baggage hall. Music: an original airport-lounge tune opened by a PA chime, and a faster last-call version for 3-4.
 
 **Under the plane's floor (Worlds 5–6):** the cargo hold, packed with luggage; loose bags slide and tumble off toward the low side when the plane banks past about 7–13°.
 

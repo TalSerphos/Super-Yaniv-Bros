@@ -119,20 +119,27 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
         });
         if (next && worldOf(next.id) !== worldOf(current.id)) {
           const done = worldOf(current.id).id;
-          const card =
-            done === 5
-              ? {
-                  h: 'THE CAPTAIN OPENED THE DOOR!',
-                  sub: 'Wounded but brave, he lets the Bros. onto the flight deck.',
-                  soon: 'Next: World 6, the cockpit. Jacuzzam is at the controls.',
-                  go: 'INTO THE COCKPIT',
-                }
-              : {
-                  h: 'TABUK!',
-                  sub: 'The off-duty pilots touch down. 174 passengers are safe, and Jacuzzam is still tied up.',
-                  soon: 'Next: World 7, Washington. The Bros. are invited to the White House!',
-                  go: 'TO WASHINGTON',
-                };
+          const cards: Record<number, { h: string; sub: string; soon: string; go: string }> = {
+            3: {
+              h: 'BOARDING COMPLETE!',
+              sub: 'Flight 1073 pushes back from Gate B32. Yaniv finds his seat and fastens his seatbelt.',
+              soon: 'Next: World 5, somewhere over the desert. What could possibly go wrong?',
+              go: 'TAKE YOUR SEAT',
+            },
+            5: {
+              h: 'THE CAPTAIN OPENED THE DOOR!',
+              sub: 'Wounded but brave, he lets the Bros. onto the flight deck.',
+              soon: 'Next: World 6, the cockpit. Jacuzzam is at the controls.',
+              go: 'INTO THE COCKPIT',
+            },
+            6: {
+              h: 'TABUK!',
+              sub: 'The off-duty pilots touch down. 174 passengers are safe, and Jacuzzam is still tied up.',
+              soon: 'Next: World 7, Washington. The Bros. are invited to the White House!',
+              go: 'TO WASHINGTON',
+            },
+          };
+          const card = cards[done];
           hud.showOverlay(
             `<p class="world">WORLD ${done} COMPLETE</p><h2>${card.h}</h2><p class="sub">${card.sub}</p>${score}<p class="soon">${card.soon}</p>`,
             [goNext(card.go), { label: 'MAP', run: () => showMap() }, { label: 'TITLE', run: opts.onQuit }],
@@ -155,9 +162,10 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
           );
         } else {
           const ground = !isBoss(current) && (current.theme ?? 'cabin') !== 'cabin';
+          const custom = !isBoss(current) ? current.clear : undefined;
           hud.showOverlay(
-            `<h2>${ground ? 'STAGE CLEAR!' : 'CABIN CLEARED!'}</h2>
-             <p class="sub">${ground ? 'Washington loves a plumber.' : 'Ding! The seatbelt sign is off.'}</p>
+            `<h2>${custom?.title ?? (ground ? 'STAGE CLEAR!' : 'CABIN CLEARED!')}</h2>
+             <p class="sub">${custom?.sub ?? (ground ? 'Washington loves a plumber.' : 'Ding! The seatbelt sign is off.')}</p>
              ${score}
              <p class="soon">Next: ${next.id} ${next.name}</p>`,
             [goNext('NEXT LEVEL'), { label: 'TITLE', run: opts.onQuit }],
@@ -279,7 +287,8 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
       ? `<p class="world">WORLD ${level.id} · PHASE ${level.phase}</p><h2>${level.name}</h2><p class="sub">${BOSS_GOALS[level.phase]}</p>`
       : (level.theme ?? 'cabin') !== 'cabin'
         ? `<p class="world">WORLD ${level.id}</p><h2>${level.name}</h2><p class="sub">${
-            level.id === '7-1' ? 'The pool is choked with algae! Plunge its 3 clogged drains (GRAB) to open the gate.' : `${level.timer ? `TIME ${level.timer} · ` : ''}WASHINGTON, D.C.`
+            level.intro ??
+            (level.id === '7-1' ? 'The pool is choked with algae! Plunge its 3 clogged drains (GRAB) to open the gate.' : `${level.timer ? `TIME ${level.timer} · ` : ''}WASHINGTON, D.C.`)
           }</p>`
         : `<p class="world">WORLD ${level.id}</p><h2>${level.name}</h2><p class="sub">ALT ${level.altitude.start.toLocaleString('en-US')} FT · BANK ${level.tilt[0]?.deg ?? 0}°</p>`;
     hud.showOverlay(intro, [], 'intro');
@@ -303,7 +312,10 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
         if (game.scene.getScene('level')) game.scene.start('level', init);
         else game.scene.add('level', LevelScene, true, init);
         const theme = level.theme ?? 'cabin';
-        music.play(theme === 'oval' ? 'ceremony' : theme !== 'cabin' ? 'march' : level.mood === 'alarm' ? 'alarm' : 'cabin');
+        const airport = theme === 'terminal' || theme === 'dutyfree' || theme === 'gate';
+        music.play(
+          theme === 'gate' ? 'lastcall' : airport ? 'terminal' : theme === 'oval' ? 'ceremony' : theme !== 'cabin' ? 'march' : level.mood === 'alarm' ? 'alarm' : 'cabin',
+        );
       }
       if (portrait.matches) window.setTimeout(pause, 50);
     }, INTRO_MS);
@@ -318,7 +330,7 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
   }
 
   function begin(): void {
-    // Returning players with more than 5-1 unlocked pick from the map; first-timers board 5-1 directly.
+    // Returning players with more than the first level unlocked pick from the map; first-timers start at 3-1.
     if (!opts.level && progress.unlocked !== ORDER[0]) showMap();
     else playLevel(current);
   }

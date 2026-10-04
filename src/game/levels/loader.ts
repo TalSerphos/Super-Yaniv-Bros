@@ -16,6 +16,11 @@
  *             'G' checkpoint (feet)   'N' the Captain (feet)   'Q' screaming passenger (feet)
  *   World 7   'O' clogged drain (feet; the level's objective: plunge them all)   'a' algae blob (feet)
  *             'J' reporter (feet)   'F' paparazzo (feet)   'V' the President (feet, 7-4)
+ *   World 3   '>' '<' conveyor belt / travelator (solid; carries whoever stands on it right or left)
+ *             'S' Duty-Free Bill cannon (feet; fires left)   'c' runaway baggage cart (feet; rolls in from ahead)
+ *             'm' Mr. Spritz, the duty-free mascot (feet; the exit stays shut until he is beaten)
+ *             'd' metal detector arch (feet)   'u' security officer (feet)   'x' X-ray machine (feet, on a belt)
+ *             'g' gate agent (feet)
  *   '.' or ' ' empty
  */
 import { TILE } from '../config.ts';
@@ -35,8 +40,14 @@ export interface LevelData {
   tilt: TiltKey[];
   /** Optional mood: 'sunset' (default) or 'alarm' (red alarm lighting, World 5-4). */
   mood?: 'sunset' | 'alarm';
-  /** Look of the level (default 'cabin'); World 7 is on the ground in Washington. */
-  theme?: 'cabin' | 'mall' | 'lawn' | 'oval';
+  /** Look of the level (default 'cabin'); World 3 is DXB airport, World 7 is on the ground in Washington. */
+  theme?: 'cabin' | 'mall' | 'lawn' | 'oval' | 'terminal' | 'dutyfree' | 'gate';
+  /** Conveyor belts (3-1) and travelators (3-2, 3-4): world units/s for '>' (and minus that for '<'). */
+  beltSpeed?: number;
+  /** Intro card subtitle (overrides the default). */
+  intro?: string;
+  /** Clear card heading and subtitle (overrides the default). */
+  clear?: { title: string; sub: string };
   /** Ground levels: a TIME counter in seconds instead of ALT. */
   timer?: number;
   grid: string[];
@@ -49,7 +60,7 @@ export interface Rect {
   h: number;
 }
 
-export type SolidKind = 'floor' | 'bin';
+export type SolidKind = 'floor' | 'bin' | 'belt';
 export type SeatKind = 'empty' | 'sleeper' | 'reader' | 'kid';
 export type BlockKind = 'nut' | 'power' | 'bamba' | 'sabich';
 export interface Point {
@@ -84,6 +95,15 @@ export interface ParsedLevel {
   reporters: Point[];
   paparazzi: Point[];
   president?: Point;
+  /** World 3: belt surfaces (also solids of kind 'belt'), with their speed. */
+  belts: (Rect & { speed: number })[];
+  launchers: Point[];
+  carts: Point[];
+  mascot?: Point;
+  detectors: Point[];
+  officers: Point[];
+  xrays: Point[];
+  gateAgent?: Point;
 }
 
 /** Seat sprite footprint (world units), seatback top inset, and the standable seatback span. */
@@ -93,7 +113,9 @@ export const BLOCK = 32;
 export const MASK_LENGTH = 104;
 
 const SEAT_CHARS: Record<string, SeatKind> = { E: 'empty', Z: 'sleeper', R: 'reader', K: 'kid' };
-const SOLID_CHARS: Record<string, SolidKind> = { '#': 'floor', B: 'bin' };
+const SOLID_CHARS: Record<string, SolidKind> = { '#': 'floor', B: 'bin', '>': 'belt', '<': 'belt' };
+/** Default belt speed (world units/s) when the level doesn't set one. */
+export const BELT_SPEED = 60;
 const BLOCK_CHARS: Record<string, BlockKind> = { '?': 'nut', H: 'power', A: 'bamba', U: 'sabich' };
 
 export function parseLevel(level: LevelData): ParsedLevel {
@@ -123,15 +145,25 @@ export function parseLevel(level: LevelData): ParsedLevel {
     algae: [],
     reporters: [],
     paparazzi: [],
+    belts: [],
+    launchers: [],
+    carts: [],
+    detectors: [],
+    officers: [],
+    xrays: [],
   };
+  const beltSpeed = level.beltSpeed ?? BELT_SPEED;
   let starts = 0;
   let exits = 0;
 
   rows.forEach((row, r) => {
-    let run: { kind: SolidKind | 'oneway'; from: number } | null = null;
+    let run: { kind: SolidKind | 'oneway'; from: number; ch: string } | null = null;
     const flush = (c: number) => {
       if (!run) return;
       const rect = { x: run.from * TILE, y: r * TILE, w: (c - run.from) * TILE, h: TILE };
+      // Only a belt's top row moves (a travelator is as deep as the floor slab it is set into).
+      const above = rows[r - 1]?.[run.from];
+      if (run.kind === 'belt' && above !== '>' && above !== '<') out.belts.push({ ...rect, speed: run.ch === '<' ? -beltSpeed : beltSpeed });
       if (run.kind === 'oneway') {
         out.oneWays.push(rect);
         out.shelves.push(rect);
@@ -141,8 +173,9 @@ export function parseLevel(level: LevelData): ParsedLevel {
     for (let c = 0; c <= cols; c++) {
       const ch = row[c] ?? '.';
       const kind: SolidKind | 'oneway' | undefined = SOLID_CHARS[ch] ?? (ch === '-' ? 'oneway' : undefined);
-      if (run && run.kind !== kind) flush(c);
-      if (kind && !run) run = { kind, from: c };
+      // A belt run also ends where its direction changes ('>' then '<').
+      if (run && (run.kind !== kind || (kind === 'belt' && run.ch !== ch))) flush(c);
+      if (kind && !run) run = { kind, from: c, ch };
 
       const x = c * TILE;
       const top = r * TILE;
@@ -213,6 +246,27 @@ export function parseLevel(level: LevelData): ParsedLevel {
           break;
         case 'V':
           out.president = feet;
+          break;
+        case 'S':
+          out.launchers.push(feet);
+          break;
+        case 'c':
+          out.carts.push(feet);
+          break;
+        case 'm':
+          out.mascot = feet;
+          break;
+        case 'd':
+          out.detectors.push(feet);
+          break;
+        case 'u':
+          out.officers.push(feet);
+          break;
+        case 'x':
+          out.xrays.push(feet);
+          break;
+        case 'g':
+          out.gateAgent = feet;
           break;
       }
     }
