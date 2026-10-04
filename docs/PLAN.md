@@ -15,8 +15,13 @@ Decisions already made with the user:
 
 ## 0. Status
 
-- **Stage 1 (scaffold + title screen): on `main`** since 2026-10-04. `deploy.yml` publishes it to superyanivbros.com.
-- **Next: Stage 2 (World 5 slice).** The only input it needs is `art/reference/w5-aisle.webp`, which we already have. The concept-art PDF is needed before Stage 3.
+- **Stage 1 (scaffold + title screen): shipped.**
+- **Stage 2 (World 5 slice, 5-2 THE AISLE): shipped 2026-10-04.** Live at superyanivbros.com. CI is green on Chrome, Firefox, WebKit, iPhone, iPad and Lighthouse, and the post-deploy tests pass on production. Fidelity is 7.2/10 against `w5-aisle.webp` (gate 5).
+- **Next: Stage 3 (full World 5: 5-1 → 5-4).** Needs the concept-art PDF. Carry over:
+  - denser passengers in the play layer
+  - a larger Yaniv frame (about 56×72)
+  - a fidelity capture point that shows a trolley mid-screen
+  - touch buttons in the phone letterbox bars
 
 ---
 
