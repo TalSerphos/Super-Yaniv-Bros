@@ -17,7 +17,7 @@ type Syb = { state(): SybState; teleport(x: number, y: number): void; clearEnemi
 
 const syb = (page: Page) => page.evaluate(() => (window as unknown as { __syb?: Syb }).__syb?.state());
 /** Pop-up texts are drawn in the canvas: read them from the test hook. */
-const popped = (page: Page, text: string) => expect.poll(async () => (await syb(page))?.pops ?? [], { timeout: 6_000 }).toContain(text);
+const popped = (page: Page, text: string) => expect.poll(async () => (await syb(page))?.pops ?? [], { timeout: 20_000 }).toContain(text);
 
 async function waitForLevel(page: Page, id: string) {
   await page.waitForFunction((want) => (window as unknown as { __syb?: Syb }).__syb?.state().level === want, id, { timeout: 20_000 });
@@ -55,10 +55,11 @@ test.describe('World 3 mechanics', () => {
     const s = () => (window as unknown as { __syb: Syb }).__syb;
     // The first travelator runs right over columns 21-50 (x 336-816).
     await page.evaluate(`(${s})().clearEnemies(); (${s})().teleport(400, 320)`);
-    await expect.poll(async () => (await syb(page))!.x, { timeout: 5_000 }).toBeGreaterThan(460);
+    // (Generous timeouts: WebKit on CI runs the game well below real time.)
+    await expect.poll(async () => (await syb(page))!.x, { timeout: 20_000 }).toBeGreaterThan(460);
     // The backward one: columns 91-118 (x 1456-1904), running left.
     await page.evaluate(`(${s})().clearEnemies(); (${s})().teleport(1800, 320)`);
-    await expect.poll(async () => (await syb(page))!.x, { timeout: 5_000 }).toBeLessThan(1740);
+    await expect.poll(async () => (await syb(page))!.x, { timeout: 20_000 }).toBeLessThan(1740);
   });
 
   test('holding → into a gap costs one heart, not all three (the held key is ignored after the respawn)', async ({ page }) => {
