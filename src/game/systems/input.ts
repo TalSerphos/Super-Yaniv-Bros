@@ -13,6 +13,28 @@ export interface Buttons {
 
 export const noButtons = (): Buttons => ({ left: false, right: false, jump: false, grab: false, pause: false });
 
+/** Current and previous step's buttons, for edge detection ("pressed this step"). */
+export class ButtonEdges {
+  current: Buttons = noButtons();
+  private previous: Buttons = noButtons();
+
+  /** Start a new step with freshly read buttons. */
+  next(read: Buttons): void {
+    this.previous = this.current;
+    this.current = read;
+  }
+
+  pressed(b: keyof Buttons): boolean {
+    return this.current[b] && !this.previous[b];
+  }
+
+  /** Forget everything (e.g. when pausing), so the next press after resuming is always an edge. */
+  clear(): void {
+    this.current = noButtons();
+    this.previous = noButtons();
+  }
+}
+
 export interface InputSource {
   read(into: Buttons): void;
   /** Forget pending taps/held state (level start, resume), so keys pressed on a card don't leak into play. */

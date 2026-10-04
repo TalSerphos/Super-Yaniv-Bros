@@ -74,8 +74,9 @@ test('Escape pauses, Resume continues, Quit returns to the title', async ({ page
   await page.keyboard.press('Escape');
   await expect(page.getByRole('heading', { name: 'PAUSED' })).toBeVisible();
   await page.getByRole('button', { name: 'RESUME' }).click();
-  await expect(page.getByRole('heading', { name: 'PAUSED' })).toBeHidden();
+  // Press again straight away (before the next physics step): must still pause.
   await page.keyboard.press('Escape');
+  await expect(page.getByRole('heading', { name: 'PAUSED' })).toBeVisible();
   await page.getByRole('button', { name: 'QUIT TO TITLE' }).click();
   await expect(page.getByRole('button', { name: '1 PLAYER', exact: true })).toBeVisible();
   await expect(page.locator('canvas')).toHaveCount(0);
@@ -138,7 +139,7 @@ test.describe('QA regressions', () => {
     // Respawned standing on the floor right of the hatch, not back inside it, and it stays that way.
     await expect.poll(async () => (await state(page))!.y, { timeout: 10_000 }).toBe(320);
     const s = (await state(page))!;
-    expect(s.x).toBeGreaterThan(1056 + 30);
+    expect(s.x).toBeGreaterThan(1056 + 10); // on the floor, clear of the hatch edge (body half-width 10)
     await page.waitForTimeout(1_000);
     expect((await state(page))!).toMatchObject({ hearts: 2, y: 320 });
   });

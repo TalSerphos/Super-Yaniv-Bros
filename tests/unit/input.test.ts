@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BotInput, KeyboardInput, noButtons, type BotView } from '../../src/game/systems/input.ts';
+import { BotInput, ButtonEdges, KeyboardInput, noButtons, type BotView } from '../../src/game/systems/input.ts';
 
 describe('KeyboardInput', () => {
   it('latches a tap released before the next read, then clears it', () => {
@@ -67,5 +67,32 @@ describe('BotInput', () => {
     const b = noButtons();
     bot.read(b);
     expect(b.jump).toBe(true);
+  });
+});
+
+describe('ButtonEdges', () => {
+  const pause = { ...noButtons(), pause: true };
+
+  it('reports a press once while held', () => {
+    const e = new ButtonEdges();
+    e.next(pause);
+    expect(e.pressed('pause')).toBe(true);
+    e.next(pause);
+    expect(e.pressed('pause')).toBe(false);
+  });
+
+  it('after clear(), a press straight after resuming is a new edge (WebKit regression)', () => {
+    const e = new ButtonEdges();
+    e.next(pause); // the step that paused the game
+    e.clear(); // done when pausing
+    e.next(pause); // first step after resume: Escape was pressed again before it
+    expect(e.pressed('pause')).toBe(true);
+  });
+
+  it('without clear(), that second press would be lost', () => {
+    const e = new ButtonEdges();
+    e.next(pause);
+    e.next(pause);
+    expect(e.pressed('pause')).toBe(false);
   });
 });

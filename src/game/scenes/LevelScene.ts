@@ -4,7 +4,7 @@ import { ensurePlaceholders, frameIndex, preloadAssets } from '../assets.ts';
 import { ART_SCALE, PHYS, RULES, VIEW_H, VIEW_W, ZOOM } from '../config.ts';
 import { BLOCK, EXIT, SEAT, parseLevel, type LevelData, type ParsedLevel } from '../levels/loader.ts';
 import { Altitude } from '../systems/altitude.ts';
-import { BotInput, noButtons, type Buttons, type InputSource } from '../systems/input.ts';
+import { BotInput, ButtonEdges, noButtons, type Buttons, type InputSource } from '../systems/input.ts';
 import { cabinGravity, degToRad, tiltAt } from '../systems/tilt.ts';
 
 export interface HudState {
@@ -52,8 +52,7 @@ export class LevelScene extends Phaser.Scene {
   private exitZone!: Phaser.GameObjects.Zone;
   private altitude!: Altitude;
 
-  private buttons: Buttons = noButtons();
-  private prev: Buttons = noButtons();
+  private edges = new ButtonEdges();
   private coyote = 0;
   private jumpBuffer = 0;
   private jumpCut = false;
@@ -119,8 +118,7 @@ export class LevelScene extends Phaser.Scene {
   }
 
   private resetState(): void {
-    this.buttons = noButtons();
-    this.prev = noButtons();
+    this.edges.clear();
     this.coyote = this.jumpBuffer = this.invulnerable = this.hurtTimer = this.controlLock = this.plungeCooldown = 0;
     this.jumpCut = false;
     this.hearts = RULES.hearts;
@@ -281,6 +279,9 @@ export class LevelScene extends Phaser.Scene {
     this.elapsed += dt;
     this.readInput();
     if (this.pressed('pause')) {
+      // Forget this step's buttons: otherwise, after resuming, the edge detector still sees 'pause' held and
+      // a quick second press would be missed (seen on WebKit, where resume-then-Escape lands before a step).
+      this.edges.clear();
       this.cfg.onEvent({ type: 'pause' });
       return;
     }
@@ -295,15 +296,19 @@ export class LevelScene extends Phaser.Scene {
   }
 
   private readInput(): void {
-    this.prev = this.buttons;
-    this.buttons = noButtons();
+    const read = noButtons();
     if (this.cfg.bot) this.cfg.bot.view = this.botView();
-    for (const src of this.cfg.inputs) src.read(this.buttons);
-    this.cfg.bot?.read(this.buttons);
+    for (const src of this.cfg.inputs) src.read(read);
+    this.cfg.bot?.read(read);
+    this.edges.next(read);
+  }
+
+  private get buttons(): Buttons {
+    return this.edges.current;
   }
 
   private pressed(b: keyof Buttons): boolean {
-    return this.buttons[b] && !this.prev[b];
+    return this.edges.pressed(b);
   }
 
   private updatePlayer(dt: number): void {
