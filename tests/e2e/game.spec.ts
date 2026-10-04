@@ -59,8 +59,12 @@ test('the bot can finish the level (proves it is completable in a real browser)'
     null,
     { timeout: 100_000, polling: 500 },
   );
-  const s = (await state(page))!;
   await expect(page.getByRole('heading', { name: 'CABIN CLEARED!' })).toBeVisible();
+  // He walks through the curtain and stays on the floor: no creeping downhill or dropping off the level.
+  const s = (await state(page))!;
+  expect(s.y).toBeLessThanOrEqual(320);
+  await page.waitForTimeout(1_500);
+  expect((await state(page))!).toMatchObject({ x: s.x, y: s.y });
   expect(s.hearts).toBeGreaterThan(0);
   expect(s.nuts).toBeGreaterThan(10);
   expect(s.x).toBeGreaterThan(s.width - 300);

@@ -37,6 +37,8 @@ type Sprite = Phaser.Physics.Arcade.Sprite;
 
 /** Body sizes in world units (sprites are drawn at ART_SCALE, so source-pixel sizes are ×2). */
 const PLAYER_BODY = { w: 20, h: 50 };
+/** Walking pace through the exit curtain (world units/s). */
+const EXIT_WALK_SPEED = 70;
 const TROLLEY_BODY = { w: 52, h: 42 };
 
 export class LevelScene extends Phaser.Scene {
@@ -241,6 +243,7 @@ export class LevelScene extends Phaser.Scene {
     body.setSize(src(PLAYER_BODY.w), src(PLAYER_BODY.h));
     body.setOffset((this.player.width - src(PLAYER_BODY.w)) / 2, this.player.height - src(PLAYER_BODY.h));
     body.setMaxVelocity(PHYS.runSpeed * 2, PHYS.maxFall);
+    body.setCollideWorldBounds(true); // left/right/top only: the world's bottom stays open for pits
     this.player.play('yaniv.small:idle');
     this.lastSafe = { x, y };
   }
@@ -499,20 +502,36 @@ export class LevelScene extends Phaser.Scene {
     this.cameras.main.flash(200, 20, 16, 34);
   }
 
+  /**
+   * Exit sequence: controls off, Yaniv walks steadily through the curtain (the slope's pull fully cancelled,
+   * so no creeping or sliding off the level), fades out behind it, then the card appears.
+   */
   private clearLevel(): void {
     if (this.finished) return;
     this.finished = true;
-    // Let him land (gravity stays on), clear the aisle behind him, then show the card.
-    (this.player.body as Body).setVelocityX(0);
-    this.player.anims.play('yaniv.small:idle', true);
+    const body = this.player.body as Body;
+    body.setGravityX(-this.physics.world.gravity.x);
+    body.setVelocityX(EXIT_WALK_SPEED);
+    this.player.setFlipX(false).anims.play('yaniv.small:run', true);
     for (const t of this.trolleys.getChildren() as Sprite[]) {
       (t.body as Body).setVelocity(0, 0).setAllowGravity(false);
       this.tweens.add({ targets: t, alpha: 0, duration: 300 });
     }
     play('chime');
     this.pushHud();
+    this.tweens.add({
+      targets: this.player,
+      alpha: 0,
+      delay: 250,
+      duration: 450,
+      onComplete: () => {
+        body.stop();
+        body.enable = false;
+        this.player.anims.stop();
+      },
+    });
     const result = { type: 'clear' as const, score: this.score, nuts: this.nutCount, seconds: Math.round(this.elapsed) };
-    this.time.delayedCall(800, () => this.cfg.onEvent(result));
+    this.time.delayedCall(900, () => this.cfg.onEvent(result));
   }
 
   private gameOver(reason: 'hearts' | 'altitude'): void {
