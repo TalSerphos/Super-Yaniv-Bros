@@ -37,7 +37,7 @@ describe('BotInput', () => {
     grounded: true,
     groundAt: () => true,
     wallAt: () => false,
-    trolleys: [],
+    threats: [],
     ...over,
   });
 
@@ -63,10 +63,33 @@ describe('BotInput', () => {
 
   it('jumps when a faster trolley closes in from behind', () => {
     const bot = new BotInput();
-    bot.view = view({ trolleys: [{ dx: -50, vx: 210 }] });
+    bot.view = view({ threats: [{ kind: 'trolley', dx: -50, dy: 0, vx: 210 }] });
     const b = noButtons();
     bot.read(b);
     expect(b.jump).toBe(true);
+  });
+
+  it('pokes an enemy in plunger reach, then waits for the cooldown', () => {
+    const bot = new BotInput();
+    bot.view = view({ threats: [{ kind: 'suitcase', dx: 60, dy: 0, vx: -36 }] });
+    const b = noButtons();
+    bot.read(b);
+    expect(b.grab).toBe(true);
+    const again = noButtons();
+    bot.read(again);
+    expect(again.grab).toBe(false);
+  });
+
+  it('stops under a bag dropping just ahead, then runs on once it has landed', () => {
+    const bot = new BotInput();
+    bot.view = view({ threats: [{ kind: 'luggage', dx: 30, dy: -90, vx: 0 }] });
+    const b = noButtons();
+    bot.read(b);
+    expect(b).toMatchObject({ right: false, jump: false });
+    bot.view = view();
+    const go = noButtons();
+    bot.read(go);
+    expect(go.right).toBe(true);
   });
 });
 

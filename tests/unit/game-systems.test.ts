@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Altitude } from '../../src/game/systems/altitude.ts';
-import { cabinGravity, tiltAt } from '../../src/game/systems/tilt.ts';
+import { EASE_DISTANCE, WARNING_DISTANCE, cabinGravity, tiltAt, upcomingTilt } from '../../src/game/systems/tilt.ts';
 import { parseLevel, SEAT, type LevelData } from '../../src/game/levels/loader.ts';
 
 describe('cabinGravity', () => {
@@ -18,16 +18,24 @@ describe('cabinGravity', () => {
   });
 });
 
-describe('tiltAt', () => {
-  const tl = [
-    { t: 0, deg: 0 },
-    { t: 10, deg: 15 },
+describe('tiltAt / upcomingTilt', () => {
+  const keys = [
+    { x: 0, deg: 0 },
+    { x: 1000, deg: 12 },
+    { x: 2000, deg: 15 },
   ];
-  it('interpolates and holds the ends', () => {
-    expect(tiltAt(tl, -1)).toBe(0);
-    expect(tiltAt(tl, 5)).toBeCloseTo(7.5);
-    expect(tiltAt(tl, 99)).toBe(15);
+  it('holds, then eases each change in over EASE_DISTANCE after its key', () => {
+    expect(tiltAt(keys, 500)).toBe(0);
+    expect(tiltAt(keys, 1000)).toBe(0);
+    expect(tiltAt(keys, 1000 + EASE_DISTANCE / 2)).toBeCloseTo(6);
+    expect(tiltAt(keys, 1500)).toBe(12);
+    expect(tiltAt(keys, 9999)).toBe(15);
     expect(tiltAt([], 3)).toBe(0);
+  });
+  it('warns within WARNING_DISTANCE before a change, not after it', () => {
+    expect(upcomingTilt(keys, 1000 - WARNING_DISTANCE - 1)).toBeUndefined();
+    expect(upcomingTilt(keys, 1000 - WARNING_DISTANCE + 1)).toEqual({ x: 1000, deg: 12 });
+    expect(upcomingTilt(keys, 1001)).toBeUndefined();
   });
 });
 
@@ -50,7 +58,7 @@ describe('parseLevel', () => {
     id: 't',
     name: 'test',
     altitude: { start: 1000, rate: 10 },
-    tilt: [{ t: 0, deg: 12 }],
+    tilt: [{ x: 0, deg: 12 }],
     grid: [
       '..........BB..',
       '..o.?.........',
@@ -66,9 +74,9 @@ describe('parseLevel', () => {
     expect(p.width).toBe(14 * 16);
     expect(p.start).toEqual({ x: 8, y: 64 });
     expect(p.nuts).toEqual([{ x: 40, y: 24 }]);
-    expect(p.blocks).toEqual([{ x: 64, y: 16 }]);
+    expect(p.blocks).toEqual([{ x: 64, y: 16, kind: 'nut' }]);
     expect(p.trolleys).toEqual([{ x: 136, y: 64 }]);
-    expect(p.exit).toEqual({ x: 208, y: 64 - 128, w: 64, h: 128 });
+    expect(p.exit).toEqual({ x: 208, y: 64 - 128, w: 64, h: 128, kind: 'curtain' });
     expect(p.seats).toEqual([{ x: 48, y: 64 - SEAT.h, kind: 'empty' }]);
   });
 

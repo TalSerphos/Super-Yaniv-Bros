@@ -13,6 +13,11 @@ function readMuted(): boolean {
   }
 }
 
+/** The shared AudioContext (created on the first user gesture), for the music sequencer. */
+export function audioContext(): AudioContext | undefined {
+  return ctx;
+}
+
 export function isMuted(): boolean {
   return muted;
 }
@@ -64,7 +69,7 @@ function sweep(from: number, to: number, start: number, dur: number, type: Oscil
   osc.stop(start + dur + 0.02);
 }
 
-export type Sfx = 'move' | 'ding' | 'back' | 'jump' | 'nut' | 'stomp' | 'hurt' | 'bump' | 'thwop' | 'chime' | 'warn';
+export type Sfx = 'move' | 'ding' | 'back' | 'jump' | 'nut' | 'stomp' | 'hurt' | 'bump' | 'thwop' | 'chime' | 'warn' | 'scream' | 'powerup';
 
 export function play(sfx: Sfx): void {
   if (muted || !ctx) return;
@@ -115,6 +120,13 @@ function synth(sfx: Sfx): void {
     case 'chime': // seatbelt sign off: the two-tone cabin chime
       tone(1046, t, 0.9, 'sine', 0.18);
       tone(784, t + 0.45, 1.2, 'sine', 0.18);
+      break;
+    case 'scream': // a passenger screams (5-1)
+      sweep(900, 1500, t, 0.35, 'sawtooth', 0.05);
+      sweep(1500, 700, t + 0.35, 0.6, 'sawtooth', 0.05);
+      break;
+    case 'powerup':
+      [523, 659, 784, 1046].forEach((f, i) => tone(f, t + i * 0.07, 0.18, 'square', 0.05));
       break;
     case 'warn':
       tone(988, t, 0.08, 'square', 0.05);

@@ -12,6 +12,7 @@ const PLANE = `<svg viewBox="0 0 16 8" class="ghud-plane" aria-hidden="true"><pa
 export interface OverlayAction {
   label: string;
   run(button: HTMLButtonElement): void;
+  disabled?: boolean;
 }
 
 export class Hud {
@@ -21,6 +22,7 @@ export class Hud {
   private score: HTMLElement;
   private nuts: HTMLElement;
   private bankValue: HTMLElement;
+  private bankBox: HTMLElement;
   private bankBars: HTMLElement;
   private label: HTMLElement;
   private alt: HTMLElement;
@@ -57,6 +59,7 @@ export class Hud {
     this.score = q('.ghud-score');
     this.nuts = q('[data-testid="nuts"]');
     this.bankValue = q('.ghud-bank-label b');
+    this.bankBox = q('.ghud-bank');
     this.bankBars = q('.ghud-bars');
     this.label = q('.ghud-label');
     this.alt = q('.ghud-alt');
@@ -75,6 +78,7 @@ export class Hud {
     this.nuts.textContent = String(s.nuts).padStart(3, '0');
     this.score.textContent = String(s.score).padStart(6, '0');
     this.bankValue.textContent = `${s.bank}°`;
+    this.bankBox.classList.toggle('warning', s.bankWarning);
     // 10 segments = 30°; blue while gentle, amber past 10°.
     const lit = Math.min(10, Math.round(Math.abs(s.bank) / 3));
     [...this.bankBars.children].forEach((el, i) => (el.className = i < lit ? (i >= 3 ? 'hot' : 'on') : ''));
@@ -98,11 +102,12 @@ export class Hud {
     for (const a of actions) {
       const btn = document.createElement('button');
       btn.textContent = a.label;
+      btn.disabled = !!a.disabled;
       btn.addEventListener('click', () => a.run(btn));
       row.appendChild(btn);
     }
     this.overlay.hidden = false;
-    row.querySelector<HTMLButtonElement>('button')?.focus({ preventScroll: true });
+    row.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus({ preventScroll: true });
     return () => this.hideOverlay();
   }
 
@@ -117,7 +122,7 @@ export class Hud {
 
   /** Keyboard/gamepad navigation for cards: move focus between buttons and activate the focused one. */
   overlayNavigate(action: 'prev' | 'next' | 'confirm'): void {
-    const buttons = [...this.overlay.querySelectorAll<HTMLButtonElement>('.card-actions button')];
+    const buttons = [...this.overlay.querySelectorAll<HTMLButtonElement>('.card-actions button:not(:disabled)')];
     if (!buttons.length) return;
     const i = buttons.indexOf(document.activeElement as HTMLButtonElement);
     if (action === 'confirm') return (buttons[i] ?? buttons[0]).click();

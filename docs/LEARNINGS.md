@@ -62,3 +62,26 @@ Append after every stage/level: what worked, what didn't, numbers worth remember
 **QA agent (2nd pass)**: 9 bugs and 5 feel items, all addressed except placing touch buttons in the letterbox bars (Stage 10). Recipe as in Stage 1, plus real held-key playthroughs and a FPS check under 4× CPU throttle.
 
 **Fidelity**: World 5 judged 8.0 → 7.2 (gate 5). The drop came from a later trolley spawn moving it out of the capture frame, not from the art. Lowering the camera and making the foreground seats larger fixed the "too much empty wall" note. For Stage 3: denser passengers in the play layer, a larger Yaniv frame (the art agent suggests about 56×72), and a capture point that shows the trolley mid-screen.
+
+## World 5 Stage 3 assets (2026-10-04)
+- All 13 entries in `docs/levels/w5-stage3-assets.md` come from `art/manifest/w5-stage3.yaml`. Spend was about $5.40 estimated (30 calls): low exploration for all, three prompt fixes, medium finals for the small items and blocks, high for characters, enemies, door and galley.
+- **Calibrate fits by measuring, not by eye.** Yaniv's idle content is 107 px tall (his fit of 118 is a median across poses). The Captain at fit 118 came out 12 px taller, so he uses fit 108. The suitcase uses fit 50, which reaches Yaniv's belt. A throwaway script that prints each frame's opaque bbox settles these quickly.
+- **Seated enemies: keep everyone inside the seat's footprint.** The first Baby Bomber had the parent's hair above the seat back and the feet and baby's arm far to the right. In a 96×128 frame that shrank the seat to 85% of `w5.seat`. Asking for "head BELOW the top of the seat back, feet no further right than the passengers in the reference, short arms close to the body" brought it to 93% (frame width is the limit now).
+- **The model draws the projectile in the throw frame.** Ask for "NO pacifier anywhere in the picture", or paint it out of the candidate with flat magenta before `select`. Retouched candidates live in `art/raw/<id>/retouched/` (`select --from` is repo-relative).
+- **Check bandages for red.** The Captain's bandage came with a small pink "blood" spot in every frame, which the no-blood guardrail rules out. It was recoloured in three small boxes using the test `r-g > 30 && |g-b| < 40`, which leaves skin and gold braid alone.
+- "Golden plunger standing upright" reads as a bell. Raising it like a trophy, tilted, with a "rounded half-dome cup, not a cone", fixed that. "Drop-down oxygen mask" got an elastic loop that made it look like a bucket; "NO strap, NO loop" fixed that.
+- `valign: top` is new, for hanging sprites (Bin Biter). For multi-state props (door, bin), ask for "the outer outline identical in every frame". Then `fit: stretch` or `common` + `bbox` keeps the frames registered. Verify with an onion-skin overlay of all frames.
+
+## Stage 3: full World 5 (2026-10-04)
+
+**Engine**
+- Entities talk to the scene only through the `GameWorld` interface (`world.ts`). Don't name a field `scene` on a `Phaser.Scene` subclass: it shadows the scene's own plugin. The field is called `stage`.
+- Key tilt to progress (the furthest x reached), not to time. Then the level designer controls exactly where the floor gets steeper, and a warning goes out 280 units early. Ease each change over 120 units so the camera doesn't snap.
+- Mask vines are pendulums that rest along *true* gravity (φ = tilt in cabin space), so they hang straight down on screen at any bank angle. Auto-grab only while airborne and not hurt, with a 0.35 s cooldown after letting go.
+- Level JSON comes from a small generator (row conventions: floor rows 20–21, seats 19, blocks 14, bins 11–12, mask anchors 6). A unit test checks every floor gap is within the jump envelope (`MAX_GAP` ≈ 98). That caught one 112-wide pit in 5-3.
+
+**Testing**
+- Two bot modes: `god=1` proves each level's geometry is completable, and the plain bot proves a simple player can clear it. The bot started at "only jumps": it cleared 5-1 and died in 5-2..5-4. Adding three rules let it clear all four with 1–3 hearts: poke anything within plunger reach, wait while a bag is falling just ahead, and only jump slow ground enemies. The bot uses the same plunger as a player, so this is also a balance check.
+- `window.__syb` survives a level change until the new scene replaces it. Tests that cross levels wait for `state().level === id`, not just for `__syb`.
+- A jump under a block is stopped by the block about 14 units up. "Airborne" asserts have to allow for that.
+- Don't rebuild `dist/` while another process runs e2e against `vite preview`: a test's `goto` can land on deleted hashed files.

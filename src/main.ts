@@ -54,7 +54,13 @@ function mountGame(): void {
   void loadGame().then((m) => {
     if (screen !== 'game' || game) return; // left before the chunk arrived
     gameScreen.querySelector('.game-loading')?.remove();
-    game = m.startGame(gameScreen, { onQuit: goBack, bot: params.has('bot'), debug: params.has('debug') });
+    game = m.startGame(gameScreen, {
+      onQuit: goBack,
+      bot: params.has('bot'),
+      god: params.has('god'),
+      debug: params.has('debug'),
+      level: params.get('level') ?? undefined,
+    });
   });
 }
 

@@ -97,6 +97,7 @@ async function buildFrames(entry: AssetEntry, master: string) {
         ? { x: Math.max(0, Math.round((frame.w - maxW) / 2)), y: frame.h - p.h }
         : placeInFrame(p, frame, anchor === 'mass' ? p.massX : p.w / 2);
     if (entry.valign === 'middle') pos.y = Math.floor((frame.h - p.h) / 2);
+    else if (entry.valign === 'top') pos.y = 0;
     for (let y = 0; y < p.h; y++) {
       const fy = pos.y + y;
       if (fy < 0 || fy >= frame.h) continue;

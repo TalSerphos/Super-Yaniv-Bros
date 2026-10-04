@@ -183,38 +183,70 @@ export interface BotView {
   y: number;
   vx: number;
   grounded: boolean;
+  /** Hanging from an oxygen-mask vine, and the vine's horizontal speed. */
+  swinging?: boolean;
+  swingVx?: number;
   /** Is there something solid to stand on at this x, near the player's feet? */
   groundAt(x: number): boolean;
   /** Is the space at (x, feet-8) blocked by a wall the player would run into? */
   wallAt(x: number): boolean;
-  /** Horizontal distances (x - player.x) to live trolleys, and their speeds. */
-  trolleys: { dx: number; vx: number }[];
+  /**
+   * Live hazards that can currently touch the player: offset of their feet from the player's feet
+   * (dx, dy; negative dy is above), speed, and kind ('trolley', 'suitcase', 'pacifier', 'luggage', ...).
+   */
+  threats: BotThreat[];
 }
 
+export interface BotThreat {
+  kind: string;
+  dx: number;
+  dy: number;
+  vx: number;
+}
+
+/** Things the bot rolls into or jumps over at ground level (and pokes first when it can). */
+const GROUND_THREATS = new Set(['trolley', 'suitcase']);
+
 /**
- * Rule-based bot that runs right and jumps over pits, walls and incoming trolleys. Used by e2e tests to
- * prove the level is completable in a real browser; deliberately simple, so a level it can finish is
- * comfortably finishable by a person.
+ * Rule-based bot that runs right, pokes anything in plunger reach, waits out falling bags, and jumps over
+ * pits, walls and enemies. Used by e2e tests to prove levels are completable in a real browser;
+ * deliberately simple, so a level it can finish is comfortably finishable by a person.
  */
 export class BotInput implements InputSource {
   private jumpHeld = 0;
+  private pokeCooldown = 0;
   view: BotView | null = null;
 
   read(into: Buttons): void {
     const v = this.view;
     if (!v) return;
-    into.right = true;
+    this.pokeCooldown = Math.max(0, this.pokeCooldown - 1);
+    if (v.swinging) {
+      // Pump right, let go on the forward swing.
+      into.right = true;
+      if ((v.swingVx ?? 0) > 110) into.jump = true;
+      return;
+    }
+    // Plunger poke: reaches ~70 ahead at body height (also calms babies and stuns open bin biters).
+    if (this.pokeCooldown === 0 && v.threats.some((t) => t.kind !== 'luggage' && t.dx > -6 && t.dx < 66 && Math.abs(t.dy) < 38)) {
+      into.grab = true;
+      this.pokeCooldown = 16;
+    }
+    // A bag dropping just ahead: let it land first (it is harmless once down).
+    const bagAhead = v.threats.some((t) => t.kind === 'luggage' && t.dy < -20 && t.dx > -14 && t.dx < 64);
+    into.right = !(bagAhead && v.grounded);
     if (this.jumpHeld > 0) {
       this.jumpHeld--;
       into.jump = true;
       return;
     }
-    if (!v.grounded) return;
+    if (!v.grounded || bagAhead) return;
     const pitAhead = !v.groundAt(v.x + 22) || !v.groundAt(v.x + 38);
     const wallAhead = v.wallAt(v.x + 20);
-    const trolleyBehind = v.trolleys.some((t) => t.dx < 0 && t.dx > -70 && t.vx > v.vx);
-    const trolleyAhead = v.trolleys.some((t) => t.dx > 0 && t.dx < 46);
-    if (pitAhead || wallAhead || trolleyBehind || trolleyAhead) {
+    const ground = v.threats.filter((t) => GROUND_THREATS.has(t.kind) && Math.abs(t.dy) < 30);
+    const rushingBehind = ground.some((t) => t.dx < 0 && t.dx > -70 && t.vx > v.vx);
+    const enemyAhead = ground.some((t) => t.dx > 0 && t.dx < 46 && t.vx < 120);
+    if (pitAhead || wallAhead || rushingBehind || enemyAhead) {
       this.jumpHeld = 18; // hold for a full-height jump
       into.jump = true;
     }

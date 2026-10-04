@@ -1,27 +1,38 @@
 /**
  * Level format: an ASCII grid (one char per 16×16 tile) plus metadata. Agents and humans can both edit it,
- * diff it and validate it (tools/levels/validate.ts).
+ * diff it and validate it (tests/unit/levels.test.ts checks every shipped level).
  *
- * Grid legend
- *   '#' floor slab (solid)          'B' overhead bin (solid)
- *   '-' one-way platform (stand on top, pass through from below)
- *   'P' player start (feet on the cell's bottom edge)
- *   'o' brass nut                   '?' call-button block (top-left cell of a 2×2 block)
- *   'T' trolley spawner (feet on the cell's bottom edge)
- *   'X' exit curtain (bottom-left cell)
- *   'E' 'Z' 'R' 'K' seats (leftmost cell; seat bottom on the cell's bottom edge): empty, sleeper, reader, kid.
- *       Each seat adds a one-way platform along its seatback top.
+ * Grid legend (feet = the entity stands on the cell's bottom edge)
+ *   terrain   '#' floor slab   'B' overhead bin (solid)   '-' one-way platform (stand on top only)
+ *             'b' breakable bin panel (32×32, top-left cell; Big Yaniv smashes it from below)
+ *   blocks    (32×32, top-left cell) '?' call button: nut   'H' power: hummus or golden plunger
+ *             'A' bamba rush   'U' sabich (+1 heart)
+ *   items     'o' brass nut
+ *   enemies   'T' trolley spawner (feet)   'C' suitcase shell (feet)   'Y' baby bomber seat (seat cell)
+ *             'W' bin biter (top-left cell; hangs from the bin above)   'L' luggage-rain zone (top cell)
+ *   swing     'M' oxygen-mask anchor (the mask hangs MASK_LENGTH below it)
+ *   seats     'E' 'Z' 'R' 'K' (leftmost cell, feet): empty, sleeper, reader, kid. Their seatback is a one-way platform.
+ *   markers   'P' player start (feet)   'X' exit curtain (bottom-left)   'D' cockpit door exit (bottom-left)
+ *             'G' galley checkpoint (feet)   'N' the Captain (feet)   'Q' screaming passenger (feet)
  *   '.' or ' ' empty
  */
 import { TILE } from '../config.ts';
-import type { TiltKey } from '../systems/tilt.ts';
+
+export interface TiltKey {
+  /** Furthest x the player has reached (world units) at which this bank angle applies. */
+  x: number;
+  deg: number;
+}
 
 export interface LevelData {
   id: string;
   name: string;
   /** ALT start (ft) and fall rate (ft/s). */
   altitude: { start: number; rate: number };
+  /** Tilt keyed to progress through the level (see systems/tilt.ts). */
   tilt: TiltKey[];
+  /** Optional mood: 'sunset' (default) or 'alarm' (red alarm lighting, World 5-4). */
+  mood?: 'sunset' | 'alarm';
   grid: string[];
 }
 
@@ -34,27 +45,43 @@ export interface Rect {
 
 export type SolidKind = 'floor' | 'bin';
 export type SeatKind = 'empty' | 'sleeper' | 'reader' | 'kid';
+export type BlockKind = 'nut' | 'power' | 'bamba' | 'sabich';
+export interface Point {
+  x: number;
+  y: number;
+}
 
 export interface ParsedLevel {
   width: number;
   height: number;
   solids: (Rect & { kind: SolidKind })[];
   oneWays: Rect[];
-  start: { x: number; y: number };
-  exit: Rect;
-  nuts: { x: number; y: number }[];
-  blocks: { x: number; y: number }[];
-  trolleys: { x: number; y: number }[];
-  seats: { x: number; y: number; kind: SeatKind }[];
+  start: Point;
+  exit: Rect & { kind: 'curtain' | 'door' };
+  nuts: Point[];
+  blocks: (Point & { kind: BlockKind })[];
+  breakables: Point[];
+  trolleys: Point[];
+  suitcases: Point[];
+  babies: Point[];
+  binBiters: Point[];
+  luggage: Point[];
+  masks: Point[];
+  checkpoints: Point[];
+  seats: (Point & { kind: SeatKind })[];
+  captain?: Point;
+  screamer?: Point;
 }
 
-/** Seat sprite footprint (world units) and the height of its seatback top above the floor. */
+/** Seat sprite footprint (world units), seatback top inset, and the standable seatback span. */
 export const SEAT = { w: 48, h: 64, topInset: 10, backX: 0, backW: 28 };
 export const EXIT = { w: 64, h: 128 };
 export const BLOCK = 32;
+export const MASK_LENGTH = 104;
 
 const SEAT_CHARS: Record<string, SeatKind> = { E: 'empty', Z: 'sleeper', R: 'reader', K: 'kid' };
 const SOLID_CHARS: Record<string, SolidKind> = { '#': 'floor', B: 'bin' };
+const BLOCK_CHARS: Record<string, BlockKind> = { '?': 'nut', H: 'power', A: 'bamba', U: 'sabich' };
 
 export function parseLevel(level: LevelData): ParsedLevel {
   const rows = level.grid;
@@ -66,10 +93,17 @@ export function parseLevel(level: LevelData): ParsedLevel {
     solids: [],
     oneWays: [],
     start: { x: 0, y: 0 },
-    exit: { x: 0, y: 0, w: 0, h: 0 },
+    exit: { x: 0, y: 0, w: 0, h: 0, kind: 'curtain' },
     nuts: [],
     blocks: [],
+    breakables: [],
     trolleys: [],
+    suitcases: [],
+    babies: [],
+    binBiters: [],
+    luggage: [],
+    masks: [],
+    checkpoints: [],
     seats: [],
   };
   let starts = 0;
@@ -91,37 +125,66 @@ export function parseLevel(level: LevelData): ParsedLevel {
       if (kind && !run) run = { kind, from: c };
 
       const x = c * TILE;
-      const bottom = (r + 1) * TILE;
+      const top = r * TILE;
+      const bottom = top + TILE;
+      const feet = { x: x + TILE / 2, y: bottom };
+      if (BLOCK_CHARS[ch]) {
+        out.blocks.push({ x, y: top, kind: BLOCK_CHARS[ch] });
+        continue;
+      }
+      if (SEAT_CHARS[ch] || ch === 'Y') {
+        if (ch === 'Y') out.babies.push({ x, y: bottom - SEAT.h });
+        else out.seats.push({ x, y: bottom - SEAT.h, kind: SEAT_CHARS[ch] });
+        // Only the seatback (left part of the sprite) is standable, not the passenger's head.
+        out.oneWays.push({ x: x + SEAT.backX, y: bottom - SEAT.h + SEAT.topInset, w: SEAT.backW, h: 6 });
+        continue;
+      }
       switch (ch) {
         case 'P':
-          out.start = { x: x + TILE / 2, y: bottom };
+          out.start = feet;
           starts++;
           break;
         case 'X':
-          out.exit = { x, y: bottom - EXIT.h, w: EXIT.w, h: EXIT.h };
+        case 'D':
+          out.exit = { x, y: bottom - EXIT.h, w: EXIT.w, h: EXIT.h, kind: ch === 'X' ? 'curtain' : 'door' };
           exits++;
           break;
         case 'o':
-          out.nuts.push({ x: x + TILE / 2, y: r * TILE + TILE / 2 });
+          out.nuts.push({ x: x + TILE / 2, y: top + TILE / 2 });
           break;
-        case '?':
-          out.blocks.push({ x, y: r * TILE });
+        case 'b':
+          out.breakables.push({ x, y: top });
           break;
         case 'T':
-          out.trolleys.push({ x: x + TILE / 2, y: bottom });
+          out.trolleys.push(feet);
           break;
-        default:
-          if (SEAT_CHARS[ch]) {
-            out.seats.push({ x, y: bottom - SEAT.h, kind: SEAT_CHARS[ch] });
-            // Only the seatback (left part of the sprite) is standable, not the passenger's head.
-            out.oneWays.push({ x: x + SEAT.backX, y: bottom - SEAT.h + SEAT.topInset, w: SEAT.backW, h: 6 });
-          }
+        case 'C':
+          out.suitcases.push(feet);
+          break;
+        case 'W':
+          out.binBiters.push({ x, y: top });
+          break;
+        case 'L':
+          out.luggage.push({ x: x + TILE / 2, y: top });
+          break;
+        case 'M':
+          out.masks.push({ x: x + TILE / 2, y: top });
+          break;
+        case 'G':
+          out.checkpoints.push(feet);
+          break;
+        case 'N':
+          out.captain = feet;
+          break;
+        case 'Q':
+          out.screamer = feet;
+          break;
       }
     }
   });
 
   if (starts !== 1) throw new Error(`${level.id}: expected exactly one 'P', found ${starts}`);
-  if (exits !== 1) throw new Error(`${level.id}: expected exactly one 'X', found ${exits}`);
+  if (exits !== 1) throw new Error(`${level.id}: expected exactly one exit ('X' or 'D'), found ${exits}`);
   // Merge vertically stacked solid runs with identical spans into single bodies (fewer physics objects).
   out.solids = mergeVertical(out.solids);
   return out;
@@ -136,4 +199,9 @@ function mergeVertical<T extends Rect & { kind: SolidKind }>(rects: T[]): T[] {
     else merged.push({ ...r });
   }
   return merged;
+}
+
+/** Top of the main aisle floor (the most common floor height). */
+export function floorTopOf(level: ParsedLevel): number {
+  return Math.max(...level.solids.filter((s) => s.kind === 'floor').map((s) => s.y));
 }

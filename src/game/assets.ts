@@ -23,6 +23,19 @@ export const SHEETS: Record<string, SheetSpec> = {
   'block.call': { frame: [32, 32], frames: ['active', 'used'] },
   'w5.seat': { frame: [48, 64], frames: ['empty', 'sleeper', 'reader', 'kid'] },
   'hud.icons': { frame: [16, 16], frames: ['heart', 'heartEmpty', 'nut', 'plane'] },
+  // Stage 3 (docs/levels/w5-stage3-assets.md)
+  'item.power': { frame: [16, 16], frames: ['hummus', 'goldenPlunger', 'bamba', 'sabich'] },
+  'proj.plunger': { frame: [16, 16], frames: ['fly0', 'fly1', 'stuck'] },
+  'enemy.suitcase': { frame: [32, 32], frames: ['walk0', 'walk1', 'shell', 'spin'] },
+  'enemy.baby': { frame: [48, 64], frames: ['idle', 'wind', 'throw'] },
+  'proj.pacifier': { frame: [16, 16], frames: ['spin0', 'spin1'] },
+  'enemy.binbiter': { frame: [48, 32], frames: ['closed', 'half', 'open'] },
+  'prop.luggage': { frame: [32, 32], frames: ['duffel', 'roller', 'box'] },
+  'prop.mask': { frame: [16, 16], frames: ['mask', 'maskGrab'] },
+  'block.bin': { frame: [32, 32], frames: ['intact', 'cracked'] },
+  'npc.captain': { frame: [48, 64], frames: ['idle', 'thumbsUp', 'hurt'] },
+  'npc.screamer': { frame: [48, 64], frames: ['calm', 'scream0', 'scream1'] },
+  'w5.door': { frame: [64, 128], frames: ['closed', 'open'] },
 };
 
 export const IMAGES: Record<string, [number, number]> = {
@@ -30,6 +43,7 @@ export const IMAGES: Record<string, [number, number]> = {
   'w5.bg.wall': [640, 360],
   'w5.tex.floor': [64, 32],
   'w5.tex.bin': [64, 32],
+  'w5.galley': [96, 128],
 };
 
 /** Frame index by name, e.g. frameIndex('yaniv.small', 'jump'). */
@@ -77,6 +91,18 @@ export function ensurePlaceholders(scene: Phaser.Scene): void {
 }
 
 const COLORS: Record<string, string> = {
+  'item.power': '#e0a526',
+  'proj.plunger': '#ffd23f',
+  'enemy.suitcase': '#7c3aed',
+  'enemy.baby': '#0f766e',
+  'proj.pacifier': '#f9a8d4',
+  'enemy.binbiter': '#a8a29e',
+  'prop.luggage': '#6d28d9',
+  'prop.mask': '#facc15',
+  'block.bin': '#c9c2b4',
+  'npc.captain': '#1e293b',
+  'npc.screamer': '#be185d',
+  'w5.door': '#64748b',
   'yaniv.small': '#1f3a8a',
   'enemy.trolley': '#334155',
   'item.nut': '#d4a017',

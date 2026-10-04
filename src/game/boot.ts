@@ -7,8 +7,11 @@ import Phaser from 'phaser';
 import { isMuted, play, setMuted } from '../audio/sfx.ts';
 import { CANVAS_H, CANVAS_W } from './config.ts';
 import { Hud } from './hud.ts';
-import level52 from './levels/w5/5-2.json';
-import type { LevelData } from './levels/loader.ts';
+import { RULES } from './config.ts';
+import { WORLD5, WORLD5_ORDER, levelById } from './levels/index.ts';
+import type { LevelData, Point } from './levels/loader.ts';
+import { freshRun, loadProgress, recordClear, saveProgress, type RunState } from './systems/progress.ts';
+import { music } from '../audio/music.ts';
 import { LevelScene, type GameEvent, type LevelInit } from './scenes/LevelScene.ts';
 import { BotInput, GamepadInput, KeyboardInput, TouchInput, type InputSource } from './systems/input.ts';
 import './game.css';
@@ -17,7 +20,11 @@ export interface GameOptions {
   /** Leave the game and return to the title (the title owns history/navigation). */
   onQuit(): void;
   bot?: boolean;
+  /** Bot/test mode without damage, to prove every level's geometry is completable. */
+  god?: boolean;
   debug?: boolean;
+  /** Start straight into this level (tests, deep links), e.g. "5-3". */
+  level?: string;
 }
 
 export interface GameController {
@@ -25,9 +32,9 @@ export interface GameController {
 }
 
 const INTRO_MS = 1600;
+const pad6 = (n: number) => String(n).padStart(6, '0');
 
 export function startGame(host: HTMLElement, opts: GameOptions): GameController {
-  const level = level52 as LevelData;
   const canvasHost = document.createElement('div');
   canvasHost.className = 'game-canvas';
   host.appendChild(canvasHost);
@@ -37,6 +44,13 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
   const bot = opts.bot ? new BotInput() : undefined;
   let destroyed = false;
   let introTimer = 0;
+
+  let progress = loadProgress(WORLD5_ORDER[0]);
+  let current: LevelData = levelById(opts.level ?? '') ?? WORLD5[0];
+  let run: RunState = freshRun(RULES.hearts);
+  /** Run state at the start of the current level (what RETRY goes back to). */
+  let runAtStart: RunState = run;
+  let checkpoint: Point | undefined;
 
   const game = new Phaser.Game({
     type: Phaser.AUTO,
@@ -55,6 +69,7 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
   });
 
   const scene = () => game.scene.getScene('level') as LevelScene | null;
+  const isLast = () => WORLD5_ORDER.indexOf(current.id) === WORLD5_ORDER.length - 1;
 
   const onEvent = (e: GameEvent) => {
     switch (e.type) {
@@ -64,65 +79,128 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
       case 'pause':
         pause();
         break;
+      case 'checkpoint':
+        checkpoint = e.at;
+        break;
       case 'clear':
-        hud.showOverlay(
-          `<h2>CABIN CLEARED!</h2>
-           <p class="sub">Ding! The seatbelt sign is off.</p>
-           <dl><dt>SCORE</dt><dd data-testid="final-score">${String(e.score).padStart(6, '0')}</dd>
-               <dt>NUTS</dt><dd>${e.nuts}</dd><dt>TIME</dt><dd>${e.seconds}s</dd></dl>
-           <p class="soon">The rest of World 5 is coming soon.</p>`,
-          [
-            { label: 'PLAY AGAIN', run: restart },
-            { label: 'TITLE', run: opts.onQuit },
-          ],
-          'clear',
-        );
+        run = e.run;
+        progress = recordClear(progress, WORLD5_ORDER, current.id, e.run.score);
+        saveProgress(progress);
+        music.stop();
+        if (isLast()) {
+          hud.showOverlay(
+            `<p class="world">WORLD 5 COMPLETE</p>
+             <h2>THE CAPTAIN OPENED THE DOOR!</h2>
+             <p class="sub">Wounded but brave, he lets the Bros. onto the flight deck.</p>
+             <dl><dt>SCORE</dt><dd data-testid="final-score">${pad6(e.run.score)}</dd><dt>NUTS</dt><dd>${e.run.nuts}</dd></dl>
+             <p class="soon">World 6: The Dive is coming soon.</p>`,
+            [
+              { label: 'WORLD 5 MAP', run: showMap },
+              { label: 'TITLE', run: opts.onQuit },
+            ],
+            'clear',
+          );
+        } else {
+          const next = WORLD5[WORLD5_ORDER.indexOf(current.id) + 1];
+          hud.showOverlay(
+            `<h2>CABIN CLEARED!</h2>
+             <p class="sub">Ding! The seatbelt sign is off.</p>
+             <dl><dt>SCORE</dt><dd data-testid="final-score">${pad6(e.run.score)}</dd>
+                 <dt>NUTS</dt><dd>${e.run.nuts}</dd><dt>TIME</dt><dd>${e.seconds}s</dd></dl>
+             <p class="soon">Next: ${next.id} ${next.name}</p>`,
+            [
+              { label: 'NEXT LEVEL', run: () => playLevel(next) },
+              { label: 'TITLE', run: opts.onQuit },
+            ],
+            'clear',
+          );
+        }
         break;
       case 'gameover':
         play('hurt');
+        music.stop();
         hud.showOverlay(
           `<h2>${e.reason === 'altitude' ? 'ALTITUDE ZERO' : 'GAME OVER'}</h2>
            <p class="sub">${e.reason === 'altitude' ? 'Pull up faster next time!' : 'Even plumbers need a second try.'}</p>
-           <dl><dt>SCORE</dt><dd>${String(e.score).padStart(6, '0')}</dd></dl>`,
+           <dl><dt>SCORE</dt><dd>${pad6(e.score)}</dd></dl>`,
           [
-            { label: 'RETRY', run: restart },
+            { label: checkpoint ? 'RETRY FROM GALLEY' : 'RETRY', run: retry },
             { label: 'TITLE', run: opts.onQuit },
           ],
           'over',
         );
         break;
-      case 'intro':
-        break;
     }
   };
 
-  const init: LevelInit = { level, inputs, bot, onHud: (s) => hud.update(s), onEvent };
+  /** World 5 map: replay any unlocked level. */
+  function showMap(): void {
+    music.stop();
+    const unlockedIdx = WORLD5_ORDER.indexOf(progress.unlocked);
+    hud.showOverlay(
+      `<p class="world">WORLD 5</p><h2>THE ATTACK</h2>
+       <p class="sub">Pick a cabin. Your best scores are saved on this device.</p>`,
+      WORLD5.map((l, i) => ({
+        label: i <= unlockedIdx ? `${l.id} ${l.name}${progress.best[l.id] ? ` · ${pad6(progress.best[l.id])}` : ''}` : `${l.id} LOCKED`,
+        disabled: i > unlockedIdx,
+        run: () => {
+          run = freshRun(RULES.hearts);
+          playLevel(l);
+        },
+      })),
+      'map',
+    );
+  }
 
-  function begin(): void {
+  function playLevel(level: LevelData, fromCheckpoint = false): void {
+    if (level.id !== current.id || !fromCheckpoint) checkpoint = undefined;
+    current = level;
+    runAtStart = { ...run };
     hud.showOverlay(
       `<p class="world">WORLD ${level.id}</p><h2>${level.name}</h2><p class="sub">ALT ${level.altitude.start.toLocaleString('en-US')} FT · BANK ${level.tilt[0]?.deg ?? 0}°</p>`,
       [],
       'intro',
     );
+    window.clearTimeout(introTimer);
     introTimer = window.setTimeout(() => {
       if (destroyed) return;
       hud.hideOverlay();
+      const init: LevelInit = {
+        level,
+        run: { ...run },
+        checkpoint,
+        inputs,
+        bot,
+        god: opts.god,
+        onHud: (s) => hud.update(s),
+        onEvent,
+      };
       if (game.scene.getScene('level')) game.scene.start('level', init);
       else game.scene.add('level', LevelScene, true, init);
+      music.play(level.mood === 'alarm' ? 'alarm' : 'cabin');
       if (portrait.matches) window.setTimeout(pause, 50);
     }, INTRO_MS);
   }
 
-  function restart(): void {
+  function retry(): void {
     hud.hideOverlay();
     game.scene.stop('level');
-    begin();
+    // A retry keeps the score but starts small with full hearts.
+    run = { ...runAtStart, hearts: RULES.hearts, power: 'small' };
+    playLevel(current, true);
+  }
+
+  function begin(): void {
+    // Returning players with more than 5-1 unlocked pick from the map; first-timers board 5-1 directly.
+    if (!opts.level && progress.unlocked !== WORLD5_ORDER[0]) showMap();
+    else playLevel(current);
   }
 
   function pause(): void {
     const s = scene();
     if (!s || hud.overlayOpen) return;
     game.scene.pause('level');
+    music.pause();
     const soundLabel = () => `SOUND: ${isMuted() ? 'OFF' : 'ON'}`;
     hud.showOverlay('<h2>PAUSED</h2><p class="sub">Please remain seated.</p>', [
       { label: 'RESUME', run: resume },
@@ -133,6 +211,7 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
           btn.textContent = soundLabel();
         },
       },
+      { label: 'WORLD 5 MAP', run: () => (game.scene.stop('level'), showMap()) },
       { label: 'QUIT TO TITLE', run: opts.onQuit },
     ]);
   }
@@ -141,6 +220,7 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
     hud.hideOverlay();
     inputs.forEach((i) => i.reset?.()); // keys pressed on the card must not fire in play
     game.scene.resume('level');
+    music.resume();
   }
 
   const paused = () => !!scene() && game.scene.isPaused('level');
@@ -205,6 +285,7 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
     destroy() {
       destroyed = true;
       window.clearTimeout(introTimer);
+      music.stop();
       window.removeEventListener('keydown', onKey);
       cancelAnimationFrame(padRaf);
       portrait.removeEventListener('change', onOrientation);

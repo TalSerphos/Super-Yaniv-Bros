@@ -53,8 +53,11 @@ export interface AssetEntry {
   fit?: AssetFit;
   /** Horizontal placement in the frame: centre of mass (default), bounding-box centre, or shared left edge. */
   anchor?: 'mass' | 'bbox' | 'left';
-  /** Vertical placement: feet on the bottom row (default, characters and props) or centred (items, icons). */
-  valign?: 'bottom' | 'middle';
+  /**
+   * Vertical placement: feet on the bottom row (default, characters and props), centred (items, icons) or top
+   * row (things hanging from a ceiling, e.g. the Bin Biter).
+   */
+  valign?: 'bottom' | 'middle' | 'top';
   /** Make the built image tile seamlessly along x. */
   seamless?: 'x';
 }

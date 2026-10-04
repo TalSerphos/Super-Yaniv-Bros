@@ -131,3 +131,11 @@
 .card-actions button:hover, .card-actions button:focus-visible { color: var(--gold); outline: 0.2cqw dashed var(--gold); outline-offset: 0.3cqw; }
 .game-overlay.intro { background: #0b0816; }
 .game-overlay.intro .card { background: none; border: 0; box-shadow: none; }
+
+/* A tilt change is coming: the BANK gauge flashes (spec: 2-second warning). */
+.ghud-bank.warning { animation: bank-warn 0.3s steps(1) infinite; }
+@keyframes bank-warn { 50% { border-color: #ffb347; box-shadow: 0 0 0.6cqw #ffb347; } }
+
+/* World map / level select */
+.game-overlay.map .card-actions { flex-direction: column; align-items: stretch; gap: 1.2cqh; }
+.card-actions button:disabled { opacity: 0.4; cursor: default; }

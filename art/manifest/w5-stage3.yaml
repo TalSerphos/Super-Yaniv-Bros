@@ -1,0 +1,324 @@
+# World 5, Stage 3 additions. Contract: docs/levels/w5-stage3-assets.md. Schema: tools/assets/README.md.
+# Sprites are painted on flat magenta and keyed out; frames are built at 2x world units.
+# Scale targets (2x px): Yaniv is 118 tall, items about his head (~28), suitcase knee-to-waist (~56),
+# the Baby Bomber seat matches w5.seat (128), the Captain matches Yaniv.
+
+- id: item.power
+  kind: spritesheet
+  size: 1024x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 2, rows: 2}
+  cells: [0, 1, 2, 3]
+  frame: {w: 16, h: 16}
+  fit: {mode: each, height: 30}
+  valign: middle
+  prompt: >
+    Four chunky power-up items for a platformer, in an invisible grid of 2 columns by 2 rows (no grid lines),
+    each centered in its cell, the same size, bold and simple with thick dark outlines so they read at a tiny
+    size, slightly from the front and above:
+    (1) a round white ceramic bowl of hummus: a creamy beige swirl with a golden-green pool of olive oil in the
+    middle, a few whole chickpeas, a pinch of orange paprika and a green parsley leaf;
+    (2) a shiny solid-gold toilet plunger raised like a trophy and tilted diagonally: the wide gold rubber
+    suction cup (a soft rounded half-dome, not a cone) at the TOP RIGHT with its open rim facing up and out, a
+    straight gold handle running down to the
+    lower left, bright white highlights, no knob, no floating sparkles; it must read as a plunger, not a bell;
+    (3) a plain bright yellow crinkled foil snack bag, open at the top with a few puffy golden peanut-snack
+    curls poking out; the bag has NO logo, NO letters, NO picture on it, just plain yellow foil with a white
+    highlight;
+    (4) a fluffy pita bread pocket seen from the side, stuffed and overflowing with fried purple-brown eggplant
+    slices, sliced hard-boiled egg (white with yellow yolk), green and red chopped salad and a drizzle of tahini.
+    Perfectly flat, solid, uniform magenta (#FF00FF) background, no shadows on the background, no text.
+  out: {dir: w5, colors: 48}
+
+- id: proj.plunger
+  kind: spritesheet
+  refs: [art/masters/item.power.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 3, rows: 1}
+  cells: [0, 1, 2]
+  frame: {w: 16, h: 16}
+  fit: {mode: common, height: 32}
+  valign: middle
+  prompt: >
+    Three sprites of the same small shiny solid-gold toilet plunger from the reference image (gold rubber cup,
+    gold handle, thick dark outline), drawn as a thrown projectile flying to the RIGHT, in three equal columns
+    (no grid lines), each centered in its column, the same plunger at the same size in all three:
+    (1) flying horizontally, cup pointing RIGHT and handle trailing to the left, two short white speed lines
+    attached behind the handle;
+    (2) mid-spin, the plunger rotated diagonally, cup at the upper right, handle at the lower left;
+    (3) stuck: horizontal, the cup on the RIGHT squashed flat against an invisible wall (flattened, wider
+    rim), handle sticking straight out to the left, a tiny wobble line.
+    Perfectly flat, solid, uniform magenta (#FF00FF) background, no shadows on the background, no text.
+  out: {dir: w5, colors: 24}
+
+- id: enemy.suitcase
+  kind: spritesheet
+  refs: [art/reference/w5-aisle.webp, art/masters/enemy.trolley.webp]
+  size: 1024x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 2, rows: 2}
+  cells: [0, 1, 2, 3]
+  frame: {w: 32, h: 32}
+  fit: {height: 50}
+  prompt: >
+    Sprite sheet for a platformer enemy, the "Suitcase Shell": a small grumpy hard-shell rolling suitcase come
+    to life, like the purple suitcase in the first reference image, drawn in the same pixel style and with the
+    same angry cartoon face style as the cart in the second reference image. Strict side view facing RIGHT.
+    Glossy purple ribbed hard shell with teal corner guards and a teal zip line, the telescopic handle fully
+    retracted (only a short stubby top grab handle), two small black wheels, a grumpy face on its side
+    (heavy slanted brows, narrowed yellow eyes, a frowning mouth). No red, no brown, no navy.
+    Layout: an invisible grid of 2 columns by 2 rows of equal cells (no grid lines), one suitcase per cell,
+    centered, same scale, all on a common baseline in each row.
+    (1) walking on two tiny stubby legs with little white sneakers, left leg forward; (2) walking, right leg
+    forward, body bobbing up a little; (3) shell: the same suitcase shut tight with its legs tucked inside, eyes
+    squeezed shut, sitting on its wheels; (4) spin: the same shut suitcase spinning fast, smeared with a few
+    curved white motion-blur streaks and speed lines around it.
+    Perfectly flat, solid, uniform magenta (#FF00FF) background, no gradient, no floor, no shadows on the
+    background, no text, no labels.
+  out: {dir: w5, colors: 48}
+
+- id: enemy.baby
+  kind: spritesheet
+  refs: [art/masters/w5.seat.webp, art/reference/w5-aisle.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 3, rows: 1}
+  cells: [0, 1, 2]
+  frame: {w: 48, h: 64}
+  fit: {height: 128}
+  anchor: left
+  prompt: >
+    Sprite sheet for a platformer enemy, the "Baby Bomber": the SAME teal airliner economy seat as in the
+    first reference image, at the same size and in the same strict side view facing RIGHT (seat back on the
+    left, cushion pointing right, teal upholstery, cream-grey plastic shell and armrest, dark grey base).
+    Sitting in it, facing right: a frazzled, exhausted but loving young parent (messy dark curly hair, tired
+    eyes with dark circles, a mustard-yellow cardigan over a green t-shirt, grey jeans) holding a chubby
+    crying baby on their lap. The baby wears a mint-green onesie, has a tiny tuft of hair, its face red-cheeked
+    and bawling with tears flying, mouth wide open. Sympathetic and funny, not mocking.
+    Layout: three equal columns in a row (no grid lines), one seat per column, the seat identical in all three
+    and on a common floor baseline. Keep everything inside the seat's outline exactly like the passengers in
+    the reference: the parent sits low and slumped with exhaustion, the top of the parent's head stays BELOW
+    the top of the seat back, the parent's knees and feet stick out to the right no further than the
+    passengers' in the reference, and the baby sits high on the parent's lap, its arms always staying close
+    to its body, never reaching beyond the parent's knees. (1) idle: the baby bawling, the parent gently bouncing it with a weary
+    smile; (2) wind-up: the baby leans back with one short arm raised just above its head, gripping a pastel
+    pink pacifier, ready to throw; (3) throw: the baby's short arm flung forward to the right, hand open, NO
+    pacifier anywhere in the picture (it is already gone), the parent wincing apologetically.
+    Perfectly flat, solid, uniform magenta (#FF00FF) background, no gradient, no floor, no shadows on the
+    background, no text, no labels.
+  out: {dir: w5, colors: 64}
+
+- id: proj.pacifier
+  kind: spritesheet
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 2, rows: 1}
+  cells: [0, 1]
+  frame: {w: 16, h: 16}
+  fit: {mode: common, height: 24}
+  valign: middle
+  prompt: >
+    Two sprites of the same baby pacifier (dummy) for a platformer projectile, in two equal columns (no grid
+    lines), each centered in its column at the same size, bold and simple with a thick dark outline so it reads
+    at a tiny size: a pastel pink rounded butterfly-shaped shield, a pale mint-green ring handle on the front
+    and a soft cream rubber teat. (1) seen from the side, teat pointing right, ring on the left;
+    (2) the same pacifier turned a quarter turn as it spins, seen front-on, showing the round ring in the
+    middle of the pink shield.
+    Perfectly flat, solid, uniform magenta (#FF00FF) background, no shadows on the background, no text.
+  out: {dir: w5, colors: 24}
+
+- id: enemy.binbiter
+  kind: spritesheet
+  refs: [art/masters/w5.tex.bin.webp, art/reference/w5-aisle.webp]
+  size: 1024x1536
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 1, rows: 3}
+  cells: [0, 1, 2]
+  frame: {w: 48, h: 32}
+  fit: {height: 64}
+  anchor: bbox
+  valign: top
+  prompt: >
+    Sprite sheet for a platformer enemy, the "Bin Biter": an airliner overhead luggage bin come to life, seen
+    straight from the front like the bins in the reference images, cream and light-grey plastic, a wide box
+    about twice as wide as it is tall. Its upper body has two angry glaring yellow eyes under heavy slanted
+    dark brows. Its front door is its lower jaw, hinged along the bottom edge. No red anywhere.
+    Layout: three equal rows stacked vertically (no grid lines), one bin per row, all at exactly the same size,
+    their TOP edges level (the top of the bin never moves).
+    (1) closed: the door shut, a jagged zig-zag seam of white teeth along the closed mouth line;
+    (2) half open: the door-jaw dropped open a little, showing a dark charcoal interior and two rows of jagged
+    white teeth on the upper and lower lips;
+    (3) wide open: the door-jaw dropped wide open and hanging down below the box, a big dark gaping mouth with
+    jagged white teeth, a small suitcase silhouette visible deep inside.
+    Perfectly flat, solid, uniform magenta (#FF00FF) background, no gradient, no shadows on the background,
+    no text, no labels.
+  out: {dir: w5, colors: 48}
+
+- id: prop.luggage
+  kind: spritesheet
+  refs: [art/reference/w5-aisle.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 3, rows: 1}
+  cells: [0, 1, 2]
+  frame: {w: 32, h: 32}
+  fit: {mode: each, height: 52}
+  prompt: >
+    Three pieces of carry-on luggage for a platformer, falling hazards, in strict side view, in three equal
+    columns (no grid lines), each centered in its column and resting on a common baseline, the same pixel
+    style as the reference image, thick dark outlines, chunky and readable at a small size. No faces.
+    (1) a soft olive-green duffel bag with dark green straps and a silver zip, fat and slumped;
+    (2) a small hard-shell orange roller suitcase with a short handle and two black wheels;
+    (3) a cardboard box tied up with white string and silver tape, slightly battered.
+    Perfectly flat, solid, uniform magenta (#FF00FF) background, no gradient, no floor, no shadows on the
+    background, no text, no labels, no logos, no stickers.
+  out: {dir: w5, colors: 48}
+
+- id: prop.mask
+  kind: spritesheet
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 2, rows: 1}
+  cells: [0, 1]
+  frame: {w: 16, h: 16}
+  fit: {mode: common, height: 26}
+  valign: middle
+  prompt: >
+    Two sprites of the same airliner drop-down oxygen mask for a platformer, in two equal columns (no grid
+    lines), each centered in its column, bold and simple with a thick dark outline so it reads at a tiny size:
+    a bright yellow soft rubber oxygen cup mask seen from the front and slightly below, its soft oval rim facing
+    the viewer like a little yellow cup, a short stub of clear tube on top (cut off). NO elastic band, NO strap,
+    NO handle, NO loop: just the cup and the tube stub. (1) the mask hanging still; (2) the same mask squashed:
+    slightly wider and shorter, as if just grabbed.
+    Perfectly flat, solid, uniform magenta (#FF00FF) background, no shadows on the background, no text.
+  out: {dir: w5, colors: 24}
+
+- id: block.bin
+  kind: spritesheet
+  refs: [art/masters/block.call.webp, art/masters/w5.tex.bin.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 2, rows: 1}
+  cells: [0, 1]
+  frame: {w: 32, h: 32}
+  fit: {mode: stretch}
+  prompt: >
+    Two square breakable blocks for a platformer, side by side, each a perfect square seen straight on, same
+    size, in the same chunky style as the call-button block in the first reference image. They are panels cut
+    from an airliner overhead luggage bin (second reference image): cream and light-grey plastic with bevelled
+    edges, a dark recessed latch handle across the middle, four corner screws, a dark outline.
+    Left block (intact): clean and solid. Right block (cracked): the same block with big jagged dark cracks
+    running across it, a chipped corner and a dent, about to break apart.
+    Perfectly flat, solid, uniform magenta (#FF00FF) background around the blocks, no shadows on the background,
+    no text, no letters.
+  out: {dir: w5, colors: 32}
+
+- id: npc.captain
+  kind: spritesheet
+  refs: [art/reference/w7-cockpit.webp, art/masters/yaniv.small.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 3, rows: 1}
+  cells: [0, 1, 2]
+  frame: {w: 48, h: 64}
+  fit: {height: 108}
+  prompt: >
+    Sprite sheet for a heroic platformer NPC, "The Captain": the grey-haired airline captain on the left of
+    the first reference image (the man in the white shirt being helped by the flight attendant), drawn as a
+    full-body sprite with the SAME compact proportions, size and pixel style as the hero sprites in the second
+    reference image (about 4 heads tall). Ignore the plumber's outfit; use the second image only for size and
+    style. Exact outfit: a crisp white pilot shirt with black epaulettes that each have FOUR gold stripes, a
+    black tie, a gold wings badge on the chest, dark charcoal trousers, black shoes, a dark captain's cap with a
+    gold braid and gold badge on the peak. Short grey hair and a grey moustache. A clean white gauze bandage
+    wrapped around his forehead, just below the cap. He is wounded but brave, dignified and kind: a respected
+    hero, not a joke. Strict three-quarter side view facing RIGHT in every pose, standing on a common baseline.
+    Layout: three equal columns in a row (no grid lines), one pose per column, same scale.
+    (1) idle: standing tall and steady, chin up, determined smile, one hand resting on his side;
+    (2) thumbs up: the same stance, his front arm raised giving a confident thumbs up to the right, a warm grin;
+    (3) hurt: wincing with eyes shut, one hand pressed to his bandaged forehead, knees slightly bent, but still
+    on his feet.
+    Perfectly flat, solid, uniform magenta (#FF00FF) background, no gradient, no floor, no shadows on the
+    background, no text, no labels.
+  out: {dir: w5, colors: 64}
+
+- id: npc.screamer
+  kind: spritesheet
+  refs: [art/masters/w5.seat.webp, art/masters/yaniv.small.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 3, rows: 1}
+  cells: [0, 1, 2]
+  frame: {w: 48, h: 64}
+  fit: {height: 108}
+  prompt: >
+    Sprite sheet for a platformer NPC: an airline passenger woman standing in the aisle, drawn full-body with
+    the SAME compact proportions and pixel style as the hero sprites in the second reference image (about 4
+    heads tall), and the same passenger style as the people in the first reference image. Ignore the plumber's
+    outfit and the seats. She has big curly auburn hair, a lilac blouse, a long teal skirt, white sneakers and a
+    small cream handbag on her shoulder. Strict three-quarter side view facing RIGHT in every pose, all
+    standing on a common baseline. Layout: three equal columns in a row (no grid lines), one pose per column,
+    same scale.
+    (1) calm: standing relaxed, holding a paper cup, a polite smile;
+    (2) scream: both hands on her cheeks, eyes wide, mouth wide open in a huge scream, hair puffed up, the cup
+    dropped (not shown), a few short white shout lines around her head;
+    (3) scream, louder: the same pose leaning forward a little more, mouth even wider, hair standing on end,
+    more shout lines.
+    Funny and over the top, cartoon slapstick. Perfectly flat, solid, uniform magenta (#FF00FF) background, no
+    gradient, no floor, no shadows on the background, no text, no letters, no labels.
+  out: {dir: w5, colors: 64}
+
+- id: w5.door
+  kind: spritesheet
+  refs: [art/reference/w7-cockpit.webp, art/reference/w5-aisle.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 2, rows: 1}
+  cells: [0, 1]
+  frame: {w: 64, h: 128}
+  fit: {mode: stretch}
+  prompt: >
+    Two sprites of the same airliner cockpit doorway for a platformer level goal, side by side, each drawn
+    straight-on and not tilted, exactly twice as tall as it is wide, both exactly the same size with the same
+    outer door frame, each tall and narrow (its height exactly twice its width). A heavy grey reinforced cockpit door in a thick cream bulkhead frame with rounded top
+    corners: steel-grey armoured panels, rivets, a small square peephole, a small dark keypad on the right with
+    blank square buttons (no digits, no symbols) and a tiny amber status light.
+    (1) closed: the door shut. (2) open: the door has swung inward out of sight, and through the same frame you
+    see the warm-lit flight deck beyond, like the cockpit in the first reference image:
+    glowing instrument panels, two empty pilot seats seen from behind, the windshield with a sunset sky, warm
+    amber and teal light spilling out. No people.
+    Perfectly flat, solid, uniform magenta (#FF00FF) background around the two doorways, no shadows on the
+    background, no text, no letters, no signs.
+  out: {dir: w5, colors: 64}
+
+- id: w5.galley
+  kind: image
+  refs: [art/masters/w5.curtain.webp, art/reference/w5-aisle.webp]
+  size: 1024x1536
+  chroma: '#ff00ff'
+  candidates: 2
+  frame: {w: 96, h: 128}
+  prompt: >
+    A single object for a platformer checkpoint, drawn straight-on and not tilted, in the same style and
+    palette as the galley doorway in the first reference image but clearly WIDER: an airliner galley seen from
+    the aisle, a wide, squat block exactly three quarters as wide as it is tall, filling the whole image from
+    edge to edge, standing on the bottom edge. A cream bulkhead with rounded top corners framing one WIDE
+    opening; a teal-grey fabric curtain on a rail across the top, drawn half open and gathered to the right
+    side; inside, warm golden galley light: on the lower half, two plain silver-grey metal trolley carts parked
+    side by side in their stowage bays (plain metal with latches, no faces, no logos); above them a counter with
+    a coffee maker with a small glowing amber light, a row of white cups on a shelf and steel drawer units.
+    Perfectly flat, solid, uniform magenta (#FF00FF) background around it, no shadows on the background, no
+    text, no letters, no signs, no people.
+  out: {dir: w5, colors: 64}

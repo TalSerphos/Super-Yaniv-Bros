@@ -1,6 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
 
 interface SybState {
+  level: string;
+  power: string;
   x: number;
   y: number;
   hearts: number;
@@ -14,21 +16,34 @@ interface SybState {
 
 const state = (page: Page) => page.evaluate(() => (window as unknown as { __syb?: { state(): SybState } }).__syb?.state());
 
-async function waitForLevel(page: Page) {
-  await page.waitForFunction(() => (window as unknown as { __syb?: unknown }).__syb, null, { timeout: 20_000 });
+async function waitForLevel(page: Page, id?: string) {
+  await page.waitForFunction(
+    (want) => {
+      const syb = (window as unknown as { __syb?: { state(): { level: string } } }).__syb;
+      return syb && (!want || syb.state().level === want);
+    },
+    id,
+    { timeout: 20_000 },
+  );
 }
 
-test('1 PLAYER boards World 5: intro card, then a playable tilted level with HUD', async ({ page }) => {
+interface SybHooks {
+  teleport(x: number, y: number): void;
+  clearTrolleys(): void;
+}
+const syb = () => (window as unknown as { __syb: SybHooks }).__syb;
+
+test('1 PLAYER boards World 5 at 5-1: intro card, then a playable level with HUD', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   await page.goto('./');
   await page.getByRole('button', { name: '1 PLAYER', exact: true }).click();
   await expect(page).toHaveURL(/#play$/);
-  await expect(page.getByText('THE AISLE').first()).toBeVisible();
-  await waitForLevel(page);
+  await expect(page.getByText('THE SCREAM').first()).toBeVisible();
+  await waitForLevel(page, '5-1');
   const s = (await state(page))!;
-  expect(s.tilt).toBe(12);
+  expect(s.tilt).toBe(0); // the plane is still level when the scream hits
   expect(s.hearts).toBe(3);
   await expect(page.getByTestId('hud')).toBeVisible();
   await expect(page.getByTestId('alt')).toHaveText(/ALT \d{2},\d{3} FT/);
@@ -50,24 +65,50 @@ test('keyboard moves Yaniv right and jump leaves the floor', async ({ page, isMo
   await page.keyboard.up('ArrowRight');
 });
 
-test('the bot can finish the level (proves it is completable in a real browser)', async ({ page }) => {
-  test.setTimeout(120_000);
-  await page.goto('./?bot=1#play');
-  await waitForLevel(page);
-  await page.waitForFunction(
-    () => (window as unknown as { __syb?: { state(): { finished: boolean } } }).__syb?.state().finished,
-    null,
-    { timeout: 100_000, polling: 500 },
-  );
-  await expect(page.getByRole('heading', { name: 'CABIN CLEARED!' })).toBeVisible();
-  // He walks through the curtain and stays on the floor: no creeping downhill or dropping off the level.
-  const s = (await state(page))!;
-  expect(s.y).toBeLessThanOrEqual(320);
-  await page.waitForTimeout(1_500);
-  expect((await state(page))!).toMatchObject({ x: s.x, y: s.y });
-  expect(s.hearts).toBeGreaterThan(0);
-  expect(s.nuts).toBeGreaterThan(10);
-  expect(s.x).toBeGreaterThan(s.width - 300);
+// The rule-based bot (no god mode) must clear every World 5 level: proves each is completable in a real
+// browser by a simple player. 5-2 runs on every device; the rest on desktop Chrome to keep CI time down.
+for (const id of ['5-1', '5-2', '5-3', '5-4']) {
+  test(`the bot can finish ${id}`, async ({ page }, info) => {
+    test.skip(id !== '5-2' && info.project.name !== 'desktop-chrome', 'full World 5 sweep runs on desktop Chrome');
+    test.setTimeout(180_000);
+    const errors: string[] = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto(`./?level=${id}&bot=1#play`);
+    await waitForLevel(page, id);
+    await page.waitForFunction(
+      () => (window as unknown as { __syb?: { state(): { finished: boolean } } }).__syb?.state().finished,
+      null,
+      { timeout: 160_000, polling: 500 },
+    );
+    const last = id === '5-4';
+    await expect(page.getByRole('heading', { name: last ? 'THE CAPTAIN OPENED THE DOOR!' : 'CABIN CLEARED!' })).toBeVisible();
+    // He walks through the curtain and stays on the floor: no creeping downhill or dropping off the level.
+    const s = (await state(page))!;
+    expect(s.y).toBeLessThanOrEqual(320);
+    await page.waitForTimeout(1_500);
+    expect((await state(page))!).toMatchObject({ x: s.x, y: s.y, level: id });
+    expect(s.hearts, JSON.stringify(s.hurts)).toBeGreaterThan(0);
+    expect(s.nuts).toBeGreaterThan(10);
+    expect(s.x).toBeGreaterThan(s.width - 300);
+    expect(errors).toEqual([]);
+    if (last) return;
+    // The clear unlocks the next level, saves it, and NEXT LEVEL boards it.
+    const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('syb.progress.v1') ?? '{}'));
+    expect(saved.best[id]).toBe(s.score);
+    await page.getByRole('button', { name: 'NEXT LEVEL' }).click();
+    await waitForLevel(page, `5-${Number(id[2]) + 1}`);
+  });
+}
+
+test('returning players pick an unlocked level from the World 5 map', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('syb.progress.v1', JSON.stringify({ unlocked: '5-2', best: { '5-1': 1234 } })));
+  await page.goto('./#play');
+  await expect(page.getByRole('heading', { name: 'THE ATTACK' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '5-1 THE SCREAM · 001234' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: '5-3 LOCKED' })).toBeDisabled();
+  await page.getByRole('button', { name: /^5-2 THE AISLE/ }).click();
+  await waitForLevel(page, '5-2');
+  expect((await state(page))!.tilt).toBe(8);
 });
 
 test('Escape pauses, Resume continues, Quit returns to the title', async ({ page, isMobile }) => {
@@ -126,8 +167,8 @@ test.describe('QA regressions', () => {
 
   test('walking left into a hatch respawns on safe floor (no death loop)', async ({ page }) => {
     test.setTimeout(90_000); // software-rendered CI browsers can run the simulation slowly
-    await page.goto('./#play');
-    await waitForLevel(page);
+    await page.goto('./?level=5-2#play');
+    await waitForLevel(page, '5-2');
     await page.evaluate(() => {
       const syb = (window as unknown as { __syb: { teleport(x: number, y: number): void; clearTrolleys(): void } }).__syb;
       syb.clearTrolleys();
@@ -171,6 +212,37 @@ test.describe('QA regressions', () => {
     await page.keyboard.press('ArrowLeft');
     await page.keyboard.press('Space');
     await expect(page.getByRole('heading', { name: 'PAUSED' })).toBeHidden();
+  });
+
+  test('bumping a call-button block from below releases hummus: Yaniv grows Big', async ({ page }) => {
+    test.setTimeout(60_000);
+    await page.goto('./#play');
+    await waitForLevel(page, '5-1');
+    // 5-1's power block is at column 28 (x 448-480); stand just left of its centre so the hummus slides right.
+    await page.evaluate(`(${syb})().teleport(458, 320)`);
+    await page.keyboard.down('Space'); // held: a full-height jump
+    await expect.poll(async () => (await state(page))!.y, { timeout: 10_000 }).toBeLessThan(316); // airborne (the block stops the head ~14 units up)
+    await expect.poll(async () => (await state(page))!.y, { timeout: 10_000 }).toBe(320); // landed after the bump
+    await page.keyboard.up('Space');
+    await page.keyboard.down('ArrowRight');
+    await expect.poll(async () => (await state(page))!.power, { timeout: 20_000 }).toBe('big');
+    await page.keyboard.up('ArrowRight');
+  });
+
+  test('after the galley checkpoint, GAME OVER offers RETRY FROM GALLEY', async ({ page }) => {
+    test.setTimeout(120_000);
+    await page.goto('./?level=5-2#play');
+    await waitForLevel(page, '5-2');
+    // Past 5-2's galley (column 142, x 2272), just before the third hatch (x 2400-2464): walk in until out of hearts.
+    await page.evaluate(`(${syb})().clearTrolleys(); (${syb})().teleport(2380, 320)`);
+    await page.keyboard.down('ArrowRight');
+    await expect(page.getByRole('heading', { name: 'GAME OVER' })).toBeVisible({ timeout: 90_000 });
+    await page.keyboard.up('ArrowRight');
+    await page.getByRole('button', { name: 'RETRY FROM GALLEY' }).click();
+    await expect.poll(async () => (await state(page))?.hearts, { timeout: 20_000 }).toBe(3);
+    const s = (await state(page))!;
+    expect(s.finished).toBe(false);
+    expect(Math.abs(s.x - 2272)).toBeLessThan(80);
   });
 
   test('HUD shows the score', async ({ page }) => {
