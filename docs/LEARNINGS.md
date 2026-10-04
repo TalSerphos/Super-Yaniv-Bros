@@ -107,3 +107,5 @@ Tuning from the same pass:
 - Babies hold fire while Yaniv hangs from a mask.
 - Every level starts with at least 3 hearts.
 - Bin-top nuts that nobody could reach are gone.
+- Firefox takes a different but repeatable path through a level than Chromium, even with a fixed physics step. 6× CPU throttling in Chromium did not reproduce it. Keep difficulty proofs (the real bot) on Chromium projects and run the bot invulnerable elsewhere. Never assert on chasing a moving item with real key presses: wait for it in `state().items`, then teleport onto it.
+- A hazard must never spawn inside the player. A Baby Bomber lobbing from its own seat while Yaniv stood on it was an unavoidable hit, so babies hold fire within 56 units.
