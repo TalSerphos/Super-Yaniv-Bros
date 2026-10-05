@@ -1,0 +1,359 @@
+# Art enrichment pass (v0.8): more life and depth in the existing levels, with the Super Mario feel kept.
+# Contract: docs/levels/enrich-assets.md. Schema: tools/assets/README.md.
+# Every addition is a classic-platformer beat or SMW-era presentation: impact FX, the flagpole twin, themed
+# "?" blocks, layered parallax, sparse background decor. The play layer must always read first, so decor is
+# small, plain and painted to sit behind it. `from:` entries are cut from another entry's master (no extra call).
+
+# --- FX: one paid sheet, five strips -------------------------------------------------------------------------
+- id: fx.sheet
+  kind: reference
+  refs: [art/reference/w5-aisle.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  prompt: >
+    A sprite sheet of tiny classic 16-bit platformer hit effects, in the crisp pixel style of the reference
+    image (ignore its content). Bold, simple shapes with hard pixel edges and a thick dark outline where it
+    helps; no soft glow, no blur, no gradients into the background. Layout: an invisible grid of 4 columns by 5
+    rows of equal cells (do not draw grid lines), one effect frame centred in each cell, every frame small
+    (about a third of its cell), each row one 4-frame animation read left to right:
+    ROW 1, landing dust: a little cloud of round pale-beige dust puffs on a flat ground line, (1) two small
+    puffs close together, (2) three bigger puffs spreading left and right, (3) the puffs wider apart and
+    rounder, (4) the same puffs smaller and broken up, about to vanish. Puffs only, no ground drawn.
+    ROW 2, stomp poof: (1) a small white starburst, (2) a bigger white and pale-yellow eight-pointed star with a
+    few round white puffs around it, (3) a ring of four white puffs flying outward with tiny yellow stars, (4)
+    four small puffs further out, breaking up.
+    ROW 3, coin sparkle: (1) a tiny white four-pointed twinkle, (2) a bigger golden-white four-pointed sparkle
+    star, (3) the biggest sparkle with four small dots around it, (4) a small fading cross of white dots.
+    ROW 4, water splash: bright blue and white water, base on a flat line, (1) a low crown of droplets, (2) a
+    tall column of water with drops flying up and out, (3) the column falling with droplets arcing down to both
+    sides, (4) small droplets and a low ripple ring.
+    ROW 5, four different broken shards of a cream and light-grey plastic panel with a dark outline, each a
+    jagged small chunk tumbling at a different angle.
+    Perfectly flat, solid, uniform magenta (#FF00FF) background, no shadows on the background, no text.
+
+- id: fx.dust
+  kind: spritesheet
+  from: fx.sheet
+  prompt: ''
+  chroma: '#ff00ff'
+  grid: {cols: 4, rows: 5}
+  cells: [0, 1, 2, 3]
+  frame: {w: 32, h: 16}
+  fit: {mode: common, height: 18}
+  out: {dir: w5, colors: 16}
+
+- id: fx.poof
+  kind: spritesheet
+  from: fx.sheet
+  prompt: ''
+  chroma: '#ff00ff'
+  grid: {cols: 4, rows: 5}
+  cells: [4, 5, 6, 7]
+  frame: {w: 32, h: 32}
+  fit: {mode: common, height: 44}
+  valign: middle
+  out: {dir: w5, colors: 16}
+
+- id: fx.sparkle
+  kind: spritesheet
+  from: fx.sheet
+  prompt: ''
+  chroma: '#ff00ff'
+  grid: {cols: 4, rows: 5}
+  cells: [8, 9, 10, 11]
+  frame: {w: 16, h: 16}
+  fit: {mode: common, height: 22}
+  valign: middle
+  out: {dir: w5, colors: 16}
+
+- id: fx.splash
+  kind: spritesheet
+  from: fx.sheet
+  prompt: ''
+  chroma: '#ff00ff'
+  grid: {cols: 4, rows: 5}
+  cells: [12, 13, 14, 15]
+  frame: {w: 32, h: 48}
+  fit: {mode: common, height: 70}
+  out: {dir: w5, colors: 16}
+
+- id: fx.shard
+  kind: spritesheet
+  from: fx.sheet
+  prompt: ''
+  chroma: '#ff00ff'
+  grid: {cols: 4, rows: 5}
+  cells: [16, 17, 18, 19]
+  frame: {w: 8, h: 8}
+  fit: {mode: each, height: 14}
+  valign: middle
+  out: {dir: w5, colors: 16}
+
+# --- The flagpole twin: one pole per world, sign on / sign off ----------------------------------------------
+- id: goal.pole
+  kind: spritesheet
+  refs: [art/reference/w5-aisle.webp, art/masters/block.call.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 6, rows: 1}
+  cells: [0, 1, 2, 3, 4, 5]
+  frame: {w: 32, h: 144}
+  fit: {mode: common, height: 284}
+  anchor: bbox
+  prompt: >
+    Six end-of-level goal poles for a classic 16-bit side-scrolling platformer, in the pixel style of the first
+    reference image (ignore its content and its sunset light), chunky and toy-like like the block in the second
+    reference. Six equal tall columns in a row (no grid lines), one pole per column, every pole exactly the same
+    height, filling its column from near the top edge to the bottom edge, standing straight up, not tilted,
+    seen straight on. Each is a slim shiny pole with a round ball on top and a chunky square base block at the
+    bottom. Bold dark outlines so it reads at a small size.
+    (1) and (2) the AIRLINER pole: a polished chrome pole, a square cream plastic base block with four corner
+    screws; near the top a square airliner seatbelt-sign panel fixed to the pole showing a simple seatbelt
+    pictogram (a seated stick figure with a belt) and no letters. (1) the sign lit bright amber and glowing;
+    (2) the identical sign switched off, flat grey, the pictogram dim.
+    (3) and (4) the AIRPORT pole: a brushed-steel pole, a navy-blue base block; near the top a square
+    navy-blue boarding sign showing a simple white airplane pictogram and no letters. (3) the sign lit with a
+    bright green glowing frame; (4) the identical sign switched off, dark, the airplane dim grey.
+    (5) and (6) the FLAGPOLE: a white flagpole with a gold ball on top on a white marble base block, bright
+    morning daylight. (5) a small United States flag (red and white stripes, a blue field of tiny white stars)
+    hanging at the BOTTOM of the pole, just above the base; (6) the same flag raised to the TOP of the pole,
+    flying out straight to the right in the breeze.
+    In each pair everything except the sign or the flag is identical. Perfectly flat, solid, uniform magenta
+    (#FF00FF) background, no ground, no shadows on the background, no text, no letters, no numbers.
+  out: {dir: w5, colors: 48, despill: true}
+
+# --- Themed "?" blocks: same chunky bonus-block silhouette as the call-button block ---------------------------
+- id: blocks.themed
+  kind: reference
+  refs: [art/masters/block.call.webp, art/reference/w5-aisle.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  prompt: >
+    Four square bonus blocks for a classic 16-bit platformer, in a row in four equal columns (no grid lines),
+    each a perfect square seen straight on, all exactly the same size and the same chunky shape as the
+    call-button block in the first reference image: a thick bevelled frame, four corner rivets, a bold dark
+    outline, one big simple pictogram in the middle. They must read instantly as "hit me from below for a
+    prize". (1) AIRPORT block, active: a bright golden-yellow bevelled block with a polished brass hotel
+    concierge desk bell (a dome bell on a round base) as the pictogram, a warm shine on the bevel.
+    (2) the same AIRPORT block, used: the identical outline, flattened to dull brown-grey, no shine, the bell
+    pictogram dark and flat. (3) WASHINGTON block, active: a bright golden-yellow bevelled block with white
+    marble corner rivets and a big round gold seal with a white five-pointed star in its middle as the
+    pictogram, a warm shine on the bevel. (4) the same WASHINGTON block, used: the identical outline, flattened
+    to dull brown-grey, no shine, the star seal dark and flat. Perfectly flat, solid, uniform magenta (#FF00FF)
+    background around the blocks, no shadows on the background, no text, no letters, no question marks.
+
+- id: block.w3
+  kind: spritesheet
+  from: blocks.themed
+  prompt: ''
+  chroma: '#ff00ff'
+  grid: {cols: 4, rows: 1}
+  cells: [0, 1]
+  frame: {w: 32, h: 32}
+  fit: {mode: stretch}
+  out: {dir: w3, colors: 32}
+
+- id: block.w7
+  kind: spritesheet
+  from: blocks.themed
+  prompt: ''
+  chroma: '#ff00ff'
+  grid: {cols: 4, rows: 1}
+  cells: [2, 3]
+  frame: {w: 32, h: 32}
+  fit: {mode: stretch}
+  out: {dir: w7, colors: 32}
+
+# --- World 7: layered parallax (sky, tree line, play layer) --------------------------------------------------
+- id: w7.bg.sky
+  kind: background
+  refs: [art/reference/w5-aisle.webp]
+  size: 1536x1024
+  candidates: 2
+  frame: {w: 640, h: 360}
+  seamless: x
+  prompt: >
+    The farthest background layer of a classic 16-bit side-scrolling platformer, a flat straight-on side view,
+    perfectly level, no perspective, filling the whole image edge to edge. Use the reference image ONLY for the
+    pixel-art technique (crisp pixels, painterly shading); ignore its content, its colors and its sunset light.
+    Lighting: a bright, clear MORNING in early summer, NOT sunset. The top two thirds: a clean sky going from
+    a rich mid blue at the top to a pale blue near the horizon, with a few big, round, puffy white cumulus
+    clouds with flat pale-grey bottoms, spaced well apart, in the classic cheerful platformer style. The bottom
+    third: far away and hazy, in soft pale blue-grey and lavender tones with little contrast, the low skyline of
+    Washington DC: rows of pale rounded treetops, plain low stone buildings, and ONE white capitol dome with a
+    columned drum and a small statue on top, standing a little left of the middle. No obelisks, no towers, no
+    flags, no people, no signs, no text. The pattern repeats evenly so it can tile horizontally.
+  out: {dir: w7, quality: 80, position: bottom}
+
+- id: w7.bg.park
+  kind: background
+  refs: [art/reference/w7-park-v1.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  frame: {w: 640, h: 360}
+  seamless: x
+  prompt: >
+    Recreate this exact image, the same row of round-crowned trees, the same lawn, the same pixel style and
+    colours, at the same size and position, with one change: replace the whole sky, every cloud and the
+    distant city buildings with perfectly flat, solid, uniform magenta (#FF00FF), right down to the treetops
+    and the gaps between the tree crowns. The trees keep a clean dark outline against the magenta. Bright
+    clear morning light, NOT sunset. No new objects, no text.
+  out: {dir: w7, quality: 85, position: bottom, despill: true}
+
+- id: w7.prop.whitehouse
+  kind: image
+  refs: [art/reference/w7-whitehouse-v1.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  frame: {w: 480, h: 240}
+  prompt: >
+    Recreate this exact building, the same White House facade, columns, windows, lantern, the same pixel style
+    and colours, at the same size and position, with these changes: remove the lawn strip, the fountain and
+    the flower beds entirely; the mansion now stands on a low row of round clipped green hedges that runs along
+    its base and ends at both sides in a ROUNDED bush, never cut off by the image edge, leaving a margin of
+    magenta at the left and right. Everything below the hedges, and all around the building, is perfectly
+    flat, solid, uniform magenta (#FF00FF). Bright clear morning light. No sky, no trees, no flag, no people,
+    no text, no letters, no numbers, no signs.
+  out: {dir: w7, quality: 90, despill: true}
+
+- id: w7.fg.hedge
+  kind: texture
+  refs: [art/reference/w5-aisle.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  frame: {w: 64, h: 32}
+  seamless: x
+  prompt: >
+    A strict side view, perfectly level, no perspective, in the pixel style of the reference image (ignore its
+    content and its sunset colors), bright morning daylight: a long low row of round, clipped dark-green
+    boxwood bushes for the foreground of a platformer, with a few small bright red and white tulips poking up
+    between them. The bushes are all about the same size, bumpy round tops, darker underneath, standing on
+    one horizontal line at the very bottom edge, filling only the bottom fifth of the image. The row continues
+    past the left and right edges. Everything above the bushes is perfectly flat, solid, uniform magenta
+    (#FF00FF). No ground, no shadows on the background, no text.
+  out: {dir: w7, colors: 32, position: bottom, span: 0.4, despill: true}
+
+- id: w7.decor
+  kind: spritesheet
+  refs: [art/reference/w5-aisle.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 4, rows: 2}
+  cells: [0, 1, 2, 3, 4, 5, 6, 7]
+  frame: {w: 64, h: 96}
+  fit: {heights: [46, 150, 50, 42, 18, 16, 54, 26]}
+  prompt: >
+    Eight small background decorations for a park level of a classic 16-bit side-scrolling platformer, in the
+    pixel style of the reference image (ignore its content and its sunset colors), bright clear MORNING
+    daylight from the upper left, NOT sunset. Each object stands on its own in one cell of an invisible grid of
+    4 columns by 2 rows (do not draw grid lines), seen straight from the side, not tilted, its bottom on one
+    common baseline. Simple, soft-coloured and slightly muted so they sit behind the action; clean dark
+    outline. (1) a plain green wooden park bench with black iron legs; (2) a small cherry-blossom tree full of
+    pale pink blossoms on a slim dark trunk; (3) a round stone flower urn on a short pedestal overflowing with
+    red and white flowers; (4) a plain dark-green metal litter bin with a domed lid; (5) a tiny grey squirrel
+    sitting up, holding an acorn, facing left; (6) two tiny grey pigeons pecking the ground; (7) a round
+    clipped boxwood bush; (8) a low bed of red and yellow tulips. Perfectly flat, solid, uniform magenta
+    (#FF00FF) background, no ground, no shadows on the background, no text, no letters, no signs.
+  out: {dir: w7, colors: 64, despill: true}
+
+# --- World 3: a second terminal view, decor and the baggage hall ----------------------------------------------
+- id: w3.bg.concourse
+  kind: background
+  refs: [art/masters/w3.bg.terminal.webp, art/reference/w3-security.webp]
+  size: 1536x1024
+  candidates: 2
+  frame: {w: 640, h: 360}
+  seamless: x
+  prompt: >
+    Background layer for a side-scrolling platformer, a flat straight-on side view, perfectly level, no
+    perspective, filling the whole image edge to edge, in EXACTLY the pixel style, palette and lighting of the
+    first reference image (bright warm golden DAYTIME, NOT sunset), but a different part of the same Dubai
+    airport: a long, airy shopping concourse. A high white ceiling with curved ribs and round downlights; tall
+    slim indoor date palm trees in big round planters standing in a row; between them, on the upper half,
+    a long gallery of glass shopfronts with warm-lit shelves of colourful goods; above the shopfronts a tall
+    band of glass showing a clear pale-blue sky and, far away on the hazy horizon, a pale desert-city skyline
+    with one very tall slender stepped tower in the middle of a few shorter towers. The bottom fifth is a
+    far-away busy concourse: polished cream marble with soft reflections and tiny distant travellers with
+    roller bags. Slightly soft and lower in contrast so it sits behind the action. The pattern repeats evenly so
+    it can tile horizontally. No signs, no screens with writing, no logos, no text, no letters, no numbers.
+  out: {dir: w3, quality: 80, position: bottom}
+
+- id: w3.decor
+  kind: spritesheet
+  refs: [art/masters/w3.bg.terminal.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 4, rows: 2}
+  cells: [0, 1, 2, 3, 4, 5, 6, 7]
+  frame: {w: 64, h: 96}
+  fit: {heights: [150, 46, 112, 34, 132, 60, 44, 46]}
+  prompt: >
+    Eight small background decorations for a modern Dubai airport level of a classic 16-bit side-scrolling
+    platformer, in the pixel style and warm DAYTIME palette of the reference image (NOT sunset). Each object
+    stands on its own in one cell of an invisible grid of 4 columns by 2 rows (do not draw grid lines), seen
+    straight from the side, not tilted, its bottom on one common baseline. Clean, soft-coloured and slightly
+    muted so they sit behind the action; clean dark outline. (1) a tall indoor date palm in a big round white
+    planter; (2) a short row of three joined airport waiting seats in grey with chrome legs; (3) a slim
+    white information kiosk with a blank glowing light-blue screen; (4) a small yellow wet-floor warning cone
+    with a slipping-figure pictogram and no letters; (5) a tall black flight-information screen on a slim
+    pole, the screen showing only coloured horizontal bars, no letters, no numbers; (6) a chrome drinking
+    fountain; (7) a low rectangular planter of green plants; (8) a round chrome recycling bin. Perfectly flat,
+    solid, uniform magenta (#FF00FF) background, no floor, no shadows on the background, no text, no letters,
+    no numbers, no logos.
+  out: {dir: w3, colors: 64, despill: true}
+
+- id: w3.bg.baggage
+  kind: background
+  refs: [art/masters/w5.bg.hold.webp]
+  size: 1536x1024
+  candidates: 2
+  frame: {w: 320, h: 160}
+  seamless: x
+  prompt: >
+    Recreate this image in exactly the same pixel style, framing and density, but turn it from an airliner
+    cargo hold into an airport's underground baggage-handling hall: replace the curved fuselage ribs with
+    straight steel girders and support columns, add two long horizontal grey conveyor belts on steel rollers
+    with yellow-and-black safety stripes on their edges, the belts crowded with the same kind of colourful
+    suitcases, duffels and taped boxes, plus a few stacked grey luggage containers. Cooler bright fluorescent
+    strip lights along the top with a little warm light. Darker toward the bottom. Even and horizontally
+    tileable. No people, no signs, no text, no letters, no numbers.
+  out: {dir: w3, quality: 80, position: centre}
+
+# --- World 5: the flight goes on (dusk for 5-3, night for 5-4) ------------------------------------------------
+- id: w5.bg.wall.dusk
+  kind: background
+  refs: [art/masters/w5.bg.wall.webp]
+  size: 1536x1024
+  candidates: 2
+  frame: {w: 640, h: 360}
+  seamless: x
+  prompt: >
+    Recreate this exact image, the same cabin wall, bins, light strip and every window at exactly the same size
+    and position, the same pixel style, with ONE change: the view through every window is now late dusk, a
+    deep violet-blue sky with a thin glowing orange-pink band low on the horizon over dark blue-grey clouds and
+    the first few tiny stars. The cabin wall, bins and light strip keep EXACTLY the same cream colours and brightness as
+    in this image: only the window views change. No new objects, no text.
+  out: {dir: w5, quality: 85, position: top}
+
+- id: w5.bg.wall.night
+  kind: background
+  refs: [art/masters/w5.bg.wall.webp]
+  size: 1536x1024
+  candidates: 2
+  frame: {w: 640, h: 360}
+  seamless: x
+  prompt: >
+    Recreate this exact image, the same cabin wall, bins, light strip and every window at exactly the same size
+    and position, the same pixel style, with ONE change: the view through every window is now night, a dark
+    navy sky full of small white stars, a crescent moon in one or two of the windows, and moonlit dark grey
+    clouds far below. The cabin wall, bins and light strip keep EXACTLY the same cream colours and brightness
+    as in this image: only the window views change. No new objects, no text.
+  out: {dir: w5, quality: 85, position: top}

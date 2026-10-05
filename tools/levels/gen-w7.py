@@ -48,6 +48,7 @@ def l71():
     l.put(BLOCKROW, 172, 'U'); l.put(FEET, 182, 'O'); l.put(FEET, 176, 'a')
     l.marble(16, 191, 194, nuts=True)
     l.nuts(17, range(200, 212, 2))
+    l.put(FEET, 211, 'I')                        # the flagpole counts once the pool is clean
     l.put(FEET, 214, 'X')                        # the gate opens once the pool is clean
     return l.dump({"id": "7-1", "name": "THE REFLECTING POOL", "theme": "mall", "timer": 150, "altitude": {"start": 0, "rate": 0}})
 
@@ -65,6 +66,7 @@ def l72():
     l.marble(16, 149, 156, nuts=True); l.put(BLOCKROW, 162, 'A')
     l.put(FEET, 168, 'J'); l.put(FEET, 185, 'J'); l.put(BLOCKROW, 195, 'U')
     l.put(FEET, 200, 'J'); l.nuts(17, range(204, 212, 2))
+    l.put(FEET, 211, 'I')
     l.put(FEET, 214, 'X')
     return l.dump({"id": "7-2", "name": "PRESS GAGGLE", "theme": "lawn", "timer": 120, "altitude": {"start": 0, "rate": 0}})
 
@@ -81,6 +83,7 @@ def l73():
     l.put(FEET, 142, 'F'); l.put(FEET, 155, 'J'); l.put(BLOCKROW, 160, 'U')
     l.put(FEET, 176, 'F'); l.marble(16, 186, 189, nuts=True)
     l.put(FEET, 200, 'F'); l.put(FEET, 210, 'J'); l.nuts(17, range(214, 222, 2))
+    l.put(FEET, 221, 'I')
     l.put(FEET, 224, 'X')
     return l.dump({"id": "7-3", "name": "PAPARAZZI ROW", "theme": "lawn", "timer": 130, "altitude": {"start": 0, "rate": 0}})
 

@@ -106,7 +106,7 @@ async function generate(entry: AssetEntry, prefix: string): Promise<void> {
 }
 
 async function main() {
-  const entries = selectEntries(loadManifest(), args.ids);
+  const entries = selectEntries(loadManifest(), args.ids).filter((e) => !e.from); // `from` entries reuse a master
   const prefix = stylePrefix();
   const concurrency = Number(args.concurrency ?? 3);
   const queue = [...entries];

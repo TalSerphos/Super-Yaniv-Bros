@@ -90,6 +90,8 @@ export interface HoldOptions {
   random: () => number;
   /** Tint for the alarm worlds. */
   tint?: number;
+  /** Background art (default: the plane's cargo hold; World 3 has the airport's baggage hall). */
+  texture?: string;
 }
 
 export class CargoHold {
@@ -97,7 +99,7 @@ export class CargoHold {
 
   constructor(scene: Phaser.Scene, o: HoldOptions) {
     const w = o.right - o.left;
-    const art = scene.add.tileSprite(o.left, o.top, w, HOLD_H, 'w5.bg.hold').setOrigin(0).setTileScale(ART_SCALE);
+    const art = scene.add.tileSprite(o.left, o.top, w, HOLD_H, o.texture ?? 'w5.bg.hold').setOrigin(0).setTileScale(ART_SCALE);
     if (o.tint) art.setTint(o.tint);
     scene.add.rectangle(o.left, o.top + HOLD_H, w, VIEW_H * 2, HOLD_DARK).setOrigin(0);
     // A soft shadow under the floor slab.

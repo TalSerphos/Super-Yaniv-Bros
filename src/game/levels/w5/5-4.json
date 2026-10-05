@@ -1,6 +1,7 @@
 {
   "id": "5-4",
   "name": "COCKPIT DOOR",
+  "bg": "w5.bg.wall.night",
   "altitude": {
     "start": 12000,
     "rate": 70

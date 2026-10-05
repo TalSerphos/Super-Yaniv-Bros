@@ -73,6 +73,17 @@ export const SHEETS: Record<string, SheetSpec> = {
   'npc.officer': { frame: [48, 64], frames: ['idle', 'thumbsUp'] },
   'npc.gateagent': { frame: [48, 64], frames: ['idle', 'wave'] },
   'w3.gate': { frame: [64, 128], frames: ['closed', 'open'] },
+  // Enrichment pass (docs/levels/enrich-assets.md): impact FX, the goal pole, themed bonus blocks, decor.
+  'fx.dust': { frame: [32, 16], frames: ['d0', 'd1', 'd2', 'd3'] },
+  'fx.poof': { frame: [32, 32], frames: ['p0', 'p1', 'p2', 'p3'] },
+  'fx.sparkle': { frame: [16, 16], frames: ['s0', 's1', 's2', 's3'] },
+  'fx.splash': { frame: [32, 48], frames: ['w0', 'w1', 'w2', 'w3'] },
+  'fx.shard': { frame: [8, 8], frames: ['a', 'b', 'c', 'd'] },
+  'goal.pole': { frame: [32, 144], frames: ['planeLit', 'planeOff', 'gateLit', 'gateOff', 'flagDown', 'flagUp'] },
+  'block.w3': { frame: [32, 32], frames: ['active', 'used'] },
+  'block.w7': { frame: [32, 32], frames: ['active', 'used'] },
+  'w7.decor': { frame: [64, 96], frames: ['bench', 'cherry', 'urn', 'bin', 'squirrel', 'pigeons', 'shrub', 'tulips'] },
+  'w3.decor': { frame: [64, 96], frames: ['palm', 'seats', 'kiosk', 'cone', 'board', 'fountain', 'planter', 'bin'] },
 };
 
 export const IMAGES: Record<string, [number, number]> = {
@@ -111,6 +122,12 @@ export const IMAGES: Record<string, [number, number]> = {
   'w7.tex.algae': [64, 32],
   'w7.rope': [64, 32],
   'w7.checkpoint': [32, 96],
+  'w7.bg.sky': [640, 360],
+  'w7.fg.hedge': [64, 32],
+  'w3.bg.concourse': [640, 360],
+  'w3.bg.baggage': [320, 160],
+  'w5.bg.wall.dusk': [640, 360],
+  'w5.bg.wall.night': [640, 360],
 };
 
 /** Frame index by name, e.g. frameIndex('yaniv.small', 'jump'). */
@@ -128,6 +145,7 @@ export function createAnimations(scene: Phaser.Scene): void {
     scene.anims.create({ key, frames: names.map((n) => ({ key: tex, frame: frameIndex(tex, n) })), frameRate, repeat });
   };
   sheet('yaniv.small:idle', ['idle0', 'idle1'], 2);
+  for (const fx of ['fx.dust', 'fx.poof', 'fx.sparkle', 'fx.splash']) sheet(`${fx}:play`, SHEETS[fx].frames, 16, 0);
   sheet('yaniv.small:run', ['run0', 'run1', 'run2', 'run3', 'run4', 'run5'], 12);
   sheet('enemy.trolley:roll', ['roll0', 'roll1', 'roll2'], 10);
   sheet('enemy.suitcase:walk', ['walk0', 'walk1'], 5);

@@ -14,6 +14,7 @@
  *   seats     'E' 'Z' 'R' 'K' (leftmost cell, feet): empty, sleeper, reader, kid. Their seatback is a one-way platform.
  *   markers   'P' player start (feet)   'X' exit curtain / gate (bottom-left)   'D' cockpit door exit (bottom-left)
  *             'G' checkpoint (feet)   'N' the Captain (feet)   'Q' screaming passenger (feet)
+ *             'I' goal pole (feet; the flagpole twin: touch it high for a bigger bonus, a few tiles before 'X')
  *   World 7   'O' clogged drain (feet; the level's objective: plunge them all)   'a' algae blob (feet)
  *             'J' reporter (feet)   'F' paparazzo (feet)   'V' the President (feet, 7-4)
  *   World 3   '>' '<' conveyor belt / travelator (solid; carries whoever stands on it right or left)
@@ -40,6 +41,8 @@ export interface LevelData {
   tilt: TiltKey[];
   /** Optional mood: 'sunset' (default) or 'alarm' (red alarm lighting, World 5-4). */
   mood?: 'sunset' | 'alarm';
+  /** Background art override (e.g. 3-2's shopping concourse, the dusk and night cabin walls of 5-3 and 5-4). */
+  bg?: string;
   /** Look of the level (default 'cabin'); World 3 is DXB airport, World 7 is on the ground in Washington. */
   theme?: 'cabin' | 'mall' | 'lawn' | 'oval' | 'terminal' | 'dutyfree' | 'gate';
   /** Conveyor belts (3-1) and travelators (3-2, 3-4): world units/s for '>' (and minus that for '<'). */
@@ -104,6 +107,8 @@ export interface ParsedLevel {
   officers: Point[];
   xrays: Point[];
   gateAgent?: Point;
+  /** The goal pole (seatbelt sign / boarding sign / flagpole), feet at its base. */
+  pole?: Point;
 }
 
 /** Seat sprite footprint (world units), seatback top inset, and the standable seatback span. */
@@ -201,6 +206,9 @@ export function parseLevel(level: LevelData): ParsedLevel {
         case 'D':
           out.exit = { x, y: bottom - EXIT.h, w: EXIT.w, h: EXIT.h, kind: ch === 'X' ? 'curtain' : 'door' };
           exits++;
+          break;
+        case 'I':
+          out.pole = feet;
           break;
         case 'o':
           out.nuts.push({ x: x + TILE / 2, y: top + TILE / 2 });

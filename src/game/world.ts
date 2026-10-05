@@ -7,6 +7,7 @@ import type { Sfx } from '../audio/sfx.ts';
 import { ART_SCALE } from './config.ts';
 import type { ParsedLevel } from './levels/loader.ts';
 import type { Player } from './entities/player.ts';
+import type { FxKind } from './systems/fx.ts';
 
 export type Body = Phaser.Physics.Arcade.Body;
 export type Sprite = Phaser.Physics.Arcade.Sprite;
@@ -38,6 +39,8 @@ export interface GameWorld {
   random(): number;
   /** A paparazzo's flash: white out the screen for a moment (World 7). */
   flashScreen?(): void;
+  /** A one-shot impact effect (dust, stomp poof, sparkle, splash) at a point; flip mirrors it. */
+  fx(kind: FxKind, x: number, y: number, flip?: boolean): void;
   /** Floating text above something ("NO COMMENT!"). */
   popText?(x: number, y: number, text: string): void;
 }

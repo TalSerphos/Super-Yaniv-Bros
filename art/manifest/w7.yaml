@@ -4,27 +4,7 @@
 # with clear morning daylight. Scale targets (2x px): Yaniv's idle is 107 tall, adults about the same or a bit
 # more, the President about 1.12x Yaniv.
 
-- id: w7.bg.park
-  kind: background
-  refs: [art/reference/w5-aisle.webp]
-  size: 1536x1024
-  candidates: 2
-  frame: {w: 640, h: 360}
-  seamless: x
-  prompt: >
-    Background layer for a side-scrolling platformer: a wide park lawn in the morning, drawn as a flat,
-    straight-on side view, perfectly level, no perspective, filling the whole image edge to edge. Use the
-    reference image ONLY for the pixel-art technique (crisp pixels, dark outlines, painterly shading); ignore
-    its content, its colors and its sunset light. Lighting: a bright, clear MORNING in early summer, NOT sunset:
-    a clean light-blue sky getting paler toward the horizon, warm white-yellow sunlight from the upper left,
-    a few small puffy white clouds high up. In the distance, low on the horizon, a hazy pale blue-grey city
-    skyline of plain low office blocks, no tall towers, no domes, no obelisks, no monuments. In front of it a
-    long row of big round-crowned elm trees in rich greens with sunlit tops and shaded undersides, their dark
-    trunks standing on the lawn, the treetops reaching about halfway up the image. The bottom sixth of the
-    image is a flat, even, freshly mowed green lawn. The pattern repeats evenly so it can tile horizontally.
-    No landmarks, no buildings in front of the trees, no people, no animals, no benches, no paths, no flags,
-    no signs, no text.
-  out: {dir: w7, quality: 82, position: bottom}
+# w7.bg.park: moved to enrich.yaml (v0.8 redo; v1 master kept as art/reference/w7-park-v1.webp)
 
 - id: w7.prop.monument
   kind: image
@@ -46,26 +26,7 @@
     text.
   out: {dir: w7, colors: 32}
 
-- id: w7.prop.whitehouse
-  kind: image
-  refs: [art/reference/w5-aisle.webp]
-  size: 1536x1024
-  chroma: '#ff00ff'
-  candidates: 2
-  frame: {w: 480, h: 240}
-  prompt: >
-    A single wide building for a platformer background layer, in the pixel style of the reference image (ignore
-    its content and its sunset colors): the White House north facade seen straight-on, symmetric, not tilted,
-    exactly twice as wide as it is tall, filling the image width. A wide, bright white neoclassical mansion
-    with two rows of tall evenly spaced windows with dark blue-grey glass and white frames, a grey roof edge with a white balustrade,
-    and in the middle a tall columned portico: four big white columns under a triangular pediment, a lantern
-    hanging between the columns, the front door below. In front of it a strip of green lawn across the whole
-    bottom edge with a round white stone fountain splashing in the middle, low clipped hedges and a few small
-    flower beds in red and white. Bright clear morning daylight from the upper left, crisp shading on the
-    columns. Perfectly flat, solid, uniform magenta (#FF00FF) background around and above it: NO sky, NO
-    clouds, NO trees behind it, NO flag on the roof, no people, no cars, no shadows on the background, no text,
-    no letters, no numbers, no signs.
-  out: {dir: w7, quality: 90}
+# w7.prop.whitehouse: moved to enrich.yaml (v0.8 redo; v1 master kept as art/reference/w7-whitehouse-v1.webp)
 
 - id: w7.bg.oval
   kind: background

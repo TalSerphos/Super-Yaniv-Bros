@@ -21,7 +21,7 @@ art/manifest/*.yaml ──generate.ts──▶ art/raw/<id>/<quality>-<hash>/<n>
 | `out` | `width`, `height`, `fit`, `position`, `trim`, `quality` for the web build; also `dir` (subfolder of `src/assets`), `colors` (palette-quantize, lossless WebP), `alphaThreshold` (default 128: hard pixel-art edges), `span` (seamless: fraction of the master width one tile covers), `despill` (opt-in: remove the purple chroma fringe on dark outlines) |
 | `frame` | `{w, h}` in **world units**. Output is 2x, frames left to right in one strip (`tools/assets/sheet.ts`) |
 | `grid`, `cells` | pose grid painted in the master, and which cells (reading order) become frames, in output order |
-| `fit` | `mode`: `common` (one scale per sheet from the median pose height: no size jitter), `each`, `stretch`; `height`: target content height at 2x |
+| `fit` | `mode`: `common` (one scale per sheet from the median pose height: no size jitter), `each`, `stretch`; `height`: target content height at 2x; `heights`: one target height per frame (prop sheets with deliberately different sizes) |
 | `anchor`, `valign` | horizontal placement (`mass` default, `bbox`, `left` = shared left edge); vertical `bottom` (feet on the last row, default), `middle`, or `top` (hanging things) |
 | `seamless: x` | crops the stretch of the master that wraps onto itself best, then crossfades the overhang into the left edge (also works with `chroma` for a keyed tile, e.g. `w7.rope`) |
 

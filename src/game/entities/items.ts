@@ -110,10 +110,14 @@ export class Blocks {
     blocks: { x: number; y: number; kind: BlockKind }[],
     breakables: { x: number; y: number }[],
     private readonly onPower: (item: PowerItem) => void,
+    /** The world's bonus-block art (same `active`/`used` frames): call button, concierge bell, star seal. */
+    private readonly blockKey = 'block.call',
+    /** Smashed panels shatter into tumbling shards (classic brick break); without it they just vanish. */
+    private readonly shatter?: (x: number, y: number) => void,
   ) {
     this.group = world.stage.physics.add.staticGroup();
     for (const b of blocks) {
-      const s = this.group.create(b.x + BLOCK / 2, b.y + BLOCK / 2, 'block.call', 0) as Sprite;
+      const s = this.group.create(b.x + BLOCK / 2, b.y + BLOCK / 2, blockKey, 0) as Sprite;
       s.setScale(ART_SCALE).refreshBody().setData({ used: false, kind: b.kind });
     }
     for (const b of breakables) {
@@ -128,14 +132,23 @@ export class Blocks {
     if (!(pb.blocked.up || pb.touching.up)) return;
     if (block.getData('breakable')) return this.smash(block, player);
     if (block.getData('used')) return;
-    block.setData('used', true).setFrame(frameIndex('block.call', 'used'));
+    block.setData('used', true).setFrame(frameIndex(this.blockKey, 'used'));
     this.world.stage.tweens.add({ targets: block, y: block.y - 4, yoyo: true, duration: 80 });
     const kind = block.getData('kind') as BlockKind;
     const w = this.world;
     if (kind === 'nut') {
       w.sfx('ding');
       const nut = w.stage.add.sprite(block.x, block.y - 14, 'item.nut', 0).setScale(ART_SCALE).play('item.nut:spin');
-      w.stage.tweens.add({ targets: nut, y: nut.y - 26, alpha: 0, duration: 450, onComplete: () => nut.destroy() });
+      w.stage.tweens.add({
+        targets: nut,
+        y: nut.y - 26,
+        alpha: 0,
+        duration: 450,
+        onComplete: () => {
+          w.fx('sparkle', nut.x, nut.y);
+          nut.destroy();
+        },
+      });
       w.addNut();
       w.addScore(RULES.blockScore);
       return;
@@ -154,18 +167,7 @@ export class Blocks {
     }
     w.sfx('stomp');
     w.addScore(50, block.x, block.y - 20);
-    for (let i = 0; i < 4; i++) {
-      const bit = w.stage.add.rectangle(block.x, block.y, 6, 6, 0xc9c2b4).setDepth(12);
-      w.stage.tweens.add({
-        targets: bit,
-        x: block.x + (i % 2 ? 1 : -1) * (14 + i * 6),
-        y: block.y + 40,
-        angle: 180,
-        alpha: 0,
-        duration: 500,
-        onComplete: () => bit.destroy(),
-      });
-    }
+    this.shatter?.(block.x, block.y);
     block.destroy();
   }
 }

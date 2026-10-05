@@ -32,12 +32,20 @@ export interface AssetFit {
   mode?: 'common' | 'each' | 'stretch';
   /** Target content height in output pixels (2x). Defaults to the frame height. */
   height?: number;
+  /** Target content height per frame (output pixels), for prop sheets: overrides mode and height. */
+  heights?: number[];
 }
 
 export interface AssetEntry {
   id: string;
   kind: string;
+  /** Not needed for `from` entries. */
   prompt: string;
+  /**
+   * Build-only: cut this entry's frames from another entry's master (one paid image feeding several strips,
+   * e.g. the fx sheet). Never generated; `select` is not needed either.
+   */
+  from?: string;
   refs?: string[];
   size?: '1024x1024' | '1536x1024' | '1024x1536';
   /** Native alpha (uses the alpha model). Prefer `chroma` for pixel art: better models, keyed in process.ts. */

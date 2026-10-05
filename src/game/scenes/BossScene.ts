@@ -10,11 +10,13 @@ import { createAnimations, ensurePlaceholders, frameIndex, preloadAssets } from 
 import { ART_SCALE, PHYS, ROOM_FLOOR_MARGIN, RULES, VIEW_H, VIEW_W, ZOOM } from '../config.ts';
 import { Bubble, Ducky } from '../entities/boss.ts';
 import { Lobbed, lobVelocity, type Enemy } from '../entities/enemies.ts';
+import { Effects } from '../entities/fx.ts';
 import { CargoHold } from '../entities/hold.ts';
 import { Player } from '../entities/player.ts';
 import type { BossData } from '../levels/index.ts';
 import { parseLevel, type ParsedLevel } from '../levels/loader.ts';
 import { Altitude } from '../systems/altitude.ts';
+import type { FxKind } from '../systems/fx.ts';
 import { BOSS_HP, BOSS_NAME, KNOTS, Knots, PITCH, PhaseA, PitchControl, type BossEvent, type BossEventB, type BossEventC } from '../systems/boss.ts';
 import { ButtonEdges, noButtons, type BossBot, type BossBotView, type InputSource } from '../systems/input.ts';
 import type { RunState } from '../systems/progress.ts';
@@ -109,6 +111,8 @@ export class BossScene extends Phaser.Scene implements GameWorld {
   private poseTimer = 0;
   private hurtLog: { cause: string; x: number; y: number; t: number }[] = [];
 
+  private effects!: Effects;
+
   constructor() {
     super('boss');
   }
@@ -137,6 +141,7 @@ export class BossScene extends Phaser.Scene implements GameWorld {
     this.zip = undefined;
     ensurePlaceholders(this);
     createAnimations(this);
+    this.effects = new Effects(this);
     this.rng = new Phaser.Math.RandomDataGenerator([data.level.id]);
 
     this.physics.world.setBounds(0, -VIEW_H, W, this.level.height + VIEW_H * 2, true, true, true, false);
@@ -246,6 +251,10 @@ export class BossScene extends Phaser.Scene implements GameWorld {
   addHeart(): void {
     if (this.hearts < MAX_HEARTS) this.hearts++;
     this.pushHud();
+  }
+
+  fx(kind: FxKind, x: number, y: number, flip = false): void {
+    this.effects.play(kind, x, y, flip);
   }
 
   sfx(name: Sfx): void {

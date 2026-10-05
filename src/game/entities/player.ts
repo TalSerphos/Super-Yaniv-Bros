@@ -3,6 +3,7 @@ import { frameIndex } from '../assets.ts';
 import { ART_SCALE, PHYS } from '../config.ts';
 import type { Power } from '../systems/progress.ts';
 import type { ButtonEdges } from '../systems/input.ts';
+import { SKID_COOLDOWN, landingDust, skidding } from '../systems/fx.ts';
 import { degToRad } from '../systems/tilt.ts';
 import { sizeBody, type Body, type GameWorld, type Sprite } from '../world.ts';
 import type { MaskVine } from './masks.ts';
@@ -50,6 +51,10 @@ export class Player {
   private jumpBuffer = 0;
   private jumpCut = false;
   private bambaHue = 0;
+  /** For landing dust and skid puffs: the last step's ground contact and fall speed, and a puff cooldown. */
+  private wasGrounded = true;
+  private fallSpeed = 0;
+  private skidCooldown = 0;
 
   constructor(
     private readonly world: GameWorld,
@@ -126,6 +131,7 @@ export class Player {
 
   /** Bounce off a stomped enemy: full jump height if jump is held. */
   bounce(jumpHeld: boolean): void {
+    this.world.fx('poof', this.x, this.y);
     this.body.setVelocityY(-(jumpHeld ? PHYS.jumpVelocity : PHYS.stompBounce));
     this.jumpCut = !jumpHeld;
   }
@@ -189,6 +195,7 @@ export class Player {
 
     if (dir) this.sprite.setFlipX(dir < 0);
     this.animate(grounded);
+    this.stepDust(grounded, dir, dt);
 
     // A safe respawn point has solid ground well to both sides (at least 64 units from any edge), and it
     // stands still (a travelator would carry a freshly respawned Yaniv straight back into the gap).
@@ -200,6 +207,20 @@ export class Player {
     const fire = edges.pressed('grab') && this.plungeCooldown <= 0;
     if (fire) this.plungeCooldown = 0.25;
     return fire;
+  }
+
+  /** Classic dust: a puff on a hard landing, and skid puffs when reversing at a run. */
+  private stepDust(grounded: boolean, dir: number, dt: number): void {
+    this.skidCooldown = Math.max(0, this.skidCooldown - dt);
+    if (grounded && !this.wasGrounded && landingDust(this.fallSpeed)) this.world.fx('dust', this.x, this.y);
+    const vx = this.body.velocity.x - this.carry;
+    if (this.skidCooldown <= 0 && skidding(grounded, dir, vx)) {
+      this.world.fx('skid', this.x - Math.sign(dir) * 6, this.y, dir < 0);
+      this.skidCooldown = SKID_COOLDOWN;
+    }
+    // (velocity.y is already 0 on the touchdown step, so remember the speed from the airborne steps)
+    this.fallSpeed = grounded ? 0 : Math.max(0, this.body.velocity.y);
+    this.wasGrounded = grounded;
   }
 
   private animate(grounded: boolean): void {

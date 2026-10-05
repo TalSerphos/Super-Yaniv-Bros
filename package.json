@@ -12,6 +12,7 @@
     "test": "vitest run",
     "e2e": "playwright test",
     "fidelity": "NODE_USE_ENV_PROXY=1 tsx tests/fidelity/run.ts",
+    "feel": "NODE_USE_ENV_PROXY=1 tsx tests/fidelity/feel.ts",
     "assets:generate": "NODE_USE_ENV_PROXY=1 tsx tools/assets/generate.ts",
     "assets:process": "tsx tools/assets/process.ts"
   },

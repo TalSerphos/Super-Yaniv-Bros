@@ -54,7 +54,7 @@ def l51():
     l.put(SEATROW, 150, 'T'); l.seat(160, 'Z')
     l.nuts(16, range(170, 174))
     l.nuts(17, range(178, 196, 2)); l.seat(184, 'K')
-    l.put(SEATROW, 200, 'X')
+    l.put(SEATROW, 197, 'I'); l.put(SEATROW, 200, 'X')     # the seatbelt-sign pole, then the curtain
     return l.dump({"id": "5-1", "name": "THE SCREAM", "altitude": {"start": 37000, "rate": 220},
                    "tilt": [{"x": 0, "deg": 0}, {"x": 1180, "deg": 6}, {"x": 2300, "deg": 8}]})
 
@@ -76,7 +76,7 @@ def l52():
     l.nuts(16, range(150, 154))
     l.seat(158, 'R'); l.h(14, 162, 166, '-'); l.bins(167, 180); l.put(SEATROW, 160, 'T')
     l.put(SEATROW, 172, 'C'); l.put(SEATROW, 186, 'Y'); l.put(BLOCKROW, 192, 'U')
-    l.nuts(17, range(196, 210, 2)); l.put(SEATROW, 210, 'X')
+    l.nuts(17, range(196, 210, 2)); l.put(SEATROW, 207, 'I'); l.put(SEATROW, 210, 'X')
     return l.dump({"id": "5-2", "name": "THE AISLE", "altitude": {"start": 24300, "rate": 145},
                    "tilt": [{"x": 0, "deg": 8}, {"x": 900, "deg": 12}, {"x": 2300, "deg": 15}]})
 
@@ -99,8 +99,8 @@ def l53():
     l.put(6, 156, 'M'); l.put(6, 162, 'M'); l.nuts(9, [157, 159, 161])
     l.put(BLOCKROW, 168, 'U'); l.rain(173, 187, [176, 184])
     l.bins(190, 204, nuts=False); l.put(13, 196, 'W'); l.put(SEATROW, 194, 'C'); l.put(SEATROW, 200, 'T')
-    l.nuts(17, range(208, 220, 2)); l.put(SEATROW, 222, 'X')
-    return l.dump({"id": "5-3", "name": "BIN AVALANCHE", "altitude": {"start": 18000, "rate": 105},
+    l.nuts(17, range(208, 220, 2)); l.put(SEATROW, 219, 'I'); l.put(SEATROW, 222, 'X')
+    return l.dump({"id": "5-3", "name": "BIN AVALANCHE", "bg": "w5.bg.wall.dusk", "altitude": {"start": 18000, "rate": 105},
                    "tilt": [{"x": 0, "deg": 12}, {"x": 1600, "deg": 15}, {"x": 2900, "deg": 10}]})
 
 def l54():
@@ -121,7 +121,7 @@ def l54():
     l.nuts(17, range(212, 226, 2))
     l.put(SEATROW, 226, 'N')                      # the wounded Captain, by the cockpit door
     l.put(SEATROW, 230, 'D')
-    return l.dump({"id": "5-4", "name": "COCKPIT DOOR", "altitude": {"start": 12000, "rate": 70}, "mood": "alarm",
+    return l.dump({"id": "5-4", "name": "COCKPIT DOOR", "bg": "w5.bg.wall.night", "altitude": {"start": 12000, "rate": 70}, "mood": "alarm",
                    "tilt": [{"x": 0, "deg": 15}, {"x": 1800, "deg": 18}, {"x": 3000, "deg": 16}]})
 
 out = sys.argv[1]

@@ -63,6 +63,7 @@ def l31():
     l.shelf(16, 186, 189, nuts=True)
     l.put(FEET, 196, 'd'); l.put(FEET, 200, 'u'); l.put(BLOCKROW, 206, 'U')
     l.nuts(17, range(210, 218, 2))
+    l.put(FEET, 219, 'I')                                    # the goal pole: touch it high
     l.put(FEET, 222, 'X')
     return l.dump({"id": "3-1", "name": "SECURITY LINE", "theme": "terminal", "timer": 120, "beltSpeed": 50,
                    "intro": "Through security! Belts carry you; the metal detectors know a plumber when they see one.",
@@ -84,8 +85,9 @@ def l32():
     l.put(BLOCKROW, 180, 'A')
     l.travelator(186, 210, '<'); l.put(FEET, 206, 'c')
     l.nuts(17, range(212, 220, 2))
+    l.put(FEET, 219, 'I')
     l.put(FEET, 222, 'X')
-    return l.dump({"id": "3-2", "name": "TRAVELATOR RUSH", "theme": "terminal", "timer": 100, "beltSpeed": 70,
+    return l.dump({"id": "3-2", "name": "TRAVELATOR RUSH", "theme": "terminal", "bg": "w3.bg.concourse", "timer": 100, "beltSpeed": 70,
                    "intro": "Ride the moving walkways, and mind the gap!",
                    "clear": {"title": "STAGE CLEAR!", "sub": "Gate B32 is that way. Duty-free first, of course."}})
 
@@ -126,6 +128,7 @@ def l34():
     l.travelator(132, 175, '>'); l.put(FEET, 150, 'c'); l.put(FEET, 166, 'C')
     l.shelf(15, 176, 179, nuts=True)
     l.travelator(180, 212, '>'); l.put(BLOCKROW, 192, 'U')
+    l.put(FEET, 214, 'I')                                    # the boarding-sign pole, then the agent
     l.put(FEET, 217, 'g')                                    # the gate agent waves you on
     l.put(FEET, 222, 'X')
     return l.dump({"id": "3-4", "name": "GATE CLOSING", "theme": "gate", "timer": 50, "beltSpeed": 80,

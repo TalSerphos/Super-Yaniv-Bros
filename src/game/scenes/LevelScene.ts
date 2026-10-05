@@ -5,12 +5,16 @@ import { ART_SCALE, PHYS, ROOM_FLOOR_MARGIN, RULES, VIEW_H, VIEW_W, ZOOM } from 
 import { BabyBomber, BinBiter, LuggageRain, Suitcase, Trolley, type Enemy } from '../entities/enemies.ts';
 import { Blocks, PowerItem, ThrownPlunger } from '../entities/items.ts';
 import { CargoHold, HOLD_H } from '../entities/hold.ts';
+import { Effects } from '../entities/fx.ts';
 import { MaskVine } from '../entities/masks.ts';
 import { BillCannon, Mascot } from '../entities/w3.ts';
 import { Drain, Paparazzo, Reporter, algaeBlob } from '../entities/w7.ts';
 import { Player } from '../entities/player.ts';
 import { BLOCK, EXIT, SEAT, floorTopOf, parseLevel, type LevelData, type ParsedLevel, type Point } from '../levels/loader.ts';
 import { Altitude } from '../systems/altitude.ts';
+import { DECOR, critterScatters, placeDecor } from '../systems/decor.ts';
+import type { FxKind } from '../systems/fx.ts';
+import { POLE_H, poleBonus, touchesPole } from '../systems/goal.ts';
 import { BotInput, ButtonEdges, noButtons, type BotView, type InputSource } from '../systems/input.ts';
 import type { RunState } from '../systems/progress.ts';
 import { cabinGravity, degToRad, tiltAt, upcomingTilt } from '../systems/tilt.ts';
@@ -89,6 +93,8 @@ interface Theme {
   solidTex: string;
   /** Pits show water (World 7 pools and fountains) instead of the dark cargo hold. */
   water: boolean;
+  /** The world's bonus block (call button in the plane, concierge bell at DXB, star seal in Washington). */
+  block: string;
 }
 /** The floor slab's thickness (world units); the cargo hold starts under it. */
 const FLOOR_SLAB = 32;
@@ -97,14 +103,29 @@ const HOLD_DARK = 0x15142a;
 const OVAL_SLAB = 10;
 
 const THEMES: Record<ThemeName, Theme> = {
-  cabin: { bgColor: '#d9cdb4', floorTex: 'w5.tex.floor', solidTex: 'w5.tex.bin', water: false },
-  mall: { bgColor: '#9fd3f2', floorTex: 'w7.tex.path', solidTex: 'w7.tex.stone', water: true },
-  lawn: { bgColor: '#9fd3f2', floorTex: 'w7.tex.path', solidTex: 'w7.tex.stone', water: true },
-  oval: { bgColor: '#e9dcc0', floorTex: 'w7.tex.stone', solidTex: 'w7.tex.stone', water: false },
+  cabin: { bgColor: '#d9cdb4', floorTex: 'w5.tex.floor', solidTex: 'w5.tex.bin', water: false, block: 'block.call' },
+  mall: { bgColor: '#9fd3f2', floorTex: 'w7.tex.path', solidTex: 'w7.tex.stone', water: true, block: 'block.w7' },
+  lawn: { bgColor: '#9fd3f2', floorTex: 'w7.tex.path', solidTex: 'w7.tex.stone', water: true, block: 'block.w7' },
+  oval: { bgColor: '#e9dcc0', floorTex: 'w7.tex.stone', solidTex: 'w7.tex.stone', water: false, block: 'block.w7' },
   // World 3, DXB Airport: the terminal (daylight), the duty-free shop, and the gates at sunset.
-  terminal: { bgColor: '#cfe3f2', floorTex: 'w3.tex.floor', solidTex: 'w3.tex.counter', water: false },
-  dutyfree: { bgColor: '#f3e2c0', floorTex: 'w3.tex.floor', solidTex: 'w3.tex.counter', water: false },
-  gate: { bgColor: '#f0a060', floorTex: 'w3.tex.floor', solidTex: 'w3.tex.counter', water: false },
+  terminal: { bgColor: '#cfe3f2', floorTex: 'w3.tex.floor', solidTex: 'w3.tex.counter', water: false, block: 'block.w3' },
+  dutyfree: { bgColor: '#f3e2c0', floorTex: 'w3.tex.floor', solidTex: 'w3.tex.counter', water: false, block: 'block.w3' },
+  gate: { bgColor: '#f0a060', floorTex: 'w3.tex.floor', solidTex: 'w3.tex.counter', water: false, block: 'block.w3' },
+};
+/** World 7 parallax: the sky's top colour, how far the sky art is raised, how far the tree line is lowered. */
+const W7_SKY_TOP = '#7dcdf7';
+const W7_SKY_RAISE = 105;
+const W7_PARK_DROP = 85;
+/** The foreground hedge's bottom edge, below the floor top (near the bottom of the view). */
+const HEDGE_BOTTOM = 100;
+/** Decor stands a little behind the walkway's front edge (on the lawn / the concourse floor), not in the lane. */
+const DECOR_BACK = 10;
+/** Decor is washed toward the background so the play layer always reads first. */
+const DECOR_TINT = { w7: 0xd9e4ee, w3: 0xe4e2ea };
+/** Haze over the airport backdrops (the sunset gates are dark and calm enough already). */
+const AIRPORT_HAZE: Partial<Record<ThemeName, { color: number; alpha: number }>> = {
+  terminal: { color: 0xf3efe8, alpha: 0.3 },
+  dutyfree: { color: 0xf6ecd8, alpha: 0.3 },
 };
 const AIRPORT_BG: Partial<Record<ThemeName, string>> = { terminal: 'w3.bg.terminal', dutyfree: 'w3.bg.dutyfree', gate: 'w3.bg.sunset' };
 
@@ -168,6 +189,12 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
   private hudTimer = 0;
   private warnedTiltAt = -1;
   private hurtLog: { cause: string; x: number; y: number; t: number }[] = [];
+  private effects!: Effects;
+  private critters: Phaser.GameObjects.Sprite[] = [];
+  /** The goal pole before the exit (flagpole twin); `points` is set once it was touched. */
+  private pole?: { sprite: Sprite | Phaser.GameObjects.Sprite; x: number; base: number; off: string; points?: number };
+  /** Last step's feet height, to catch the moment Yaniv drops through the water surface (World 7 splash). */
+  private lastFeetY = 0;
 
   constructor() {
     super('level');
@@ -187,6 +214,7 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     this.resetState(data.run);
     ensurePlaceholders(this);
     createAnimations(this);
+    this.effects = new Effects(this);
     this.rng = new Phaser.Math.RandomDataGenerator([data.level.id]);
 
     const { width, height } = this.level;
@@ -199,11 +227,19 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     this.createForeground();
     this.createExit();
     this.createNpcs();
+    this.createDecor();
 
     const start = data.checkpoint ?? this.level.start;
     this.player = new Player(this, start.x, start.y, data.run.power);
     this.progressX = start.x;
-    this.blocks = new Blocks(this, this.level.blocks, this.level.breakables, (item) => this.items.push(item));
+    this.blocks = new Blocks(
+      this,
+      this.level.blocks,
+      this.level.breakables,
+      (item) => this.items.push(item),
+      this.theme.block,
+      (x, y) => this.shatter(x, y),
+    );
     this.stuckPlungers = this.physics.add.staticGroup();
     this.terrain = [solids.solids, solids.oneWays, this.blocks.group];
     this.createItemsAndEnemies();
@@ -269,6 +305,8 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     this.gate = this.president = undefined;
     this.gateNagged = 0;
     this.gateWall = undefined;
+    this.pole = undefined;
+    this.critters = [];
     this.lastFlash = -9;
     this.lowTimeWarned = false;
   }
@@ -297,8 +335,9 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     const theme = this.cfg.level.theme ?? 'cabin';
     if (theme !== 'cabin') return this.createGroundBackground(theme);
     // The cabin wall sits on the floor at 1:1 scale and scrolls slower than the play layer (parallax).
+    // The flight goes on: sunset in 5-1 and 5-2, dusk in 5-3, night in 5-4 (the level's `bg`).
     const wall = this.add
-      .tileSprite(-VIEW_W, this.floorTop - VIEW_H, this.level.width + VIEW_W * 2, VIEW_H, 'w5.bg.wall')
+      .tileSprite(-VIEW_W, this.floorTop - VIEW_H, this.level.width + VIEW_W * 2, VIEW_H, this.cfg.level.bg ?? 'w5.bg.wall')
       .setOrigin(0)
       .setScrollFactor(0.45, 1)
       .setTileScale(ART_SCALE);
@@ -311,7 +350,7 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
    * Below the floor line: the plane's cargo hold (Worlds 5-6) or the airport's baggage hall (World 3), packed
    * with luggage; in the air, loose bags slide off when the plane banks hard.
    */
-  private createHold(tint?: number): void {
+  private createHold(tint?: number, texture?: string): void {
     const top = this.floorTop + FLOOR_SLAB;
     // (The visual floor continues past both level ends: no fake hatch there.)
     const slabs = [
@@ -330,6 +369,7 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
       restBand: [34, 96],
       random: () => holdRng.frac(),
       tint,
+      texture,
     });
     let x = -VIEW_W;
     for (const [x0, x1] of [...slabs, [this.level.width + VIEW_W, this.level.width + VIEW_W] as [number, number]]) {
@@ -343,13 +383,16 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     const { width } = this.level;
     const airportBg = AIRPORT_BG[theme];
     if (airportBg) {
-      // DXB: the terminal / duty-free / sunset gates behind (parallax), the baggage hall below the floor.
+      // DXB: the terminal / concourse / duty-free / sunset gates behind (parallax), the baggage hall below.
       this.add
-        .tileSprite(-VIEW_W, this.floorTop - VIEW_H + 40, width + VIEW_W * 2, VIEW_H, airportBg)
+        .tileSprite(-VIEW_W, this.floorTop - VIEW_H + 40, width + VIEW_W * 2, VIEW_H, this.cfg.level.bg ?? airportBg)
         .setOrigin(0)
         .setScrollFactor(0.45, 1)
         .setTileScale(ART_SCALE);
-      this.createHold(0x9a9ab0);
+      // A light haze over the busy terminal: lower contrast behind the action, as in the 16-bit classics.
+      const haze = AIRPORT_HAZE[theme];
+      if (haze) this.add.rectangle(-VIEW_W, this.floorTop - VIEW_H + 40, width + VIEW_W * 2, VIEW_H, haze.color, haze.alpha).setOrigin(0).setScrollFactor(0.45, 1);
+      this.createHold(undefined, 'w3.bg.baggage');
       return;
     }
     if (theme === 'oval') {
@@ -358,24 +401,38 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
       this.createBasement();
       return;
     }
+    // Classic layered parallax: the far sky with the Capitol (barely moves), then the tree line (half speed),
+    // then the play layer. The camera's background is the sky's top colour, for anything above the sky art.
+    this.cameras.main.setBackgroundColor(W7_SKY_TOP);
     this.add
-      .tileSprite(-VIEW_W, this.floorTop - VIEW_H + 24, width + VIEW_W * 2, VIEW_H, 'w7.bg.park')
+      .tileSprite(-VIEW_W, this.floorTop - VIEW_H - W7_SKY_RAISE, width + VIEW_W * 2, VIEW_H, 'w7.bg.sky')
+      .setOrigin(0)
+      .setScrollFactor(0.15, 1)
+      .setTileScale(ART_SCALE);
+    // The Washington Monument rises behind the tree line (a mile off, so smaller than life and slower still).
+    if (theme === 'mall') {
+      this.add.image(width * 0.35, this.floorTop - 86, 'w7.prop.monument').setOrigin(0.5, 1).setScale(ART_SCALE * 0.62).setScrollFactor(0.2, 1);
+    }
+    this.add
+      .tileSprite(-VIEW_W, this.floorTop - VIEW_H + W7_PARK_DROP, width + VIEW_W * 2, VIEW_H, 'w7.bg.park')
       .setOrigin(0)
       .setScrollFactor(0.45, 1)
       .setTileScale(ART_SCALE);
     // A landmark far behind, scrolling slower still: the Washington Monument, or the White House near the end.
-    if (theme === 'mall') {
-      // Far away, standing at the tree line (smaller than life: it is a mile off).
-      this.add.image(width * 0.35, this.floorTop - 86, 'w7.prop.monument').setOrigin(0.5, 1).setScale(ART_SCALE * 0.62).setScrollFactor(0.2, 1);
-    } else {
+    if (theme !== 'mall') {
       this.add.image(width * 0.55, this.floorTop - 20, 'w7.prop.whitehouse').setOrigin(0.5, 1).setScale(ART_SCALE).setScrollFactor(0.45, 1);
     }
     // Water under the walkway: the pools and fountains show through the gaps. In 7-1 it meets the pool strip
     // (a gap there let the park's grass show through as a green line over every pit).
-    const y = this.floorTop + (this.level.drains.length ? 0 : 10);
-    // One rippled band at the surface, then plain deep water: the tile repeated down the pit showed seams.
+    const y = this.waterSurface!;
+    // One rippled band at the surface, then deep water darkening downward (a tile repeated down the pit
+    // showed seams; a flat fill looked like a blue box).
     this.add.tileSprite(-VIEW_W, y, width + VIEW_W * 2, 32, 'w7.tex.water').setOrigin(0).setTileScale(ART_SCALE);
-    this.add.rectangle(-VIEW_W, y + 32, width + VIEW_W * 2, VIEW_H, 0x48c8f6).setOrigin(0);
+    this.add
+      .graphics()
+      .fillGradientStyle(0x48c8f6, 0x48c8f6, 0x1d5fa8, 0x1d5fa8, 1)
+      .fillRect(-VIEW_W, y + 32, width + VIEW_W * 2, 96);
+    this.add.rectangle(-VIEW_W, y + 128, width + VIEW_W * 2, VIEW_H, 0x1d5fa8).setOrigin(0);
     // 7-1: the Reflecting Pool itself runs alongside the walkway, choked with algae until its drains are plunged.
     if (this.level.drains.length) {
       const poolY = this.floorTop - 30;
@@ -515,7 +572,17 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
       return;
     }
     if (this.ground) {
-      return; // (each paparazzo brings his own stretch of velvet rope)
+      // (each paparazzo brings his own stretch of velvet rope)
+      if (this.cfg.level.theme === 'oval') return;
+      // A low boxwood hedge with tulips along the very front, over the walkway's wall (never over a pool).
+      const ends = [
+        { x: -VIEW_W, w: VIEW_W },
+        { x: this.level.width, w: VIEW_W },
+      ];
+      for (const r of [...this.level.solids.filter((k) => k.kind === 'floor' && k.y === this.floorTop), ...ends]) {
+        this.add.tileSprite(r.x, this.floorTop + HEDGE_BOTTOM, r.w, 64, 'w7.fg.hedge').setOrigin(0, 1).setTileScale(ART_SCALE * 2).setDepth(15);
+      }
+      return;
     }
     const step = 52;
     const kinds = ['empty', 'sleeper', 'empty', 'reader', 'empty', 'kid'];
@@ -573,11 +640,88 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
       const shut = this.level.drains.length > 0;
       this.gate = this.add.sprite(e.x, e.y + EXIT.h, 'w7.gate', frameIndex('w7.gate', shut ? 'closed' : 'open')).setOrigin(0, 1).setScale(ART_SCALE);
     } else this.add.image(e.x, e.y + EXIT.h, 'w5.curtain').setOrigin(0, 1).setScale(ART_SCALE);
+    this.createPole();
     this.exitZone = this.add.zone(e.x + e.w / 2, e.y + e.h / 2, e.w * 0.6, e.h);
     this.physics.add.existing(this.exitZone, true);
     this.checkpoints = [...this.level.checkpoints];
     const marker = this.airport ? 'w3.checkpoint' : this.ground ? 'w7.checkpoint' : 'w5.galley';
     for (const g of this.level.checkpoints) this.add.image(g.x, g.y, marker).setOrigin(0.5, 1).setScale(ART_SCALE).setDepth(1);
+  }
+
+  /**
+   * Background decor on the floor behind the play layer (systems/decor.ts): sparse, washed toward the
+   * background, clear of everything that matters to play. Its own random seed leaves the level's dice alone.
+   */
+  private createDecor(): void {
+    const world = this.airport ? 'w3' : this.ground && this.cfg.level.theme !== 'oval' ? 'w7' : null;
+    if (!world) return;
+    const L = this.level;
+    const spans = L.solids.filter((r) => r.kind === 'floor' && r.y === this.floorTop).map((r): [number, number] => [r.x, r.x + r.w]);
+    const pts = [
+      L.start, ...L.checkpoints, ...L.trolleys, ...L.suitcases, ...L.drains, ...L.algae, ...L.reporters, ...L.paparazzi, ...L.launchers,
+      ...L.carts, ...L.detectors, ...L.officers, ...L.xrays, ...[L.mascot, L.gateAgent, L.president, L.pole].filter((p): p is Point => !!p),
+    ].map((p) => p.x);
+    const avoid = [...pts, ...[...L.blocks, ...L.breakables].map((b) => b.x + BLOCK / 2), L.exit.x + L.exit.w / 2, L.exit.x];
+    // Belts, travelators, counters, bins and shelves: decor stays clear of their whole length.
+    for (const r of [...L.belts, ...L.solids.filter((k) => k.kind !== 'floor' || k.y < this.floorTop), ...L.oneWays]) {
+      for (let x = r.x; x <= r.x + r.w; x += 16) avoid.push(x);
+      avoid.push(r.x + r.w);
+    }
+    const rng = new Phaser.Math.RandomDataGenerator([`${this.cfg.level.id}:decor`]);
+    const sheet = `${world}.decor`;
+    for (const spot of placeDecor(spans, avoid, DECOR[world], () => rng.frac())) {
+      const sprite = this.add
+        .sprite(spot.x, this.floorTop - DECOR_BACK, sheet, frameIndex(sheet, spot.kind.frame))
+        .setOrigin(0.5, 1)
+        .setScale(ART_SCALE)
+        .setDepth(2)
+        .setTint(DECOR_TINT[world])
+        .setAlpha(0.92)
+        .setFlipX(rng.frac() < 0.5);
+      if (spot.kind.critter) this.critters.push(sprite);
+    }
+  }
+
+  /** Squirrels and pigeons scatter when Yaniv comes close (a little life, no gameplay). */
+  private stepCritters(): void {
+    const p = this.player;
+    for (const c of this.critters) {
+      if (c.getData('gone') || !critterScatters(c.x, p.x)) continue;
+      c.setData('gone', true);
+      const dir = c.x >= p.x ? 1 : -1;
+      c.setFlipX(dir < 0);
+      this.tweens.add({ targets: c, x: c.x + dir * 70, y: c.y - 46, alpha: 0, duration: 650, ease: 'Quad.easeIn', onComplete: () => c.destroy() });
+    }
+  }
+
+  /** The goal pole: the seatbelt sign in the plane, a boarding sign at DXB, the flagpole in Washington. */
+  private createPole(): void {
+    const at = this.level.pole;
+    if (!at) return;
+    const [lit, off] = this.airport ? ['gateLit', 'gateOff'] : this.ground ? ['flagDown', 'flagUp'] : ['planeLit', 'planeOff'];
+    const sprite = this.add.sprite(at.x, at.y, 'goal.pole', frameIndex('goal.pole', lit)).setOrigin(0.5, 1).setScale(ART_SCALE).setDepth(4);
+    this.pole = { sprite, x: at.x, base: at.y, off };
+  }
+
+  /**
+   * Touching the pole: a bonus by height (systems/goal.ts), the sign switches off with a ding (in Washington the
+   * flag goes up), and Yaniv lets go and drops, as on a flagpole. It counts once, and only while the exit is
+   * open (7-1's gate stays shut until the pool is clean).
+   */
+  private stepPole(): void {
+    const pole = this.pole;
+    const p = this.player;
+    if (!pole || pole.points !== undefined || this.gateWall || !touchesPole(p.body, pole.x, pole.base)) return;
+    const height = pole.base - p.y;
+    pole.points = poleBonus(height);
+    pole.sprite.setFrame(frameIndex('goal.pole', pole.off));
+    this.addScore(pole.points, pole.x, Math.max(pole.base - POLE_H, p.y - 60));
+    this.sfx('ding');
+    this.fx('sparkle', pole.x, Math.max(pole.base - POLE_H + 8, p.body.top));
+    if (!p.grounded) {
+      p.body.setVelocityX(0);
+      p.controlLock = Math.max(p.controlLock, 0.3);
+    }
   }
 
   private createNpcs(): void {
@@ -684,6 +828,15 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     play(name);
   }
 
+  fx(kind: FxKind, x: number, y: number, flip = false): void {
+    this.effects.play(kind, x, y, flip);
+  }
+
+  /** Smashed bin panels break into tumbling shards. */
+  shatter(x: number, y: number): void {
+    this.effects.shards(x, y);
+  }
+
   warn(): void {
     this.cfg.onEvent({ type: 'warn' });
   }
@@ -748,6 +901,8 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     this.stepBelts(dt);
 
     if (p.step(dt, this.edges)) this.fire();
+    this.stepPole();
+    this.stepCritters();
     this.stepVines(dt);
     this.stepEnemies(dt);
     for (const item of this.items) {
@@ -762,6 +917,7 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     this.stepDrains(dt);
     if (this.finished) return; // the 7-4 finale started
 
+    this.stepSplash();
     if (p.y > this.level.height + 48 && !p.swing) this.fellInPit();
     if (this.altitude) {
       if (this.cfg.level.timer && !this.lowTimeWarned && this.altitude.value <= 30) {
@@ -1042,15 +1198,33 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
   }
 
   private collectNut(nut: Sprite): void {
+    this.fx('sparkle', nut.x, nut.y);
     nut.destroy();
     this.score += RULES.nutScore;
     this.addNut();
     this.sfx('nut');
   }
 
+  /** World 7: dropping through the water surface of a pit throws up a splash (sound and picture together). */
+  private stepSplash(): void {
+    const p = this.player;
+    const surface = this.waterSurface;
+    // (4 units below the line: feet resting on a walkway level with the water never count as a dive)
+    const line = surface === null ? null : surface + 4;
+    if (line !== null && this.lastFeetY < line && p.y >= line && !p.grounded) {
+      this.sfx('splash');
+      this.fx('splash', p.x, surface! + 6);
+    }
+    this.lastFeetY = p.y;
+  }
+
+  /** The water line in the pits of water themes (null: no water). */
+  private get waterSurface(): number | null {
+    return this.theme.water ? this.floorTop + (this.level.drains.length ? 0 : 10) : null;
+  }
+
   private fellInPit(): void {
     const p = this.player;
-    if (this.theme.water) this.sfx('splash');
     p.invulnerable = 0;
     if (p.power !== 'small') p.setPower('small', true); // a fall costs a heart even when Big
     this.hurtPlayer(p.x, 'pit');
@@ -1190,6 +1364,8 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
         finished: this.finished,
         tilt: Math.round(this.tiltDeg * 10) / 10,
         width: this.level.width,
+        fx: this.effects.spawned,
+        pole: this.pole ? { x: this.pole.x, base: this.pole.base, points: this.pole.points ?? null } : null,
         hurts: [...this.hurtLog],
         enemies: this.enemies.filter((e) => e.live).map((e) => ({ kind: e.kind, x: Math.round(e.x), y: Math.round(e.y) })),
         drains: this.drains.filter((d) => d.clogged).length,

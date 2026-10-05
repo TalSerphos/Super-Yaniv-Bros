@@ -43,7 +43,7 @@ function destFor(entry: AssetEntry): { file: string; rel: string } {
 
 async function build(entry: AssetEntry) {
   if (entry.kind === 'reference') return; // character bibles etc. are only used as generation refs
-  const master = join(MASTERS_DIR, `${entry.id}.webp`);
+  const master = join(MASTERS_DIR, `${entry.from ?? entry.id}.webp`);
   if (!existsSync(master)) {
     console.warn(`- ${entry.id}: no master yet, skipped`);
     return;
@@ -80,8 +80,9 @@ async function buildFrames(entry: AssetEntry, master: string) {
   const shared = commonScale(pieces, frame, fitH);
 
   const scaled: Piece[] = [];
-  for (const p of pieces) {
-    const s = mode === 'common' ? shared : containScale(p, frame, fitH);
+  for (const [i, p] of pieces.entries()) {
+    // fit.heights: a target height per frame (prop sheets whose pieces differ in size on purpose).
+    const s = entry.fit?.heights ? containScale(p, frame, entry.fit.heights[i] ?? fitH) : mode === 'common' ? shared : containScale(p, frame, fitH);
     const w = mode === 'stretch' ? frame.w : Math.max(1, Math.round(p.w * s));
     const h = mode === 'stretch' ? frame.h : Math.max(1, Math.round(p.h * s));
     const r = await toRaw(sharp(p.data, { raw: { width: p.w, height: p.h, channels: 4 } }).resize(w, h, { fit: 'fill', kernel: 'lanczos3' }));
@@ -130,6 +131,7 @@ async function buildSeamless(entry: AssetEntry, master: string) {
   // Chroma-keyed strips (foreground decor such as a rope line) keep their alpha; everything else is opaque.
   const channels = entry.chroma ? 4 : 3;
   const keyed = entry.chroma ? await chromaKeyRaw(master, entry.chroma) : undefined;
+  if (keyed && entry.out?.despill) despillMagenta(keyed.data);
   const source = () => (keyed ? sharp(keyed.data, { raw: { width: keyed.width, height: keyed.height, channels: 4 } }) : sharp(master).removeAlpha());
   const src = await toRaw(sharp(master).removeAlpha());
   const gray = await toRaw(sharp(master).greyscale().removeAlpha());
