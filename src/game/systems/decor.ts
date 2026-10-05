@@ -25,10 +25,9 @@ export const DECOR: Record<'w3' | 'w7', DecorKind[]> = {
     { frame: 'tulips', weight: 2 },
   ],
   w3: [
+    // (No 'seats' or 'cone': a flat-topped bench looks standable and a yellow warning sign looks like a hazard.)
     { frame: 'palm', weight: 3 },
-    { frame: 'seats', weight: 2 },
     { frame: 'kiosk', weight: 1 },
-    { frame: 'cone', weight: 1 },
     { frame: 'board', weight: 1 },
     { frame: 'fountain', weight: 1 },
     { frame: 'planter', weight: 2 },

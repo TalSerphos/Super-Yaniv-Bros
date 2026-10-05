@@ -661,7 +661,8 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
       L.start, ...L.checkpoints, ...L.trolleys, ...L.suitcases, ...L.drains, ...L.algae, ...L.reporters, ...L.paparazzi, ...L.launchers,
       ...L.carts, ...L.detectors, ...L.officers, ...L.xrays, ...[L.mascot, L.gateAgent, L.president, L.pole].filter((p): p is Point => !!p),
     ].map((p) => p.x);
-    const avoid = [...pts, ...[...L.blocks, ...L.breakables].map((b) => b.x + BLOCK / 2), L.exit.x + L.exit.w / 2, L.exit.x];
+    // (Nut rows too: a prop behind a row of nuts muddles the pickups.)
+    const avoid = [...pts, ...L.nuts.map((n) => n.x), ...[...L.blocks, ...L.breakables].map((b) => b.x + BLOCK / 2), L.exit.x + L.exit.w / 2, L.exit.x];
     // Belts, travelators, counters, bins and shelves: decor stays clear of their whole length.
     for (const r of [...L.belts, ...L.solids.filter((k) => k.kind !== 'floor' || k.y < this.floorTop), ...L.oneWays]) {
       for (let x = r.x; x <= r.x + r.w; x += 16) avoid.push(x);
@@ -685,8 +686,9 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
   /** Squirrels and pigeons scatter when Yaniv comes close (a little life, no gameplay). */
   private stepCritters(): void {
     const p = this.player;
+    this.critters = this.critters.filter((c) => c.active && !c.getData('gone'));
     for (const c of this.critters) {
-      if (c.getData('gone') || !critterScatters(c.x, p.x)) continue;
+      if (!critterScatters(c.x, p.x)) continue;
       c.setData('gone', true);
       const dir = c.x >= p.x ? 1 : -1;
       c.setFlipX(dir < 0);

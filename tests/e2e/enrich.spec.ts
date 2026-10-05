@@ -50,11 +50,12 @@ test.describe('goal pole', () => {
     const before = (await syb(page))!.score;
     // Record every frame whether he hangs on the pole (the slide takes well under a second).
     await page.evaluate(() => {
-      const w = window as unknown as { __slid?: boolean; __syb: Syb };
+      const w = window as unknown as { __slid?: boolean; __landed?: { x: number; y: number }; __syb: Syb };
       w.__slid = false;
       const tick = () => {
         const st = w.__syb.state();
         if (st.sliding && st.pose === 'pole') w.__slid = true;
+        if (w.__slid && !st.sliding && !w.__landed) w.__landed = { x: st.x, y: st.y };
         requestAnimationFrame(tick);
       };
       requestAnimationFrame(tick);
@@ -65,14 +66,13 @@ test.describe('goal pole', () => {
     // He grabs on and slides down the pole to its base, flagpole style.
     await expect.poll(() => page.evaluate(() => (window as unknown as { __slid: boolean }).__slid), { timeout: 10_000 }).toBe(true);
     await expect.poll(async () => (await syb(page))!.sliding, { timeout: 10_000 }).toBe(false);
-    const landed = (await syb(page))!;
+    const landed = await page.evaluate(() => (window as unknown as { __landed: { x: number; y: number } }).__landed);
     expect(landed.y).toBe(pole.base);
     expect(Math.abs(landed.x - pole.x)).toBeLessThanOrEqual(16);
     const after = (await syb(page))!.score;
     expect(after - before).toBeGreaterThanOrEqual(2000);
-    // Touching again does nothing.
-    await page.evaluate(`${hook}.teleport(${pole.x}, ${pole.base})`);
-    await page.waitForTimeout(800);
+    // Then, as after the classic flagpole, he walks on to the exit by himself (no input) and it scores once.
+    await page.waitForFunction(() => (window as unknown as { __syb: Syb }).__syb.state().finished, null, { timeout: 30_000, polling: 200 });
     expect((await syb(page))!.pole!.points).toBe(2000);
   });
 
@@ -99,6 +99,41 @@ test.describe('impact effects and level art', () => {
     await page.evaluate(`${hook}.clearEnemies(); ${hook}.teleport(${24 * 16 + 8}, 100)`);
     await expect.poll(async () => (await syb(page))!.fx, { timeout: 20_000 }).toBeGreaterThan(before);
     expect(errors).toEqual([]);
+  });
+
+  test('a skid into the 7-4 handshake never freezes the skid pose on screen', async ({ page, isMobile }) => {
+    test.skip(!!isMobile, 'keyboard-driven');
+    await page.goto('./?level=7-4&god=1#play');
+    await page.waitForFunction(() => (window as unknown as { __syb?: Syb }).__syb?.state().level === '7-4', null, { timeout: 20_000 });
+    await page.waitForTimeout(2500);
+    const presidentX = 25 * 16 + 8; // 'V' in gen-w7.py; the finale starts 46 units before him
+    await page.evaluate(`${hook}.teleport(${presidentX - 200}, 320)`);
+    // Run right, and brake (skid) just before the finale takes over: all in the page, frame-exact.
+    await page.evaluate((trigger) => {
+      const w = window as unknown as { __syb: Syb; __poses: (string | null)[] };
+      const fire = (t: string, c: string) => window.dispatchEvent(new KeyboardEvent(t, { code: c, key: c }));
+      w.__poses = [];
+      let reversed = false;
+      fire('keydown', 'ArrowRight');
+      const tick = () => {
+        const st = w.__syb.state();
+        if (!reversed && st.x >= trigger) {
+          reversed = true;
+          fire('keyup', 'ArrowRight');
+          fire('keydown', 'ArrowLeft');
+          setTimeout(() => fire('keyup', 'ArrowLeft'), 150);
+        }
+        if (st.finished) w.__poses.push(st.pose);
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    }, presidentX - 52);
+    await page.waitForFunction(() => (window as unknown as { __syb: Syb }).__syb.state().finished, null, { timeout: 20_000 });
+    await page.waitForTimeout(1500);
+    const poses = await page.evaluate(() => (window as unknown as { __poses: (string | null)[] }).__poses);
+    expect(poses.length).toBeGreaterThan(4);
+    // At most the frame of the hand-over may still show it; after that the handshake pose is the real sprite.
+    expect(poses.slice(2).filter((p) => p !== null)).toEqual([]);
   });
 
   test('reversing at a run shows the skid frame', async ({ page, isMobile }) => {

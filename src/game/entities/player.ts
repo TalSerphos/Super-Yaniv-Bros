@@ -74,6 +74,10 @@ export class Player {
    * sprite keeps its texture, size and body, and is only hidden meanwhile.
    */
   private readonly extra: Phaser.GameObjects.Sprite;
+  /** The physics sprite's frame when the twin took over (any other frame means a scene posed it). */
+  private hiddenFrame = '';
+  /** After a pole slide he walks on to the exit by himself, as after the classic flagpole (1 = right). */
+  autoWalk = 0;
 
   constructor(
     private readonly world: GameWorld,
@@ -142,9 +146,10 @@ export class Player {
       });
       apply();
     }
-    const fx = this.sprite.preFX;
-    fx?.clear();
-    if (power === 'golden') fx?.addGlow(0xffd23f, 3, 0, false, 0.1, 10);
+    for (const fx of [this.sprite.preFX, this.extra.preFX]) {
+      fx?.clear();
+      if (power === 'golden') fx?.addGlow(0xffd23f, 3, 0, false, 0.1, 10);
+    }
   }
 
   /** Can a stomp land on something whose top is at `top`? (falling, feet near its top) */
@@ -160,6 +165,7 @@ export class Player {
   }
 
   knockback(dir: number): void {
+    this.autoWalk = 0;
     this.hurtTimer = 1.05;
     this.jumpCut = true; // knockback height must not depend on the jump button
     this.body.setVelocity(dir * 160, -220);
@@ -195,7 +201,7 @@ export class Player {
     this.jumpBuffer = edges.pressed('jump') ? PHYS.jumpBuffer : Math.max(0, this.jumpBuffer - dt);
 
     if (this.heldThroughRespawn && !b.left && !b.right) this.heldThroughRespawn = false;
-    const dir = this.controlLock > 0 || this.heldThroughRespawn ? 0 : (b.right ? 1 : 0) - (b.left ? 1 : 0);
+    const dir = this.controlLock > 0 || this.heldThroughRespawn ? 0 : this.autoWalk || (b.right ? 1 : 0) - (b.left ? 1 : 0);
     // Running downhill (toward the cockpit) is a little faster, uphill a little slower. Bamba: faster still.
     const slope = Math.sin(degToRad(this.world.tiltDeg));
     const speed = PHYS.runSpeed * (this.bamba > 0 ? 1.35 : 1);
@@ -254,7 +260,7 @@ export class Player {
     const side = this.x <= poleX ? -1 : 1; // which side of the pole he hangs on
     this.poleSlide = { x: poleX, base };
     this.sprite.setFlipX(side > 0);
-    this.sprite.setPosition(poleX + side * POLE_GRIP, this.y);
+    this.sprite.setPosition(poleX + side * POLE_GRIP * (this.sprite.scaleX / ART_SCALE), this.y);
     // (prev too, as in placeAt: otherwise the next physics step applies the jump to the hands a second time)
     this.body.updateFromGameObject();
     this.body.prev.copy(this.body.position);
@@ -270,6 +276,7 @@ export class Player {
       this.poleSlide = null;
       body.setAllowGravity(true);
       this.controlLock = Math.max(this.controlLock, 0.2);
+      if (this.hurtTimer <= 0) this.autoWalk = 1;
       this.wasGrounded = true;
       this.animate(this.grounded);
       return false;
@@ -282,7 +289,9 @@ export class Player {
   /** Show a frame of the extra sheet (skid, pole) on the twin; the physics sprite hides meanwhile. */
   private showExtra(name: string, flip: boolean): void {
     this.extra.setFrame(frameIndex(EXTRA, name)).setFlipX(flip).setVisible(true);
+    this.sprite.anims.stop();
     this.sprite.setVisible(false);
+    this.hiddenFrame = `${this.sprite.texture.key}:${this.sprite.frame.name}`;
   }
 
   private hideExtra(): void {
@@ -298,6 +307,9 @@ export class Player {
 
   private syncExtra(): void {
     const p = this.sprite;
+    // Scene code that poses the physics sprite itself (the exit walk, the finale, game over) takes over: the
+    // twin steps aside, or a skid or pole frame would stay frozen on screen.
+    if (this.extra.visible && (p.anims.isPlaying || `${p.texture.key}:${p.frame.name}` !== this.hiddenFrame)) this.hideExtra();
     this.extra.setPosition(p.x, p.y).setScale(p.scaleX).setAlpha(p.alpha).setTint(p.tintTopLeft);
     if (!p.isTinted) this.extra.clearTint();
   }
@@ -385,6 +397,7 @@ export class Player {
    */
   placeAt(x: number, y: number): void {
     const body = this.body;
+    this.autoWalk = 0;
     if (this.poleSlide) {
       this.poleSlide = null;
       body.setAllowGravity(true);

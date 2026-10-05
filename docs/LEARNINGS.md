@@ -270,3 +270,16 @@ unspent. Contract: `docs/levels/enrich-assets.md`.
   y 74–416, so the Capitol has a 60-unit band between the HUD and the treetops. Tune by screenshot.
 - **Story beat:** W5 now goes sunset → dusk (5-3) → night (5-4). W6's cockpit stays daylight as before (Tal's
   concept art).
+- **QA pass (v0.8)**: 4 bugs and 5 polish items, all fixed. Each bug fix has a regression test where one fits.
+  - **A visual twin must yield to scene code.** The finale, the exit walk and game over pose the physics sprite
+    directly, which left a skid or pole frame frozen on the twin, including in the ending photo. The twin now
+    remembers the hidden sprite's frame and steps aside on `POST_UPDATE` once anything else changes it.
+  - **After the pole slide he walks to the exit by himself** (`player.autoWalk`), as after the classic flagpole.
+  - **Decor that misleads is out.**
+    - The flat-topped W3 seat bench looked standable, and the yellow wet-floor cone looked like a hazard.
+    - Decor also keeps clear of nut rows now.
+  - Twin fidelity: the golden glow is mirrored on the twin, and the pole grip scales with Big Yaniv.
+  - Destroyed critters left the list, so they could no longer re-tween.
+  - The 5-4 real-damage bot failed once in the full local suite. Under `--repeat-each=6 --workers=6` it then
+    passed 21 of 22 runs, against 18 of 18 on the old build. Its hits were existing hazards, and 5-4 has no
+    gameplay change, so this is load timing. Keep an eye on it in CI.

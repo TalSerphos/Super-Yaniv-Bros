@@ -30,6 +30,11 @@ describe('background decor placement', () => {
       for (const k of DECOR[world]) expect(SHEETS[`${world}.decor`].frames).toContain(k.frame);
     }
   });
+  it('never places props that look standable or dangerous', () => {
+    const frames = DECOR.w3.map((k) => k.frame);
+    expect(frames).not.toContain('seats');
+    expect(frames).not.toContain('cone');
+  });
   it('critters scatter only when Yaniv is close', () => {
     expect(critterScatters(100, 60)).toBe(true);
     expect(critterScatters(100, 300)).toBe(false);
