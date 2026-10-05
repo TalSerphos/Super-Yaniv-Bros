@@ -283,3 +283,21 @@ unspent. Contract: `docs/levels/enrich-assets.md`.
   - The 5-4 real-damage bot failed once in the full local suite. Under `--repeat-each=6 --workers=6` it then
     passed 21 of 22 runs, against 18 of 18 on the old build. Its hits were existing hazards, and 5-4 has no
     gameplay change, so this is load timing. Keep an eye on it in CI.
+
+## World 5 music: Hava Nagila from the score (2026-10-05)
+- Tal found the old arrangement unrecognisable. It was played at 184 bpm from the first bar and its B and C parts
+  came from memory. **Transcribe from a score, not from memory.** Tal supplied Idelsohn's melody, arranged for
+  piano, in E freygish.
+  - It is now transposed to D and transcribed bar by bar: the klezmer intro, "Hava nagila", "Hava neranena",
+    "Uru achim", and a coda.
+  - Several of the remembered notes were wrong. "Hava neranena" falls from the 3rd, not the 5th, and "Uru achim"
+    is built on the dotted "A C. B~B C B A" figure.
+- **The sequencer now has a tempo map and sixteenths.**
+  - `Song.tempo` holds one bpm per bar, from per-section ramps, so the hora accelerates: 140, the score's tempo,
+    up to 184.
+  - `sub: 4` writes bars in sixteenths, for dotted, grace-note and triplet-ish rhythms.
+  - `double` doubles the tune an octave down so it carries over the band.
+- **`renderSong(name)`** renders any song with an `OfflineAudioContext`. Run it in Chromium through the dev
+  server (`await import('/src/audio/music.ts')`) and you get a `.wav` to send for an ear check.
+- **Checking the render's pitch:** an FFT limited to the lead's register (560–1250 Hz) gets every note right.
+  Naive autocorrelation over the full mix (bass, chords, octave double) gave octave and harmonic errors.
