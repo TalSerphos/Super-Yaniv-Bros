@@ -209,3 +209,64 @@ Feel changes from the same pass:
 - **Don't hide the player behind decor.** An X-ray machine in front of the belt hid Yaniv completely while riding through; it stays behind him.
 - **Canvas text isn't in the DOM.** Pop-ups (`popText`) are Phaser text, so e2e reads them from `__syb.state().pops`.
 - **Maps grow:** four world columns needed `grid-auto-columns: minmax(0, 1fr)` and wrapping labels (nowrap buttons spilled past the card).
+
+## Enrichment pass, v0.8 (2026-10-05)
+Tal's brief was to spend up to $15 of image credit making the existing stages look and feel better (no new
+levels), staying loyal to the Super Mario feel. Spend was **$8.10 estimated** (17 entries); the rest was left
+unspent. Contract: `docs/levels/enrich-assets.md`.
+
+**Measuring "Mario feel"**
+- `npm run feel [-- --judge --label x]` screenshots every platform level at 15% and 55% of its width. It writes
+  squint versions (greyscale + blur) and, with `--judge`, scores the shots against `docs/fidelity/FEEL.md`:
+  readability, clarity, depth, invitation, classic, polish. Results append to `docs/fidelity/feel.md`.
+- **Baseline from a clean build of the untouched commit**, in a git worktree on its own preview port. The first
+  baseline ran against the dev server while I edited source: hot reload blanked one shot and crashed another.
+- Judge noise is about ±0.5 per level. Compare world means, not single levels. Result: 6.53 → 6.80 mean.
+  - W7: 5.9 → 7.0.
+  - W5: flat.
+  - W3: −0.1 (noise).
+- The judge's most repeated note, for every world, was **"the busy backdrop competes with the play layer"**. The
+  SMW answer is free: a light haze over the backdrop (`AIRPORT_HAZE`, 30% toward a warm white).
+
+**Art**
+- **One paid sheet, many strips.** `from: <entry>` builds frames from another entry's master. The FX sheet
+  (4×5) fed five strips, and one blocks sheet fed both themed blocks. `from` entries need `chroma` themselves.
+- **`fit.heights`** gives a target height per frame, for prop sheets whose pieces differ in size on purpose
+  (a bench vs a squirrel) and for calibrating poses. Measure an off-output idle cell, then apply its scale to
+  the exported poses (Yaniv's idle is 107 px).
+- **Edits of an existing master work well**:
+  - "Recreate this exact image with one change": the park with its sky keyed out, the White House on a hedge
+    base, and the cabin wall with dusk or night windows.
+  - Copy the old master to `art/reference/*-v1.webp` first, so the ref stays stable once the new master
+    replaces it.
+  - "Keep EXACTLY the same colours and brightness" stopped the dusk wall from darkening.
+- **Keyed seamless strips need `despill` too.** The keyed tree line had a purple rim until `buildSeamless`
+  honoured `out.despill`.
+- **A wide pose needs a wide frame.** The skid is 1.22× as wide as it is tall, so a 48-wide frame would have
+  shrunk Yaniv to 80%. It uses a 64×64 sheet.
+- **Regional details:**
+  - The Tabuk landing got saguaro cacti until the prompt said "Arabian desert … NO cactus".
+  - Generated US flags were fine on the goal pole.
+
+**Engine**
+- **Never change a physics sprite's frame width.** Phaser body offsets are relative to the frame, so switching to
+  a 64-wide frame moved the body 8 units. Re-fitting the body on every switch still drifted.
+  - The skid and pole poses are drawn by a visual-only twin sprite, synced on `POST_UPDATE`. The physics sprite
+    is hidden meanwhile.
+- **`body.touching.down` is also set by overlaps** (a nut beside the pole). For "really landed", use
+  `blocked.down` or a known floor y.
+- **Moving a body by hand: copy `prev` and `prevFrame`** (as `placeAt` does). Otherwise the next physics step
+  applies the move a second time; the pole grip drifted by exactly its offset.
+- **Snappy acceleration hides a skid.** `groundAccel` 1100 brakes from a run in about 3 steps, and players lift ▶
+  a few frames before pressing ◀. So:
+  - the skid threshold is 60 units/s, not 90;
+  - the frame holds for 0.16 s;
+  - the e2e test reverses in one tick with in-page `dispatchEvent`.
+- **The x-4 "castles" have no pole** (3-3 Mr. Spritz, 5-4 the cockpit door, 7-4 the finale), as in the classics.
+  7-1's pole only counts once the pool is clean (the gate wall is still up before that).
+- **Decor has its own `RandomDataGenerator` seed** and keeps clear of everything in play, including the whole
+  length of counters, shelves and belts. It must not look like part of the action.
+- **W7 parallax is three constants** (`W7_SKY_RAISE`, `W7_PARK_DROP`, `W7_SKY_TOP`). The camera only shows about
+  y 74–416, so the Capitol has a 60-unit band between the HUD and the treetops. Tune by screenshot.
+- **Story beat:** W5 now goes sunset → dusk (5-3) → night (5-4). W6's cockpit stays daylight as before (Tal's
+  concept art).

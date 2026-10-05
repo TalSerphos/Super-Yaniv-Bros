@@ -79,6 +79,7 @@ export const SHEETS: Record<string, SheetSpec> = {
   'fx.sparkle': { frame: [16, 16], frames: ['s0', 's1', 's2', 's3'] },
   'fx.splash': { frame: [32, 48], frames: ['w0', 'w1', 'w2', 'w3'] },
   'fx.shard': { frame: [8, 8], frames: ['a', 'b', 'c', 'd'] },
+  'yaniv.extra': { frame: [64, 64], frames: ['skid', 'pole'] },
   'goal.pole': { frame: [32, 144], frames: ['planeLit', 'planeOff', 'gateLit', 'gateOff', 'flagDown', 'flagUp'] },
   'block.w3': { frame: [32, 32], frames: ['active', 'used'] },
   'block.w7': { frame: [32, 32], frames: ['active', 'used'] },
@@ -167,6 +168,9 @@ export function createAnimations(scene: Phaser.Scene): void {
   sheet('proj.perfume:puff', ['puff0', 'puff1'], 6);
   sheet('boss.mascot:walk', ['walk0', 'walk1'], 4);
 }
+
+/** The scene shown behind a world's "WORLD n COMPLETE" card (DOM only, not a Phaser texture), if built. */
+export const worldCardUrl = (world: number): string | undefined => urlFor(`card.w${world}`);
 
 /** URL of a HUD/DOM icon strip, if the art exists (the DOM HUD falls back to CSS shapes). */
 export const hudIconsUrl = (): string | undefined => urlFor('hud.icons');

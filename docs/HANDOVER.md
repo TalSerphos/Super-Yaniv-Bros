@@ -9,7 +9,7 @@ Written at the end of the first long build session (2026-10-03 to 10-05). Read t
 ## 1. Where things stand
 
 **Live:** https://superyanivbros.com (GitHub Pages, deployed by `.github/workflows/deploy.yml` on every push to
-`main`). Version **v0.7.0**, shown bottom left on the title next to the short commit.
+`main`). Version **v0.8.0**, shown bottom left on the title next to the short commit.
 
 | World | Levels | State |
 |---|---|---|
@@ -37,8 +37,13 @@ Also live:
 - **"Od Avinu Chai" melody.** It's under copyright: the 6-3 win plays claps and the chanted words over an original fanfare. Ask Tal before using the real tune.
 - **World 3 polish left from QA:**
   - On phones, when Yaniv stands high, floor threats can hide behind the touch buttons.
-  - The "?" blocks are still World 5 call-button bells.
-- **A minor art nit:** the White House image has a hard left edge.
+- **v0.8 enrichment pass** (`docs/levels/enrich-assets.md`) added:
+  - impact FX and the goal pole (flagpole twin, `'I'`);
+  - themed bonus blocks;
+  - Yaniv's skid and pole-slide frames;
+  - W7 parallax (sky + Capitol), W3 concourse and baggage hall, W5 dusk and night;
+  - decor and world-complete card art.
+  - Use `npm run feel` to check that the platformer feel holds after visual changes.
 
 ---
 
@@ -371,7 +376,7 @@ the full ladder after.
 
 ## 11. Suggested next steps (Tal's backlog, in likely order)
 
-1. **The World 3 phone polish from QA.** Camera bias down while standing high; a World 3 "?" block style.
+1. **The World 3 phone polish from QA.** Camera bias down while standing high.
 2. **World 4, Cruise:**
    - Boarding (bin wars), Meal Service (Trolley Trolls), Wing Dream (a sky level), The Lav (a water level).
    - Lav Warps: flush to warp.

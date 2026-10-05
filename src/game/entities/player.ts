@@ -14,6 +14,14 @@ const BODY = { small: { w: 20, h: 50 }, big: { w: 24, h: 62 } };
 const BIG_SCALE = 1.25;
 export const BAMBA_SECONDS = 8;
 const SHEET = 'yaniv.small';
+/** Skid and pole-slide frames (64 wide, so drawn by a visual-only twin sprite). */
+const EXTRA = 'yaniv.extra';
+const EXTRA_FRAMES = ['skid', 'pole'];
+/** Sliding down the goal pole (world units/s), and the hands' offset from the pole. */
+const POLE_SLIDE_SPEED = 150;
+const POLE_GRIP = 10;
+/** The skid frame shows at least this long (the brake itself takes ~3 physics steps). */
+const SKID_SHOW = 0.16;
 
 /**
  * Yaniv: movement (run, variable jump, coyote time, jump buffer), power states (small / big / golden),
@@ -55,6 +63,17 @@ export class Player {
   private wasGrounded = true;
   private fallSpeed = 0;
   private skidCooldown = 0;
+  /** Braking against a run (shows the skid frame). */
+  private skid = false;
+  /** Sliding down the goal pole (flagpole style) until the feet touch the ground. */
+  poleSlide: { x: number; base: number } | null = null;
+  /** Seconds the skid frame stays up (the brake itself lasts only a few steps). */
+  private skidShow = 0;
+  /**
+   * Skid and pole-slide poses are drawn by this visual-only twin (their frames are wider): the physics
+   * sprite keeps its texture, size and body, and is only hidden meanwhile.
+   */
+  private readonly extra: Phaser.GameObjects.Sprite;
 
   constructor(
     private readonly world: GameWorld,
@@ -68,6 +87,10 @@ export class Player {
     body.setMaxVelocity(PHYS.runSpeed * 2.2, PHYS.maxFall);
     body.setCollideWorldBounds(true); // left/right/top only: the world's bottom stays open for pits
     this.lastSafe = { x, y };
+    this.extra = scene.add.sprite(x, y, EXTRA, 0).setOrigin(0.5, 1).setDepth(10).setVisible(false);
+    // Follow the physics sprite after the physics step has moved it (no one-step lag).
+    scene.events.on(Phaser.Scenes.Events.POST_UPDATE, this.syncExtra, this);
+    scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.events.off(Phaser.Scenes.Events.POST_UPDATE, this.syncExtra, this));
     this.setPower(power, true);
     this.sprite.play(`${SHEET}:idle`);
   }
@@ -157,12 +180,14 @@ export class Player {
     this.stepBamba(dt);
 
     if (this.pose) {
+      this.hideExtra();
       body.setVelocityX(0);
       this.sprite.anims.stop();
       this.sprite.setTexture('yaniv.action', frameIndex('yaniv.action', this.pose));
       return false;
     }
     if (this.swing) return this.stepSwing(dt, edges);
+    if (this.poleSlide) return this.stepPoleSlide();
 
     const grounded = this.grounded;
     if (grounded) this.releasedVine = null;
@@ -194,6 +219,8 @@ export class Player {
     }
 
     if (dir) this.sprite.setFlipX(dir < 0);
+    this.skid = skidding(grounded, dir, body.velocity.x - this.carry);
+    this.skidShow = this.skid ? SKID_SHOW : grounded && dir ? Math.max(0, this.skidShow - dt) : 0;
     this.animate(grounded);
     this.stepDust(grounded, dir, dt);
 
@@ -213,8 +240,7 @@ export class Player {
   private stepDust(grounded: boolean, dir: number, dt: number): void {
     this.skidCooldown = Math.max(0, this.skidCooldown - dt);
     if (grounded && !this.wasGrounded && landingDust(this.fallSpeed)) this.world.fx('dust', this.x, this.y);
-    const vx = this.body.velocity.x - this.carry;
-    if (this.skidCooldown <= 0 && skidding(grounded, dir, vx)) {
+    if (this.skidCooldown <= 0 && this.skid) {
       this.world.fx('skid', this.x - Math.sign(dir) * 6, this.y, dir < 0);
       this.skidCooldown = SKID_COOLDOWN;
     }
@@ -223,11 +249,68 @@ export class Player {
     this.wasGrounded = grounded;
   }
 
+  /** Grab the goal pole in the air: hands on the bar, slide straight down at a steady speed. */
+  startPoleSlide(poleX: number, base: number): void {
+    const side = this.x <= poleX ? -1 : 1; // which side of the pole he hangs on
+    this.poleSlide = { x: poleX, base };
+    this.sprite.setFlipX(side > 0);
+    this.sprite.setPosition(poleX + side * POLE_GRIP, this.y);
+    // (prev too, as in placeAt: otherwise the next physics step applies the jump to the hands a second time)
+    this.body.updateFromGameObject();
+    this.body.prev.copy(this.body.position);
+    this.body.prevFrame.copy(this.body.position);
+    this.body.setAllowGravity(false);
+    this.body.setVelocity(0, POLE_SLIDE_SPEED);
+  }
+
+  private stepPoleSlide(): boolean {
+    const body = this.body;
+    // (A real landing or the pole's foot: `touching` is also set by overlaps, e.g. a nut beside the pole.)
+    if (body.blocked.down || this.y >= this.poleSlide!.base - 0.5 || this.hurtTimer > 0) {
+      this.poleSlide = null;
+      body.setAllowGravity(true);
+      this.controlLock = Math.max(this.controlLock, 0.2);
+      this.wasGrounded = true;
+      this.animate(this.grounded);
+      return false;
+    }
+    body.setVelocity(0, POLE_SLIDE_SPEED);
+    this.showExtra('pole', this.sprite.flipX);
+    return false;
+  }
+
+  /** Show a frame of the extra sheet (skid, pole) on the twin; the physics sprite hides meanwhile. */
+  private showExtra(name: string, flip: boolean): void {
+    this.extra.setFrame(frameIndex(EXTRA, name)).setFlipX(flip).setVisible(true);
+    this.sprite.setVisible(false);
+  }
+
+  private hideExtra(): void {
+    if (!this.extra.visible) return;
+    this.extra.setVisible(false);
+    this.sprite.setVisible(true);
+  }
+
+  /** Which extra pose is up, if any (test hook). */
+  get extraPose(): string | null {
+    return this.extra.visible ? EXTRA_FRAMES[Number(this.extra.frame.name)] : null;
+  }
+
+  private syncExtra(): void {
+    const p = this.sprite;
+    this.extra.setPosition(p.x, p.y).setScale(p.scaleX).setAlpha(p.alpha).setTint(p.tintTopLeft);
+    if (!p.isTinted) this.extra.clearTint();
+  }
+
   private animate(grounded: boolean): void {
     const p = this.sprite;
+    this.hideExtra();
     if (this.hurtTimer > 0) this.showFrame('hurt');
+    else if (this.poleSlide) this.showExtra('pole', p.flipX);
     else if (this.swing) this.showFrame('jump');
     else if (!grounded) this.showFrame(this.body.velocity.y < 0 ? 'jump' : 'fall');
+    // The brake faces the way he is still sliding, leaning back against it (then he turns around).
+    else if (this.skidShow > 0) this.showExtra('skid', this.body.velocity.x - this.carry < 0);
     else if (Math.abs(this.body.velocity.x - this.carry) > 12) p.anims.play(`${SHEET}:run`, true); // (riding a belt is standing)
     else p.anims.play(`${SHEET}:idle`, true);
     p.setAlpha(this.bamba <= 0 && this.invulnerable > 0 && Math.floor(this.invulnerable * 12) % 2 ? 0.35 : 1);
@@ -302,6 +385,10 @@ export class Player {
    */
   placeAt(x: number, y: number): void {
     const body = this.body;
+    if (this.poleSlide) {
+      this.poleSlide = null;
+      body.setAllowGravity(true);
+    }
     this.sprite.setPosition(x, y);
     body.updateFromGameObject();
     body.stop();

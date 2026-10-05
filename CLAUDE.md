@@ -19,6 +19,7 @@ Spec: `docs/GAME_SPEC.md`. Staged roadmap: `docs/PLAN.md`. Read `docs/LEARNINGS.
 npm run dev | build | preview
 npm run lint && npm test && npm run build && npm run e2e   # run all before pushing
 npm run fidelity [-- --judge]                              # metrics, + OpenAI vision rubric
+npm run feel [-- --judge --label x]                        # platformer-feel shots + squint sheets (+ rubric)
 npm run assets:generate -- --ids <id,prefix*> --quality low|medium|high [--max-spend 5]
 npm run assets:process -- select --id <id> --from art/raw/<id>/<dir>/<n>.png
 npm run assets:process -- build [--ids <id>]

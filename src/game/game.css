@@ -154,6 +154,14 @@
   pointer-events: auto;
 }
 .game-overlay[hidden] { display: none; }
+.game-overlay[data-backdrop='on'] {
+  background-size: cover;
+  background-position: center 30%;
+  image-rendering: pixelated;
+  align-items: end; /* the card sits low: the scene's sky and its hero (the plane, the door) stay in view */
+  padding-bottom: 4cqh;
+}
+.game-overlay[data-backdrop='on'] .card { background: color-mix(in srgb, var(--panel) 90%, transparent); }
 .game-overlay .card {
   min-width: 40cqw;
   padding: 3cqh 3cqw;

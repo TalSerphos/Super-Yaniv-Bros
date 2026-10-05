@@ -357,3 +357,80 @@
     clouds far below. The cabin wall, bins and light strip keep EXACTLY the same cream colours and brightness
     as in this image: only the window views change. No new objects, no text.
   out: {dir: w5, quality: 85, position: top}
+
+# --- Yaniv: a skid (the classic turn-around brake) and the goal-pole slide -------------------------------------
+# The third cell is a standing idle used only to calibrate the scale (measure.mts): fit.heights are that
+# cell's scale applied to the two exported poses, so Yaniv stays exactly as tall as in yaniv.small (idle 107).
+- id: yaniv.extra
+  kind: spritesheet
+  refs: [art/masters/char.yaniv.sheet.webp, art/masters/yaniv.small.webp]
+  size: 1536x1024
+  chroma: '#ff00ff'
+  candidates: 2
+  grid: {cols: 3, rows: 1}
+  cells: [0, 1]
+  frame: {w: 64, h: 64}  # the skid is 1.22x as wide as tall: a 48-wide frame would shrink it
+  fit: {heights: [99, 88]}  # idle cell 479 px -> 107: skid 441 px, pole 393 px at that scale
+  prompt: >
+    Sprite sheet for a classic 16-bit side-scrolling platformer. The SAME hero as in both reference images
+    (Yaniv: short dark brown hair, short dark beard, NO hat, navy polo with a small white wrench logo, brown
+    tool belt, blue jeans, brown boots, his red plunger), same proportions, same colors, and the same size as
+    the sprites in the second reference image. Full-body side view, his face and chest turned to the RIGHT in
+    every pose. Layout: three equal columns in a row (no grid lines), one pose per column, all at exactly the
+    same scale, feet on a common baseline.
+    (1) skid: braking hard from a run, the classic platformer turn-around: his face and chest turned to the
+    RIGHT but his whole body leaning back to the LEFT, his right leg stretched far out to the right with the
+    boot heel dug in, the left knee bent under him, both arms flung out for balance, the red plunger in his
+    raised left hand, eyes wide, mouth open in a surprised "whoa"; compact: no wider than three quarters of his
+    standing height;
+    (2) pole slide: gripping a tall vertical pole that is NOT drawn, which stands just in front of him on his
+    RIGHT side: both hands one above the other in front of his face, closed around the invisible upright bar,
+    knees bent and pulled up, both boots pressed together against where the bar would be, a big happy grin; the
+    red plunger hangs from his tool belt;
+    (3) standing idle, relaxed, holding the red plunger, exactly like the first pose of the second reference
+    image.
+    Perfectly flat, solid, uniform magenta (#FF00FF) background, no gradient, no floor, no pole, no shadows on
+    the background, no text, no labels, no grid lines.
+  out: {dir: w5, colors: 64, despill: true}
+
+# --- World-complete cards: an illustrated scene behind the card (DOM background, no text in the art) ----------
+- id: card.w3
+  kind: background
+  refs: [art/masters/w3.bg.sunset.webp]
+  size: 1536x1024
+  candidates: 2
+  prompt: >
+    A wide cinematic illustration in exactly the pixel style, palette and sunset light of the reference image:
+    seen through the tall windows of the airport gate, a white airliner with a plain blue tail stripe slowly
+    pushing back from its jet bridge at golden sunset, a small tug vehicle in front of its nose, the runway lights
+    glowing, the sky purple and orange, a few birds. Calm, hopeful, the start of a journey. No people in the
+    foreground, no logos, no text, no letters, no numbers, no signs.
+  out: {dir: w3, width: 960, height: 540, fit: cover, quality: 76}
+
+- id: card.w5
+  kind: background
+  refs: [art/masters/w5.door.webp, art/masters/w5.bg.wall.webp]
+  size: 1536x1024
+  candidates: 2
+  prompt: >
+    A wide cinematic illustration in exactly the pixel style and palette of the reference images: inside an
+    airliner, the end of the aisle seen head-on, the reinforced grey cockpit door from the first reference image
+    standing half open, warm golden light and a glimpse of glowing instrument panels pouring out through the gap
+    onto the carpet, dim red alarm light washing the cabin walls and overhead bins, a few empty seats on both
+    sides. Tense but hopeful. No people, no text, no letters, no numbers, no signs.
+  out: {dir: w5, width: 960, height: 540, fit: cover, quality: 76}
+
+- id: card.w6
+  kind: background
+  refs: [art/masters/w6.bg.cockpit.webp]
+  size: 1536x1024
+  candidates: 2
+  prompt: >
+    A wide cinematic illustration in exactly the pixel style and bright desert palette of the reference image:
+    a white airliner with a plain blue tail stripe safely landed on a runway at a small desert airport in the
+    morning, its mobile stairs at the door, a few red fire trucks and white vans parked nearby with lights
+    flashing, rocky sandstone mountains and a clear blue sky behind, tiny distant figures waving their arms
+    in celebration near the stairs. Arabian desert: sand, rocks and a few low shrubs, NO cactus anywhere. Joyful
+    relief. No close-up people, no logos, no flags, no text, no letters,
+    no numbers, no signs.
+  out: {dir: w6, width: 960, height: 540, fit: cover, quality: 76}

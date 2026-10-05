@@ -27,7 +27,7 @@ export const FX_CAP = 16;
 /** A landing raises dust only after a real drop (world units/s at touchdown), not after every jump. */
 export const LAND_DUST_SPEED = 400; // a full jump lands at ~370: only real drops (> ~90 units) puff
 /** Skid dust: reversing while still running at least this fast the other way. */
-export const SKID_SPEED = 90;
+export const SKID_SPEED = 60;
 /** Seconds between two skid puffs. */
 export const SKID_COOLDOWN = 0.14;
 

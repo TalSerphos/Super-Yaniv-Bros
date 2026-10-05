@@ -705,7 +705,7 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
 
   /**
    * Touching the pole: a bonus by height (systems/goal.ts), the sign switches off with a ding (in Washington the
-   * flag goes up), and Yaniv lets go and drops, as on a flagpole. It counts once, and only while the exit is
+   * flag goes up), and a Yaniv in the air grabs on and slides down, as on a flagpole. It counts once, and only while the exit is
    * open (7-1's gate stays shut until the pool is clean).
    */
   private stepPole(): void {
@@ -718,10 +718,7 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     this.addScore(pole.points, pole.x, Math.max(pole.base - POLE_H, p.y - 60));
     this.sfx('ding');
     this.fx('sparkle', pole.x, Math.max(pole.base - POLE_H + 8, p.body.top));
-    if (!p.grounded) {
-      p.body.setVelocityX(0);
-      p.controlLock = Math.max(p.controlLock, 0.3);
-    }
+    if (!p.grounded && !p.swing) p.startPoleSlide(pole.x, pole.base); // grab on and slide down, flagpole style
   }
 
   private createNpcs(): void {
@@ -1366,6 +1363,8 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
         width: this.level.width,
         fx: this.effects.spawned,
         pole: this.pole ? { x: this.pole.x, base: this.pole.base, points: this.pole.points ?? null } : null,
+        sliding: !!this.player.poleSlide,
+        pose: this.player.extraPose,
         hurts: [...this.hurtLog],
         enemies: this.enemies.filter((e) => e.live).map((e) => ({ kind: e.kind, x: Math.round(e.x), y: Math.round(e.y) })),
         drains: this.drains.filter((d) => d.clogged).length,

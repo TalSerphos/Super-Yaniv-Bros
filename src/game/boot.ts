@@ -5,6 +5,7 @@
  */
 import Phaser from 'phaser';
 import { isMuted, play, setMuted } from '../audio/sfx.ts';
+import { worldCardUrl } from './assets.ts';
 import { CANVAS_H, CANVAS_W } from './config.ts';
 import { Hud } from './hud.ts';
 import { RULES } from './config.ts';
@@ -144,6 +145,7 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
             `<p class="world">WORLD ${done} COMPLETE</p><h2>${card.h}</h2><p class="sub">${card.sub}</p>${score}<p class="soon">${card.soon}</p>`,
             [goNext(card.go), { label: 'MAP', run: () => showMap() }, { label: 'TITLE', run: opts.onQuit }],
             'clear',
+            worldCardUrl(done),
           );
         } else if (!next) {
           hud.showOverlay(`<h2>THE END</h2>${score}`, [{ label: 'TITLE', run: opts.onQuit }], 'clear');

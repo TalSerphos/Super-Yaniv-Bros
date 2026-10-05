@@ -154,8 +154,11 @@ export class Hud {
   }
 
   /** Shows a modal card. Actions become buttons; the first is focused. Returns a closer. */
-  showOverlay(html: string, actions: OverlayAction[] = [], className = ''): () => void {
+  showOverlay(html: string, actions: OverlayAction[] = [], className = '', backdrop?: string): () => void {
     this.overlay.className = `game-overlay ${className}`;
+    // An optional illustrated scene behind the card (world-complete cards), dimmed so the card stays the focus.
+    this.overlay.style.backgroundImage = backdrop ? `linear-gradient(rgba(8, 6, 18, 0.35), rgba(8, 6, 18, 0.35)), url("${backdrop}")` : '';
+    this.overlay.dataset.backdrop = backdrop ? 'on' : '';
     this.overlay.innerHTML = `<div class="card">${html}<div class="card-actions"></div></div>`;
     const row = this.overlay.querySelector('.card-actions')!;
     let focus: HTMLButtonElement | null = null;
