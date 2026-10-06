@@ -5,7 +5,8 @@
  */
 import Phaser from 'phaser';
 import { isMuted, play, setMuted } from '../audio/sfx.ts';
-import { worldCardUrl } from './assets.ts';
+import { mapArtUrls, worldCardUrl } from './assets.ts';
+import { MAP_H, MAP_NODES, MAP_PLAQUES, MAP_W, nodePercent, pathNeighbours, pathSegments } from './systems/mapLayout.ts';
 import { CANVAS_H, CANVAS_W } from './config.ts';
 import { Hud } from './hud.ts';
 import { RULES } from './config.ts';
@@ -240,21 +241,47 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
   };
 
   /**
-   * The flight map: replay any unlocked level, one column per world in the order players count them (World 0, the
-   * airport, opens after the first win). Opened from the pause card, the level
-   * stays paused behind it and RESUME (or Esc) goes back to it; TITLE is always a way out.
+   * The flight map, an overworld in the Super Mario World manner: the four worlds are islands, each level a node
+   * on a dotted path (src/game/systems/mapLayout.ts), and Yaniv stands on the focused one while the caption
+   * names it. Nodes are real buttons (arrows/gamepad move between them, Enter/A plays). Opened from the pause
+   * card, the level stays paused behind it and RESUME (or Esc) goes back to it; TITLE is always a way out.
    */
   function showMap(fromPause = false): void {
     if (!fromPause) music.stop();
     const unlockedIdx = ORDER.indexOf(progress.unlocked);
-    // One column per world, its levels top to bottom; RESUME / TITLE on the row underneath.
-    const levels = WORLDS_BY_NUMBER.flatMap((w, col) =>
-      w.stages.map((l, row) => {
-        const open = ORDER.indexOf(l.id) <= unlockedIdx;
+    const isOpen = (id: string) => ORDER.indexOf(id) <= unlockedIdx;
+    const art = mapArtUrls();
+    const caption = (l: Stage): string => {
+      const best = l.id in progress.best ? `<span class="best">BEST ${pad6(progress.best[l.id])}</span>` : '';
+      return isOpen(l.id)
+        ? `<b>WORLD ${stageLabel(l.id)}</b> <span class="name">${l.name}</span>${best}`
+        : `<b>WORLD ${stageLabel(l.id)}</b> <span class="name">LOCKED</span>`;
+    };
+    // Yaniv stands on the focused node; the caption names it.
+    const standOn = (l: Stage) => {
+      const { left, top } = nodePercent(l.id);
+      const marker = document.querySelector<HTMLElement>('.map-yaniv');
+      marker?.style.setProperty('left', `${left}%`);
+      marker?.style.setProperty('top', `${top}%`);
+      const cap = document.querySelector('.map-caption');
+      if (cap) cap.innerHTML = caption(l);
+    };
+    const here = levelById(isOpen(progress.unlocked) ? progress.unlocked : ORDER[0]) ?? STAGES[0];
+    const levels = WORLDS_BY_NUMBER.flatMap((w) =>
+      w.stages.map((l, i) => {
+        const open = isOpen(l.id);
+        const { left, top } = nodePercent(l.id);
+        const state = !open ? 'locked' : l.id in progress.best ? 'cleared' : 'open';
         return {
           label: open ? `${stageLabel(l.id)} ${l.name}${l.id in progress.best ? ` · ${pad6(progress.best[l.id])}` : ''}` : `${stageLabel(l.id)} LOCKED`,
+          html: `<span class="dot"></span><span class="num">${stageLabel(l.id)}</span>`,
+          className: `node ${state}${i === w.stages.length - 1 ? ' fort' : ''}`,
           disabled: !open,
-          style: `grid-column:${col + 1};grid-row:${row + 1}`,
+          focus: l.id === here.id,
+          style: `left:${left}%;top:${top}%`,
+          onFocus: () => standOn(l),
+          id: l.id,
+          near: pathNeighbours(l.id),
           run: () => {
             music.stop();
             game.scene.stop(activeKey);
@@ -265,17 +292,36 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
         };
       }),
     );
-    const below = `grid-row:${Math.max(...WORLDS_BY_NUMBER.map((w) => w.stages.length)) + 1}`;
+    const path = pathSegments(isOpen)
+      .map((s) => {
+        const [[x1, y1], [x2, y2]] = [MAP_NODES[s.from], MAP_NODES[s.to]];
+        return `<line class="${s.open ? 'open' : 'shut'}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+      })
+      .join('');
+    const plaques = WORLDS_BY_NUMBER.map((w) => {
+      const [x, y] = MAP_PLAQUES[w.number];
+      const shut = !w.stages.some((l) => isOpen(l.id));
+      return `<p class="plaque${shut ? ' shut' : ''}" style="left:${(x / MAP_W) * 100}%;top:${(y / MAP_H) * 100}%">WORLD ${w.number}<span>${shut && w.number === 0 ? 'BONUS: WIN TO OPEN' : w.name}</span></p>`;
+    }).join('');
+    const start = nodePercent(here.id);
+    const yaniv = `left:${start.left}%;top:${start.top}%${art.yaniv ? `;--sheet:url('${art.yaniv}')` : ''}`;
     hud.showOverlay(
-      `<p class="world">FLIGHT 1073</p><h2>THE MAP</h2>
-       <p class="sub">${WORLDS_BY_NUMBER.map((w) => `WORLD ${w.number}: ${w.name}`).join(' · ')}</p>`,
+      `<div class="map-art"${art.map ? ` style="background-image:url('${art.map}')"` : ''}>
+         <svg class="map-path" viewBox="0 0 ${MAP_W} ${MAP_H}" preserveAspectRatio="none" aria-hidden="true">${path}</svg>
+         ${plaques}
+         <div class="map-yaniv-layer" aria-hidden="true"><div class="map-yaniv" style="${yaniv}"></div></div>
+       </div>
+       <header class="map-title"><p class="world">FLIGHT 1073</p><h2>THE MAP</h2></header>
+       <p class="map-caption" aria-live="polite">${caption(here)}</p>`,
       [
         ...levels,
-        ...(fromPause ? [{ label: 'RESUME', run: resume, focus: true, style: `grid-column:1;${below}` }] : []),
-        { label: 'TITLE', run: opts.onQuit, style: `grid-column:${fromPause ? 2 : 1};${below}` },
+        ...(fromPause ? [{ label: 'RESUME', run: resume, focus: true, className: 'map-exit resume' }] : []),
+        { label: 'TITLE', run: opts.onQuit, className: 'map-exit title' },
       ],
       'map',
     );
+    // RESUME takes the focus from the pause menu; Yaniv still stands where the trip is.
+    if (fromPause) standOn(here);
   }
 
   /** What each boss phase asks of you, for its intro card. */

@@ -37,3 +37,4 @@ Same conventions as `docs/levels/w5-assets.md`:
 | `w5.bg.wall.dusk` | image | 640×360 | n/a | 5-3: the same wall with dusk in the windows |
 | `w5.bg.wall.night` | image | 640×360 | n/a | 5-4: night, stars and a crescent moon (under the red alarm tint) |
 | `card.w3`, `card.w5`, `card.w6` | image | 960×540 px | n/a | DOM backdrops behind the WORLD n COMPLETE card: the pushback at sunset, the cockpit door ajar, the landing at Tabuk |
+| `map.bg` | image | 1280×720 px | n/a | v0.9: the overworld map behind the DOM nodes (four islands, no roads or text) |

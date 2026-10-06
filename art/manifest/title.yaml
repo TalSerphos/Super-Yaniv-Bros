@@ -1,22 +1,26 @@
 # Stage 1 — title screen assets. See tools/assets/README.md for the schema.
-# The first version (2026-10-03) recreated art/reference/title.webp without text. Tal found Zvika's headphone cable
-# loop hard to read as headphones, so the plate is now inpainted from that master: only the masked area (the loop
-# over Zvika's head, his head and shoulders) is repainted. Base = art/masters/title.bg.webp as PNG.
+# The first version (2026-10-03) recreated art/reference/title.webp without text. v2 (2026-10-05) inpainted Zvika's
+# headphones (mask art/masks/title.bg.mask.png). v3 (2026-10-06): Captain Machchhar leans out of the cockpit side
+# window and waves, inpainted around the plane's nose only. Base = art/masters/title.bg.webp as PNG; the repainted
+# region is composited back onto the master with a feathered edge (HANDOVER, "Fixing one detail").
 - id: title.bg
   kind: background
-  refs: [art/masks/title.bg.base.png]
-  mask: art/masks/title.bg.mask.png
+  refs: [art/masks/title.bg.base.png, art/masters/npc.captain.webp]
+  mask: art/masks/title.bg.captain.mask.png
   size: 1536x1024
   candidates: 3
   prompt: >
-    Edit only the masked area of this title-screen illustration and keep everything else pixel-identical. In the
-    masked area is Zvika, the banker with glasses, a navy waistcoat and a red tie, the third of the four heroes
-    standing on the airliner. Remove the big white cable loop that arcs up over his head. Instead he now WEARS a
-    pair of big, chunky, unmistakable over-ear HEADPHONES on his head: a thick black headband over the top of his
-    hair and two big round black-and-silver ear cups covering his ears, like studio headphones, clearly readable
-    as headphones at a glance. A long white headphone cable runs from the left ear cup down to the coil of white
-    cable he still holds in his hands. Keep his face, glasses, moustache, hair, shirt, waistcoat and tie exactly
-    as they are, same pose, same size, same 16-bit pixel-art style and the same purple sunset sky behind him.
+    Edit only the masked area of this title-screen illustration, around the nose of the white airliner, and keep
+    everything else pixel-identical: the four heroes standing on top of the plane stay exactly as they are. In
+    the masked area, add Captain Machchhar, the plane's captain from the second image (use that image only for
+    his look): grey hair, a grey moustache, a CLEARLY VISIBLE white gauze bandage wrapped around his forehead
+    between his eyebrows and the peak of his dark captain's cap (gold badge), a white pilot shirt with black-and-gold four-stripe epaulettes and a black tie. He leans
+    his head, shoulders and upper body OUT of the cockpit's side window, just behind the windshield, toward the
+    viewer, and waves hello with one raised open hand, a big friendly open-mouthed grin on his face. The
+    windshield in front of him keeps its original shape. Only his upper body is
+    outside; his waist stays inside the window frame. He is smaller than the heroes standing on the roof (his
+    head about two thirds the size of their heads) and he never covers them. Keep the fuselage, windshield,
+    nose, landing gear and the sunset sky around him in the same 16-bit pixel-art style, same colours and light.
     No text, no letters, no logos.
   out: {width: 1280, height: 720, fit: cover, position: right, quality: 82}
 

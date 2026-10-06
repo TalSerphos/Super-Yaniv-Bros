@@ -175,7 +175,11 @@ export const worldCardUrl = (world: number): string | undefined => urlFor(`card.
 /** URL of a HUD/DOM icon strip, if the art exists (the DOM HUD falls back to CSS shapes). */
 export const hudIconsUrl = (): string | undefined => urlFor('hud.icons');
 
-export const missingAssets = (): string[] => [...Object.keys(SHEETS), ...Object.keys(IMAGES)].filter((id) => !urlFor(id));
+/** The overworld map picture and Yaniv's sprite sheet for its marker (DOM only), if built. */
+export const mapArtUrls = (): { map?: string; yaniv?: string } => ({ map: urlFor('map.bg'), yaniv: urlFor('yaniv.small') });
+
+export const missingAssets = (): string[] =>
+  [...Object.keys(SHEETS), ...Object.keys(IMAGES), 'map.bg', 'card.w3', 'card.w5', 'card.w6'].filter((id) => !urlFor(id));
 
 export function preloadAssets(scene: Phaser.Scene): void {
   for (const [id, spec] of Object.entries(SHEETS)) {

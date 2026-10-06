@@ -320,3 +320,22 @@ unspent. Contract: `docs/levels/enrich-assets.md`.
   step, and the `__syb.pitFall()` hook covers this in an e2e test.
   - How it was found: six bots in parallel, each logging x every 2 s, then checking which one stopped moving and
     where.
+
+## The overworld map and the captain on the title (2026-10-06, v0.9.0)
+- **The map is DOM over one generated picture.** `map.bg` is four islands with no roads and no text; the nodes, the
+  dotted path (an SVG of dashed round-capped lines), plaques, the caption and Yaniv's marker are DOM in map
+  percentages (`systems/mapLayout.ts`). The stage is 16:9 like the art, so percentages line up exactly.
+  - Node spots were picked on a coordinate grid drawn over the built image, then checked on desktop and Pixel 7.
+    A unit test keeps every pair of nodes 44 px apart at a 915 px stage.
+  - On phones, 44 px buttons make the bottom-right caption taller: the World 3 plaque first sat under it. Check
+    plaques against the phone shot, not just the desktop one.
+  - Nodes stay real buttons: `OverlayAction.html` shows a dot while `aria-label` keeps the full name, so the tests'
+    `getByRole('button', { name: '1-1 THE SCREAM · 001234' })` still work. `near` makes the arrows walk the path
+    first, then fall back to the nearest button.
+- **Inpainting a character into the title.** The model drew the captain partly outside the mask, so a composite
+  through the mask cut his head off. Build the composite mask from where the candidate differs from the base
+  (threshold 12%, close, dilate, blur) inside a generous box instead.
+- **Small colour changes are a recolor, not a new generation.** Tal liked option 1 but wanted black hair and a
+  darker skin. A pixel recolor kept the approved drawing: greys inside hand-measured boxes (the bandage's lower
+  edge is slanted) mapped to near-black, and skin hues (8°–36°, saturated) darkened by 20%. The sky has the same
+  hue as skin, so the skin box starts below the fuselage line.

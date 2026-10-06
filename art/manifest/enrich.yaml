@@ -434,3 +434,25 @@
     relief. No close-up people, no logos, no flags, no text, no letters,
     no numbers, no signs.
   out: {dir: w6, width: 960, height: 540, fit: cover, quality: 76}
+
+# The world map (v0.9): an SMW-style overworld behind the level nodes. The nodes, the dotted path, Yaniv's marker
+# and every label are DOM on top (boot.ts showMap), so the picture has no roads and no text.
+- id: map.bg
+  kind: background
+  refs: [art/masters/title.bg.webp, art/masters/w7.prop.whitehouse.webp]
+  size: 1536x1024
+  candidates: 2
+  prompt: >
+    A 16-bit pixel-art world map in the style of a classic Super Nintendo platformer overworld, in exactly the
+    pixel technique of the reference images: a bright, cheerful top-down view with a slight tilt, chunky outlines,
+    a deep blue sea with small white wave ripples filling the background and four distinct regions, each clearly
+    separated by sea: (1) BOTTOM-LEFT: a sandy coastal island with a gleaming modern airport terminal with a
+    curved glass roof, a tall control tower, palm trees and a little parked white airliner; (2) TOP-LEFT and
+    TOP-CENTRE: a big fluffy white-and-pink cloud bank floating high above the sea, a large white airliner
+    flying across it, NO buildings on the clouds; (3) BOTTOM-CENTRE: an orange Arabian desert island with sand dunes, rocky sandstone
+    mountains and a small runway, no cactus; (4) RIGHT: a green park island with pink cherry blossom trees, a
+    long rectangular reflecting pool, a tall white obelisk and the White House from the second reference image.
+    Keep a wide band of open sea along the top and bottom edges (the picture is cropped to 16:9). Every
+    region has wide, open, flat ground for markers to be placed on later. No roads, no paths, no dots, no
+    people, no characters, no text, no letters, no numbers, no flags, no signs.
+  out: {dir: w5, width: 1280, height: 720, fit: cover, quality: 74}

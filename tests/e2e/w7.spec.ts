@@ -151,21 +151,44 @@ test.describe('World 7 QA regressions', () => {
     expect((await syb(page))!.drains).toBe(2);
   });
 
-  test('the map works like a grid with the arrow keys (World 0, the airport, stays shut until a win)', async ({ page }) => {
-    await page.addInitScript(() => localStorage.setItem('syb.progress.v1', JSON.stringify({ unlocked: '7-4', best: {} })));
+  test('the map is an overworld: Yaniv stands where the trip is and walks the path with the arrows', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('syb.progress.v1', JSON.stringify({ unlocked: '7-4', best: { '7-2': 4321 } })));
     await page.goto('./#play');
     await expect(page.getByRole('heading', { name: 'THE MAP' })).toBeVisible();
+    // World 0, the airport, stays shut until a win.
     await expect(page.getByRole('button', { name: '0-1 LOCKED' })).toBeDisabled();
-    await expect(page.getByRole('button', { name: /^1-1/ })).toBeFocused();
-    await page.keyboard.press('ArrowRight');
-    await expect(page.getByRole('button', { name: /^2-1/ })).toBeFocused();
-    await page.keyboard.press('ArrowRight');
-    await expect(page.getByRole('button', { name: /^3-1/ })).toBeFocused();
-    await page.keyboard.press('ArrowDown');
-    await expect(page.getByRole('button', { name: /^3-2/ })).toBeFocused();
+    await expect(page.locator('.map-art .plaque.shut')).toContainText('WIN TO OPEN');
+    // The furthest level is where Yaniv stands, and the caption names it.
+    await expect(page.getByRole('button', { name: /^3-4 THE OVAL OFFICE/ })).toBeFocused();
+    await expect(page.locator('.map-caption')).toContainText('WORLD 3-4');
+    // The arrows walk the dotted path, and Yaniv walks with them.
+    const steps: [string, RegExp][] = [
+      ['ArrowDown', /^3-3/],
+      ['ArrowDown', /^3-2/],
+      ['ArrowLeft', /^3-1/],
+      ['ArrowLeft', /^2-3/],
+    ];
+    for (const [key, name] of steps) {
+      await page.keyboard.press(key);
+      await expect(page.getByRole('button', { name })).toBeFocused();
+    }
+    await expect(page.locator('.map-caption')).toContainText('WORLD 2-3');
+    const where = () =>
+      page.evaluate(() => {
+        const box = (sel: string) => document.querySelector(sel)!.getBoundingClientRect();
+        const [n, y] = [box('.node:focus'), box('.map-yaniv')];
+        return { dx: Math.abs(n.x + n.width / 2 - (y.x + y.width / 2)), feet: y.bottom - (n.y + n.height / 2) };
+      });
+    await expect.poll(async () => (await where()).dx, { timeout: 3_000 }).toBeLessThan(2);
+    expect((await where()).feet).toBeGreaterThan(0); // he stands on the node, not floating above it
+    // Cleared levels show their best score in the caption and look different from open ones.
+    await page.getByRole('button', { name: /^3-2/ }).focus();
+    await expect(page.locator('.map-caption')).toContainText('BEST 004321');
+    await expect(page.getByRole('button', { name: /^3-2/ })).toHaveClass(/cleared/);
+    await expect(page.getByRole('button', { name: /^3-1/ })).not.toHaveClass(/cleared/);
   });
 
-  test('after a win the airport opens as World 0, first column of the map', async ({ page }) => {
+  test('after a win the airport opens as World 0 on the map', async ({ page }) => {
     await page.addInitScript(() => localStorage.setItem('syb.progress.v1', JSON.stringify({ unlocked: '7-4', best: { '7-4': 5000 } })));
     await page.goto('./#play');
     await expect(page.getByRole('heading', { name: 'THE MAP' })).toBeVisible();

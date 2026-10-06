@@ -15,8 +15,21 @@ export interface OverlayAction {
   disabled?: boolean;
   /** Gets the initial focus (default: the first enabled button). */
   focus?: boolean;
-  /** Inline style for the button (e.g. its grid cell on the map). */
+  /** Inline style for the button (e.g. its spot on the map). */
   style?: string;
+  /** Extra class names for the button. */
+  className?: string;
+  /**
+   * Visible content (trusted markup). The label then becomes the button's accessible name (aria-label), so a map
+   * node can show a dot and still read "1-2 THE AISLE" to screen readers and tests.
+   */
+  html?: string;
+  /** Called when the button gets focus (the map moves Yaniv's marker there). */
+  onFocus?(button: HTMLButtonElement): void;
+  /** An id for `near`. */
+  id?: string;
+  /** Ids of the buttons the arrows try first (the map's path neighbours); the nearest button otherwise. */
+  near?: string[];
 }
 
 export class Hud {
@@ -164,9 +177,16 @@ export class Hud {
     let focus: HTMLButtonElement | null = null;
     for (const a of actions) {
       const btn = document.createElement('button');
-      btn.textContent = a.label;
+      if (a.html !== undefined) {
+        btn.innerHTML = a.html;
+        btn.setAttribute('aria-label', a.label);
+      } else btn.textContent = a.label;
       btn.disabled = !!a.disabled;
       if (a.style) btn.setAttribute('style', a.style);
+      if (a.className) btn.className = a.className;
+      if (a.onFocus) btn.addEventListener('focus', () => a.onFocus!(btn));
+      if (a.id) btn.dataset.id = a.id;
+      if (a.near) btn.dataset.near = a.near.join(',');
       btn.addEventListener('click', () => a.run(btn));
       row.appendChild(btn);
       if (a.focus) focus = btn;
@@ -186,8 +206,9 @@ export class Hud {
   }
 
   /**
-   * Keyboard/gamepad navigation for cards: arrows move focus to the nearest button in that direction (so the
-   * map's columns work like a grid); with nothing that way they step through the list; confirm activates.
+   * Keyboard/gamepad navigation for cards: arrows move focus to the nearest button in that direction, trying the
+   * button's `near` list first (so on the map Yaniv walks the path); with nothing that way they step through the
+   * list; confirm activates.
    */
   overlayNavigate(action: 'up' | 'down' | 'left' | 'right' | 'confirm'): void {
     const buttons = [...this.overlay.querySelectorAll<HTMLButtonElement>('.card-actions button:not(:disabled)')];
@@ -201,17 +222,22 @@ export class Hud {
     };
     const from = centre(buttons[i]);
     const [ax, ay] = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[action];
-    let best: HTMLButtonElement | null = null;
-    let bestScore = Infinity;
-    for (const b of buttons) {
-      if (b === buttons[i]) continue;
-      const c = centre(b);
-      const along = (c.x - from.x) * ax + (c.y - from.y) * ay;
-      if (along <= 4) continue;
-      const across = Math.abs((c.x - from.x) * ay) + Math.abs((c.y - from.y) * ax);
-      const score = along + across * 2;
-      if (score < bestScore) [best, bestScore] = [b, score];
-    }
+    const pick = (pool: HTMLButtonElement[]): HTMLButtonElement | null => {
+      let best: HTMLButtonElement | null = null;
+      let bestScore = Infinity;
+      for (const b of pool) {
+        if (b === buttons[i]) continue;
+        const c = centre(b);
+        const along = (c.x - from.x) * ax + (c.y - from.y) * ay;
+        if (along <= 4) continue;
+        const across = Math.abs((c.x - from.x) * ay) + Math.abs((c.y - from.y) * ax);
+        const score = along + across * 2;
+        if (score < bestScore) [best, bestScore] = [b, score];
+      }
+      return best;
+    };
+    const near = buttons[i].dataset.near?.split(',') ?? [];
+    const best = pick(buttons.filter((b) => near.includes(b.dataset.id ?? ''))) ?? pick(buttons);
     const step = action === 'down' || action === 'right' ? 1 : buttons.length - 1;
     (best ?? buttons[(i + step) % buttons.length]).focus({ preventScroll: true });
   }

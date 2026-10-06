@@ -9,7 +9,9 @@ Written at the end of the first long build session (2026-10-03 to 10-05). Read t
 ## 1. Where things stand
 
 **Live:** https://superyanivbros.com (GitHub Pages, deployed by `.github/workflows/deploy.yml` on every push to
-`main`). Version **v0.8.0**, shown bottom left on the title next to the short commit.
+`main`). Version **v0.9.0**, shown bottom left on the title next to the short commit. **Bump the version in
+every release** (`package.json` and both `package-lock.json` entries): minor for a feature, patch for a fix. Tal
+reads the label to tell builds apart.
 
 | World | Levels | State |
 |---|---|---|
@@ -42,7 +44,8 @@ Written at the end of the first long build session (2026-10-03 to 10-05). Read t
 Also live:
 - the DOM title screen, with a "Coming Soon" page for 2P;
 - Google Analytics G-4C932NCJMZ, with a cookie banner only for EEA/UK/CH time zones;
-- the map (one column per world), the pause card, touch controls, and a portrait "rotate" hint.
+- the overworld map (islands per world, level nodes on a dotted path, Yaniv walks it; `systems/mapLayout.ts`),
+  the pause card, touch controls, and a portrait "rotate" hint.
 
 **Known open items:**
 - **Worlds 1, 2 and 4.** Spec'd but not built.
@@ -283,7 +286,7 @@ Songs are note strings in 8-token bars (`src/audio/music.ts`): `song(bpm, sectio
   *is* DOM.
 
 ### H. Ship and watch
-1. Push the branch, then `git push origin HEAD:main`.
+1. Bump the version (see section 1), push the branch, then `git push origin HEAD:main`.
 2. The deploy workflow runs build, e2e on chromium + pixel-7, deploy, then smoke on production. The CI workflow
    runs the full browser matrix plus fidelity and Lighthouse.
 3. Check both with the GitHub MCP tools. Get only the failing job logs (`get_job_logs failed_only`) and fix
