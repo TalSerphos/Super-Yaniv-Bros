@@ -334,8 +334,9 @@ unspent. Contract: `docs/levels/enrich-assets.md`.
   percentages (`systems/mapLayout.ts`). The stage is 16:9 like the art, so percentages line up exactly.
   - Node spots were picked on a coordinate grid drawn over the built image, then checked on desktop and Pixel 7.
     A unit test keeps every pair of nodes 44 px apart at a 915 px stage.
-  - On phones, 44 px buttons make the bottom-right caption taller: the World 3 plaque first sat under it. Check
-    plaques against the phone shot, not just the desktop one.
+  - On phones, 44 px buttons make anything stacked above them climb: the caption first sat on top of 3-1 and 3-2.
+    Now it shares the bottom row with TITLE/RESUME (one 44 px row), on parchment so it never reads as one of
+    the dark world plaques (v0.9.1, Tal's phone screenshot). Check overlays against the phone shot.
   - Nodes stay real buttons: `OverlayAction.html` shows a dot while `aria-label` keeps the full name, so the tests'
     `getByRole('button', { name: '1-1 THE SCREAM · 001234' })` still work. `near` makes the arrows walk the path
     first, then fall back to the nearest button.

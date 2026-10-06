@@ -9,7 +9,7 @@ Written at the end of the first long build session (2026-10-03 to 10-05). Read t
 ## 1. Where things stand
 
 **Live:** https://superyanivbros.com (GitHub Pages, deployed by `.github/workflows/deploy.yml` on every push to
-`main`). Version **v0.9.0**, shown bottom left on the title next to the short commit. **Bump the version in
+`main`). Version **v0.9.1**, shown bottom left on the title next to the short commit. **Bump the version in
 every release** (`package.json` and both `package-lock.json` entries): minor for a feature, patch for a fix. Tal
 reads the label to tell builds apart.
 

@@ -253,9 +253,7 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
     const art = mapArtUrls();
     const caption = (l: Stage): string => {
       const best = l.id in progress.best ? `<span class="best">BEST ${pad6(progress.best[l.id])}</span>` : '';
-      return isOpen(l.id)
-        ? `<b>WORLD ${stageLabel(l.id)}</b> <span class="name">${l.name}</span>${best}`
-        : `<b>WORLD ${stageLabel(l.id)}</b> <span class="name">LOCKED</span>`;
+      return `<span class="row"><b>WORLD ${stageLabel(l.id)}</b>${isOpen(l.id) ? best : ''}</span><span class="name">${isOpen(l.id) ? l.name : 'LOCKED'}</span>`;
     };
     // Yaniv stands on the focused node; the caption names it.
     const standOn = (l: Stage) => {
@@ -312,7 +310,7 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
          <div class="map-yaniv-layer" aria-hidden="true"><div class="map-yaniv" style="${yaniv}"></div></div>
        </div>
        <header class="map-title"><p class="world">FLIGHT 1073</p><h2>THE MAP</h2></header>
-       <p class="map-caption" aria-live="polite">${caption(here)}</p>`,
+       <p class="map-caption${fromPause ? ' beside-resume' : ''}" aria-live="polite">${caption(here)}</p>`,
       [
         ...levels,
         ...(fromPause ? [{ label: 'RESUME', run: resume, focus: true, className: 'map-exit resume' }] : []),

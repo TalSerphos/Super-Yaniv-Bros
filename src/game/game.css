@@ -303,23 +303,34 @@
 }
 .game-overlay.map .map-title .world { margin: 0 0 1cqh; font-size: 1.2cqw; }
 .game-overlay.map .map-title h2 { margin: 0; font-size: 2.6cqw; }
+/* The focused level's name: in the bottom row left of the buttons, on parchment so it never reads as a world
+   plaque (those are dark). */
 .map-caption {
   position: absolute;
   z-index: 1;
-  right: 2cqw;
-  bottom: calc(3cqh + max(6cqh, 44px) + 1.4cqh);
-  width: 27cqw;
+  right: 16cqw;
+  bottom: 3cqh;
+  width: 30cqw;
+  min-height: max(6cqh, 44px);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.4cqh;
   margin: 0;
-  padding: 1.2cqh 1.2cqw;
-  background: var(--panel);
-  border: 0.3cqw solid var(--panel-edge);
+  padding: 0.6cqh 1.2cqw;
+  background: #fff1c9;
+  border: 0.3cqw solid #8a1d0a;
   border-radius: 0.8cqw;
-  font: max(1cqw, 9px)/1.5 var(--font-hud);
-  color: var(--ink);
+  box-shadow: inset 0 -0.3cqw 0 #e8c98a, 0 0.4cqw 0 #000;
+  font: max(0.95cqw, 8px)/1.2 var(--font-hud);
+  color: #3a2400;
 }
-.map-caption b { color: #9fe8ff; font-weight: normal; }
-.map-caption .name { display: block; color: var(--gold); }
-.map-caption .best { display: block; color: #c9c2b4; }
+.map-caption.beside-resume { right: 30cqw; }
+.map-caption .row { display: flex; justify-content: space-between; gap: 1cqw; }
+.map-caption b { color: #c0281a; font-weight: normal; }
+.map-caption .best { color: #6b5320; }
+.map-caption .name { font-size: max(1.15cqw, 9px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .game-overlay.map .map-exit {
   position: absolute;
   bottom: 3cqh;
