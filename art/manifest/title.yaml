@@ -3,7 +3,7 @@
 # headphones (mask art/masks/title.bg.mask.png). v3 (2026-10-06): Captain Machchhar leans out of the cockpit side
 # window and waves (mask title.bg.captain.mask.png, refs [base, npc.captain]; prompt in git history), then a pixel
 # recolor (tools/assets/title-captain-recolor.mjs): black hair, darker skin. v4 (this entry): his moustache becomes
-# a full short black beard (mask title.bg.beard.mask.png, his lower face only).
+# a full short black beard (mask title.bg.beard.mask.png, his lower face only); Tal picked candidate 3 (comp2).
 # Base = art/masters/title.bg.webp as PNG; the repainted region is composited back onto the master with a feathered
 # edge built from where the candidate differs (HANDOVER, "Fixing one detail").
 - id: title.bg
