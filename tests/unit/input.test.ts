@@ -49,6 +49,18 @@ describe('BotInput', () => {
     expect(b).toMatchObject({ right: true, jump: false });
   });
 
+  it('lets go of the arrows after a pit respawn (a held direction is ignored until released), then runs on', () => {
+    const bot = new BotInput();
+    bot.view = view({ mustRelease: true });
+    const released = noButtons();
+    bot.read(released);
+    expect(released.right).toBe(false);
+    bot.view = view();
+    const after = noButtons();
+    bot.read(after);
+    expect(after.right).toBe(true);
+  });
+
   it('jumps at a pit edge and keeps holding for a full jump', () => {
     const bot = new BotInput();
     bot.view = view({ groundAt: (x) => x < 120 });

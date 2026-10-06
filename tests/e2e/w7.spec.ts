@@ -87,6 +87,19 @@ test('7-4: walking up to the President ends the game with the photo', async ({ p
 });
 
 test.describe('World 7 QA regressions', () => {
+  test('the bot gets going again after falling into a pit (it lets go of ▶ after the respawn)', async ({ page }) => {
+    test.setTimeout(90_000);
+    await page.goto('./?level=7-3&bot=1&god=1#play');
+    await waitForLevel(page, '7-3');
+    // A pit fall at x≈2001 respawns it at 1850 (where a loaded runner once left it standing until TIME'S UP).
+    await page.evaluate(() => {
+      const syb = (window as unknown as { __syb: Syb & { pitFall(): void } }).__syb;
+      syb.teleport(1850, 320);
+      syb.pitFall();
+    });
+    await expect.poll(async () => (await syb(page))!.x, { timeout: 60_000 }).toBeGreaterThan(2300);
+  });
+
   test('background props and paparazzi stand on the walkway, not floating over the lawn', async ({ page }) => {
     for (const id of ['7-2', '7-3']) {
       await page.goto(`./?level=${id}&god=1#play`);

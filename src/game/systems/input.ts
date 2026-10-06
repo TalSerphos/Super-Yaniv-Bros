@@ -192,6 +192,11 @@ export interface BotView {
   swinging?: boolean;
   swingVx?: number;
   swingDx?: number;
+  /**
+   * Just respawned after a pit, with the direction held through the fall still ignored (Player.heldThroughRespawn):
+   * the bot must let go once, as a person does, or it never moves again.
+   */
+  mustRelease?: boolean;
   /** Is there something solid to stand on at this x, near the player's feet? */
   groundAt(x: number): boolean;
   /** Is the space at (x, feet-8) blocked by a wall the player would run into? */
@@ -229,6 +234,8 @@ export class BotInput implements InputSource {
     const v = this.view;
     if (!v) return;
     this.pokeCooldown = Math.max(0, this.pokeCooldown - 1);
+    if (v.mustRelease) return; // hands off the arrows for a step after a pit respawn
+
     if (v.swinging) {
       // Pump right, let go on the forward upswing (ahead of the anchor and still moving right).
       into.right = true;

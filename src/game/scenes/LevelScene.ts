@@ -1337,6 +1337,7 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
       y: feet,
       vx: body.velocity.x,
       grounded: p.grounded,
+      mustRelease: p.heldThroughRespawn,
       swinging: !!p.swing,
       swingVx: p.swing?.tipVelocity.x ?? 0,
       swingDx: p.swing ? p.swing.end.x - p.swing.anchor.x : 0,
@@ -1400,6 +1401,8 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
       },
       setPower: (power: 'small' | 'big' | 'golden') => this.player.setPower(power, true),
       giveBamba: () => (this.player.bamba = 8),
+      /** Test-only: fall into a pit now (respawn at the last safe spot, as a real fall does). */
+      pitFall: () => this.fellInPit(),
       /** Test-only: unclog every 7-1 drain at once. */
       clearPool: () => {
         if (!this.drains.some((d) => d.clogged)) return;

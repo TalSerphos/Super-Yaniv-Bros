@@ -314,3 +314,9 @@ unspent. Contract: `docs/levels/enrich-assets.md`.
   - Making the airport a post-game world was just moving it to the end of `ORDER`: `recordClear` on 7-4 then
     unlocks 3-1 by itself.
   - Old saves need a pure `migrateProgress`, with unit tests.
+- **The 7-3 "TIME'S UP" flake had a real cause.** Under load the bot sometimes fell into a pit. After the respawn
+  the player ignores a direction held through the fall, until it is released (the W3 death-loop fix). The bot
+  never releases ▶, so it stood still until the clock ran out. Now `BotView.mustRelease` makes it let go for a
+  step, and the `__syb.pitFall()` hook covers this in an e2e test.
+  - How it was found: six bots in parallel, each logging x every 2 s, then checking which one stopped moving and
+    where.
