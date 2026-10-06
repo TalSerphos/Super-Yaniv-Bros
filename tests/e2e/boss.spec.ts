@@ -62,11 +62,11 @@ for (const { id, heading } of PHASES) {
   });
 }
 
-test('clearing 5-4 leads INTO THE COCKPIT, and the map lists World 6', async ({ page }) => {
+test('clearing 5-4 (World 1) leads INTO THE COCKPIT, and the map lists the boss as World 2', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('syb.progress.v1', JSON.stringify({ unlocked: '6-2', best: { '6-1': 12000 } })));
   await page.goto('./#play');
   await expect(page.getByRole('heading', { name: 'THE MAP' })).toBeVisible();
-  await expect(page.getByRole('button', { name: '6-1 THE CO-PILOT · 012000' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: '2-1 THE CO-PILOT · 012000' })).toBeEnabled();
   await expect(page.getByRole('button', { name: '2-3 LOCKED' })).toBeDisabled();
   await page.getByRole('button', { name: /^2-2 FIGHT \+ FLY/ }).click();
   await expect(page.getByText('PHASE B')).toBeVisible();

@@ -113,7 +113,7 @@ test('returning players pick an unlocked level from the map (World 1 = the plane
   await page.addInitScript(() => localStorage.setItem('syb.progress.v1', JSON.stringify({ unlocked: '5-2', best: { '5-1': 1234 } })));
   await page.goto('./#play');
   await expect(page.getByRole('heading', { name: 'THE MAP' })).toBeVisible();
-  await expect(page.getByRole('button', { name: '5-1 THE SCREAM · 001234' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: '1-1 THE SCREAM · 001234' })).toBeEnabled();
   await expect(page.getByRole('button', { name: '1-3 LOCKED' })).toBeDisabled();
   await expect(page.getByRole('button', { name: '0-1 LOCKED' })).toBeDisabled(); // the airport opens after a win
   await page.getByRole('button', { name: /^1-2 THE AISLE/ }).click();
