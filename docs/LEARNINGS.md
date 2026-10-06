@@ -322,7 +322,14 @@ unspent. Contract: `docs/levels/enrich-assets.md`.
     where.
 
 ## The overworld map and the captain on the title (2026-10-06, v0.9.0)
-- **The map is DOM over one generated picture.** `map.bg` is four islands with no roads and no text; the nodes, the
+- **Draw the map from the story, not from the world names.** The first map gave each world an island, so World 2
+  (the cockpit, whose last level ends with the landing at Tabuk) became a desert island. Tal: "the cockpit is in
+  the desert?" Worlds 1 and 2 both happen inside the plane, so the map is now one giant cutaway airliner: World 1
+  up the cabin aisle to 1-4 COCKPIT DOOR at the door, World 2 in a roomy cockpit at the nose, with the airport and
+  Washington as islands on either side. Ask "where does each level physically happen?" before prompting.
+  - Ask for room for the markers: "chubby, cartoonishly wide fuselage", "a roomy cockpit, a third of the plane's
+    length". The first cutaway draft had a cockpit too small for three 44 px nodes.
+- **The map is DOM over one generated picture.** `map.bg` has no roads and no text; the nodes, the
   dotted path (an SVG of dashed round-capped lines), plaques, the caption and Yaniv's marker are DOM in map
   percentages (`systems/mapLayout.ts`). The stage is 16:9 like the art, so percentages line up exactly.
   - Node spots were picked on a coordinate grid drawn over the built image, then checked on desktop and Pixel 7.
@@ -338,4 +345,7 @@ unspent. Contract: `docs/levels/enrich-assets.md`.
 - **Small colour changes are a recolor, not a new generation.** Tal liked option 1 but wanted black hair and a
   darker skin. A pixel recolor kept the approved drawing: greys inside hand-measured boxes (the bandage's lower
   edge is slanted) mapped to near-black, and skin hues (8°–36°, saturated) darkened by 20%. The sky has the same
-  hue as skin, so the skin box starts below the fuselage line.
+  hue as skin, so the skin box starts below the fuselage line. Script: `tools/assets/title-captain-recolor.mjs`.
+- **A change of shape is an inpaint, not a recolor.** "A full short beard, not a moustache" needed new pixels: a
+  mask over his lower face only (`title.bg.beard.mask.png`) on the recolored base, then the same difference-built
+  composite. Say "a FULL beard covering cheeks, jaw and chin, not just a moustache" and the colour (black).

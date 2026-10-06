@@ -293,9 +293,9 @@
   position: absolute;
   z-index: 1;
   top: 2.5cqh;
-  right: 2cqw;
+  left: 2cqw;
   padding: 1.4cqh 1.6cqw;
-  text-align: right;
+  text-align: left;
   background: var(--panel);
   border: 0.35cqw solid var(--panel-edge);
   border-radius: 1cqw;

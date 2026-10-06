@@ -436,7 +436,9 @@
   out: {dir: w6, width: 960, height: 540, fit: cover, quality: 76}
 
 # The world map (v0.9): an SMW-style overworld behind the level nodes. The nodes, the dotted path, Yaniv's marker
-# and every label are DOM on top (boot.ts showMap), so the picture has no roads and no text.
+# and every label are DOM on top (boot.ts showMap), so the picture has no roads and no text. v1 put World 2 on a
+# desert island; Tal: "the cockpit is in the desert?" World 2 is the cockpit, so v2 is one giant cutaway airliner:
+# World 1 runs down the cabin aisle, World 2 is the cockpit in its nose, the airport and Washington are islands.
 - id: map.bg
   kind: background
   refs: [art/masters/title.bg.webp, art/masters/w7.prop.whitehouse.webp]
@@ -444,15 +446,20 @@
   candidates: 2
   prompt: >
     A 16-bit pixel-art world map in the style of a classic Super Nintendo platformer overworld, in exactly the
-    pixel technique of the reference images: a bright, cheerful top-down view with a slight tilt, chunky outlines,
-    a deep blue sea with small white wave ripples filling the background and four distinct regions, each clearly
-    separated by sea: (1) BOTTOM-LEFT: a sandy coastal island with a gleaming modern airport terminal with a
-    curved glass roof, a tall control tower, palm trees and a little parked white airliner; (2) TOP-LEFT and
-    TOP-CENTRE: a big fluffy white-and-pink cloud bank floating high above the sea, a large white airliner
-    flying across it, NO buildings on the clouds; (3) BOTTOM-CENTRE: an orange Arabian desert island with sand dunes, rocky sandstone
-    mountains and a small runway, no cactus; (4) RIGHT: a green park island with pink cherry blossom trees, a
-    long rectangular reflecting pool, a tall white obelisk and the White House from the second reference image.
-    Keep a wide band of open sea along the top and bottom edges (the picture is cropped to 16:9). Every
-    region has wide, open, flat ground for markers to be placed on later. No roads, no paths, no dots, no
-    people, no characters, no text, no letters, no numbers, no flags, no signs.
+    pixel technique of the reference images, bright and cheerful, chunky outlines, seen from directly above. A deep
+    blue sea with small white wave ripples and a few small fluffy clouds fills the background. Three things:
+    (1) LEFT: a fairly large sandy island, about a fifth of the image wide, in the lower-left part of the image,
+    with a modern airport terminal with a curved glass roof, a control tower, palm trees and a wide open plaza.
+    (2) CENTRE, the main subject: one GIANT, CHUBBY, cartoonishly wide white airliner seen from directly above,
+    flying to the RIGHT, its body spanning from x 22% to x 76% of the image and its fuselage very wide (about a
+    quarter of the image height), short wings reaching up and down, a red stripe on the tail. Its roof is cut away
+    like a dollhouse so we look INSIDE: the passenger cabin with rows of teal seats on both sides of a wide
+    central aisle with a red carpet runner, a galley; then a closed grey cockpit door across the fuselage; then, in
+    the nose, a big ROOMY cockpit (about a third of the plane's length) with two pilot seats, two control yokes,
+    glowing instrument panels and open floor space, and the windshield at the tip. (3) RIGHT: a large green park
+    island, about a fifth of the image wide, with pink cherry blossom trees, a long reflecting pool, a white
+    obelisk, open lawns and the White House from the second reference image. Keep the top-left corner and the
+    bottom-right corner as open sea, and a band of open sea along the top and bottom edges (the picture is
+    cropped to 16:9). No people, no characters, no roads, no dots, no text, no letters, no numbers, no flags, no
+    signs, no logos.
   out: {dir: w5, width: 1280, height: 720, fit: cover, quality: 74}
