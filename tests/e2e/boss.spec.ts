@@ -67,8 +67,8 @@ test('clearing 5-4 leads INTO THE COCKPIT, and the map lists World 6', async ({ 
   await page.goto('./#play');
   await expect(page.getByRole('heading', { name: 'THE MAP' })).toBeVisible();
   await expect(page.getByRole('button', { name: '6-1 THE CO-PILOT · 012000' })).toBeEnabled();
-  await expect(page.getByRole('button', { name: '6-3 LOCKED' })).toBeDisabled();
-  await page.getByRole('button', { name: /^6-2 FIGHT \+ FLY/ }).click();
+  await expect(page.getByRole('button', { name: '2-3 LOCKED' })).toBeDisabled();
+  await page.getByRole('button', { name: /^2-2 FIGHT \+ FLY/ }).click();
   await expect(page.getByText('PHASE B')).toBeVisible();
   await waitForBoss(page, '6-2');
   expect((await boss(page))!.pitch).toBeLessThan(-30);

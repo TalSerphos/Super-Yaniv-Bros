@@ -55,7 +55,7 @@ test('7-1: the gate stays shut until every drain is unclogged', async ({ page })
   expect((await syb(page))!.finished).toBe(false);
 });
 
-test('winning 6-3 leads TO WASHINGTON, and the map lists World 7', async ({ page }) => {
+test('winning 6-3 leads TO WASHINGTON, and the map lists the White House as World 3', async ({ page }) => {
   test.setTimeout(60_000);
   await page.goto('./?level=6-3&god=1#play');
   await page.waitForFunction(() => !!(window as unknown as { __syb?: Syb }).__syb?.skipClock);
@@ -65,8 +65,8 @@ test('winning 6-3 leads TO WASHINGTON, and the map lists World 7', async ({ page
   await waitForLevel(page, '7-1');
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'MAP', exact: true }).click();
-  await expect(page.getByRole('button', { name: /^7-1 THE REFLECTING POOL/ })).toBeEnabled();
-  await expect(page.getByRole('button', { name: '7-4 LOCKED' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: /^3-1 THE REFLECTING POOL/ })).toBeEnabled();
+  await expect(page.getByRole('button', { name: '3-4 LOCKED' })).toBeDisabled();
 });
 
 test('7-4: walking up to the President ends the game with the photo', async ({ page }) => {
@@ -80,9 +80,25 @@ test('7-4: walking up to the President ends the game with the photo', async ({ p
   await expect(page.getByText('But your next client is waiting in Nes Ziona!')).toBeVisible();
   await expect(page.locator('.game-overlay img.photo')).toBeVisible();
   await expect(page.getByTestId('credits')).toContainText('Thank you Yaniv, Assaf, Zvika, Shota and Captain Machchhar');
+  // The first win opens the bonus world: the airport, World 0.
+  await expect(page.getByTestId('bonus-world')).toContainText('WORLD 0, DXB AIRPORT');
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('syb.progress.v1') ?? '{}'));
+  expect(saved.unlocked).toBe('3-1');
 });
 
 test.describe('World 7 QA regressions', () => {
+  test('background props and paparazzi stand on the walkway, not floating over the lawn', async ({ page }) => {
+    for (const id of ['7-2', '7-3']) {
+      await page.goto(`./?level=${id}&god=1#play`);
+      await page.waitForFunction((want) => (window as unknown as { __syb?: { state(): { level: string } } }).__syb?.state().level === want, id, {
+        timeout: 20_000,
+      });
+      const feet = await page.evaluate(() => (window as unknown as { __syb: { state(): { propFeet: number[] } } }).__syb.state().propFeet);
+      expect(feet.length, id).toBeGreaterThan(3);
+      expect([...new Set(feet)], id).toEqual([320]); // the floor top
+    }
+  });
+
   test.skip(({ isMobile }) => !!isMobile, 'keyboard-driven');
 
   test('7-4: jumping over the President still ends in the handshake', async ({ page }) => {
@@ -122,18 +138,27 @@ test.describe('World 7 QA regressions', () => {
     expect((await syb(page))!.drains).toBe(2);
   });
 
-  test('the map works like a grid with the arrow keys', async ({ page }) => {
+  test('the map works like a grid with the arrow keys (World 0, the airport, stays shut until a win)', async ({ page }) => {
     await page.addInitScript(() => localStorage.setItem('syb.progress.v1', JSON.stringify({ unlocked: '7-4', best: {} })));
     await page.goto('./#play');
     await expect(page.getByRole('heading', { name: 'THE MAP' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '0-1 LOCKED' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: /^1-1/ })).toBeFocused();
+    await page.keyboard.press('ArrowRight');
+    await expect(page.getByRole('button', { name: /^2-1/ })).toBeFocused();
+    await page.keyboard.press('ArrowRight');
     await expect(page.getByRole('button', { name: /^3-1/ })).toBeFocused();
-    await page.keyboard.press('ArrowRight');
-    await expect(page.getByRole('button', { name: /^5-1/ })).toBeFocused();
-    await page.keyboard.press('ArrowRight');
-    await expect(page.getByRole('button', { name: /^6-1/ })).toBeFocused();
-    await page.keyboard.press('ArrowRight');
-    await expect(page.getByRole('button', { name: /^7-1/ })).toBeFocused();
     await page.keyboard.press('ArrowDown');
-    await expect(page.getByRole('button', { name: /^7-2/ })).toBeFocused();
+    await expect(page.getByRole('button', { name: /^3-2/ })).toBeFocused();
+  });
+
+  test('after a win the airport opens as World 0, first column of the map', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('syb.progress.v1', JSON.stringify({ unlocked: '7-4', best: { '7-4': 5000 } })));
+    await page.goto('./#play');
+    await expect(page.getByRole('heading', { name: 'THE MAP' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^0-1 SECURITY LINE/ })).toBeEnabled();
+    await expect(page.getByRole('button', { name: '0-2 LOCKED' })).toBeDisabled();
+    await page.getByRole('button', { name: /^0-1 SECURITY LINE/ }).click();
+    await expect(page.getByText('WORLD 0-1').first()).toBeVisible();
   });
 });

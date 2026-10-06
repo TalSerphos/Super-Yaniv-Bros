@@ -233,8 +233,9 @@ export class Paparazzo implements Enemy {
     readonly x: number,
     readonly y: number,
   ) {
-    // Behind the rope line: drawn under Yaniv and the walkway's front edge.
-    this.s = world.stage.add.sprite(x, y - 14, 'enemy.paparazzi', 0).setOrigin(0.5, 1).setScale(ART_SCALE * 0.92).setDepth(2);
+    // Feet on the walkway like everyone in the play layer (raised, they floated over the slower lawn behind);
+    // drawn under Yaniv, so he passes in front of the rope line.
+    this.s = world.stage.add.sprite(x, y, 'enemy.paparazzi', 0).setOrigin(0.5, 1).setScale(ART_SCALE * 0.92).setDepth(2);
     this.t = (x / 16) % 1.5; // stagger the row
   }
 
@@ -268,6 +269,11 @@ export class Paparazzo implements Enemy {
   hit(): boolean {
     return false;
   }
+  /** Where his feet are (the walkway's top), for tests. */
+  get footY(): number {
+    return this.s.y;
+  }
+
   destroy(): void {
     this.live = false;
     this.s.destroy();

@@ -9,9 +9,9 @@ import { worldCardUrl } from './assets.ts';
 import { CANVAS_H, CANVAS_W } from './config.ts';
 import { Hud } from './hud.ts';
 import { RULES } from './config.ts';
-import { ORDER, STAGES, WORLDS, isBoss, levelById, worldOf, type Stage } from './levels/index.ts';
+import { BONUS_START_ID, FINALE_ID, ORDER, STAGES, WORLDS_BY_NUMBER, isBoss, levelById, stageAfter, stageLabel, worldOf, type Stage } from './levels/index.ts';
 import type { Point } from './levels/loader.ts';
-import { freshRun, loadProgress, recordClear, saveProgress, type RunState } from './systems/progress.ts';
+import { freshRun, loadProgress, migrateProgress, recordClear, saveProgress, type RunState } from './systems/progress.ts';
 import { music } from '../audio/music.ts';
 import { BossScene, type BossInit } from './scenes/BossScene.ts';
 import { LevelScene, type GameEvent, type HudState, type LevelInit } from './scenes/LevelScene.ts';
@@ -49,7 +49,8 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
   let destroyed = false;
   let introTimer = 0;
 
-  let progress = loadProgress(ORDER[0]);
+  // (Saves from the old story order, which began at the airport, are brought up to date.)
+  let progress = migrateProgress(loadProgress(ORDER[0]), ORDER, BONUS_START_ID, FINALE_ID);
   let current: Stage = levelById(opts.level ?? '') ?? STAGES[0];
   /** Boss HP to start Phase B with (half after a slipped knot in Phase C). */
   let bossHp: number | undefined;
@@ -81,7 +82,7 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
   /** The scene playing the current stage: 'level' (platform levels) or 'boss' (World 6). */
   let activeKey: 'level' | 'boss' = 'level';
   const scene = () => game.scene.getScene(activeKey) as LevelScene | BossScene | null;
-  const nextStage = (): Stage | undefined => STAGES[ORDER.indexOf(current.id) + 1];
+  const nextStage = (): Stage | undefined => stageAfter(current.id);
 
   const onEvent = (e: GameEvent) => {
     switch (e.type) {
@@ -124,25 +125,25 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
             3: {
               h: 'BOARDING COMPLETE!',
               sub: 'Flight 1073 pushes back from Gate B32. Yaniv finds his seat and fastens his seatbelt.',
-              soon: 'Next: World 5, somewhere over the desert. What could possibly go wrong?',
+              soon: 'Next: World 1, somewhere over the desert. What could possibly go wrong?',
               go: 'TAKE YOUR SEAT',
             },
             5: {
               h: 'THE CAPTAIN OPENED THE DOOR!',
               sub: 'Wounded but brave, he lets the Bros. onto the flight deck.',
-              soon: 'Next: World 6, the cockpit. Jacuzzam is at the controls.',
+              soon: 'Next: World 2, the cockpit. Jacuzzam is at the controls.',
               go: 'INTO THE COCKPIT',
             },
             6: {
               h: 'TABUK!',
               sub: 'The off-duty pilots touch down. 174 passengers are safe, and Jacuzzam is still tied up.',
-              soon: 'Next: World 7, Washington. The Bros. are invited to the White House!',
+              soon: 'Next: World 3, Washington. The Bros. are invited to the White House!',
               go: 'TO WASHINGTON',
             },
           };
           const card = cards[done];
           hud.showOverlay(
-            `<p class="world">WORLD ${done} COMPLETE</p><h2>${card.h}</h2><p class="sub">${card.sub}</p>${score}<p class="soon">${card.soon}</p>`,
+            `<p class="world">WORLD ${worldOf(current.id).number} COMPLETE</p><h2>${card.h}</h2><p class="sub">${card.sub}</p>${score}<p class="soon">${card.soon}</p>`,
             [goNext(card.go), { label: 'MAP', run: () => showMap() }, { label: 'TITLE', run: opts.onQuit }],
             'clear',
             worldCardUrl(done),
@@ -158,7 +159,7 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
                  : 'Zvika ties him up with headphone cables. 50 minutes to Tabuk.'
              }</p>
              ${score}
-             <p class="soon">Next: ${next.id} ${next.name}</p>`,
+             <p class="soon">Next: ${stageLabel(next.id)} ${next.name}</p>`,
             [goNext('NEXT PHASE'), { label: 'TITLE', run: opts.onQuit }],
             'clear',
           );
@@ -169,7 +170,7 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
             `<h2>${custom?.title ?? (ground ? 'STAGE CLEAR!' : 'CABIN CLEARED!')}</h2>
              <p class="sub">${custom?.sub ?? (ground ? 'Washington loves a plumber.' : 'Ding! The seatbelt sign is off.')}</p>
              ${score}
-             <p class="soon">Next: ${next.id} ${next.name}</p>`,
+             <p class="soon">Next: ${stageLabel(next.id)} ${next.name}</p>`,
             [goNext('NEXT LEVEL'), { label: 'TITLE', run: opts.onQuit }],
             'clear',
           );
@@ -200,6 +201,7 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
       }
       case 'finale': {
         run = e.run;
+        const airportWasLocked = ORDER.indexOf(progress.unlocked) < ORDER.indexOf(BONUS_START_ID);
         progress = recordClear(progress, ORDER, current.id, e.run.score - runAtStart.score);
         saveProgress(progress);
         music.play('victory', true);
@@ -210,7 +212,8 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
            <h2>THANK YOU YANIV!</h2>
            <p class="sub">But your next client is waiting in Nes Ziona!</p>
            <dl><dt>SCORE</dt><dd data-testid="final-score">${pad6(e.run.score)}</dd><dt>NUTS</dt><dd>${e.run.nuts}</dd></dl>
-           <p class="soon" data-testid="credits">Flight 1073 · Thank you Yaniv, Assaf, Zvika, Shota and Captain Machchhar · Super Yaniv Bros.</p>`,
+           <p class="soon" data-testid="credits">Flight 1073 · Thank you Yaniv, Assaf, Zvika, Shota and Captain Machchhar · Super Yaniv Bros.</p>
+           ${airportWasLocked ? '<p class="soon" data-testid="bonus-world">BONUS: WORLD 0, DXB AIRPORT, IS OPEN ON THE MAP! How it all began…</p>' : ''}`,
           [
             { label: 'MAP', run: () => showMap() },
             { label: 'TITLE', run: opts.onQuit },
@@ -237,18 +240,19 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
   };
 
   /**
-   * The flight map: replay any unlocked level of World 5 or World 6. Opened from the pause card, the level
+   * The flight map: replay any unlocked level, one column per world in the order players count them (World 0, the
+   * airport, opens after the first win). Opened from the pause card, the level
    * stays paused behind it and RESUME (or Esc) goes back to it; TITLE is always a way out.
    */
   function showMap(fromPause = false): void {
     if (!fromPause) music.stop();
     const unlockedIdx = ORDER.indexOf(progress.unlocked);
     // One column per world, its levels top to bottom; RESUME / TITLE on the row underneath.
-    const levels = WORLDS.flatMap((w, col) =>
+    const levels = WORLDS_BY_NUMBER.flatMap((w, col) =>
       w.stages.map((l, row) => {
         const open = ORDER.indexOf(l.id) <= unlockedIdx;
         return {
-          label: open ? `${l.id} ${l.name}${l.id in progress.best ? ` · ${pad6(progress.best[l.id])}` : ''}` : `${l.id} LOCKED`,
+          label: open ? `${stageLabel(l.id)} ${l.name}${l.id in progress.best ? ` · ${pad6(progress.best[l.id])}` : ''}` : `${stageLabel(l.id)} LOCKED`,
           disabled: !open,
           style: `grid-column:${col + 1};grid-row:${row + 1}`,
           run: () => {
@@ -261,10 +265,10 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
         };
       }),
     );
-    const below = `grid-row:${Math.max(...WORLDS.map((w) => w.stages.length)) + 1}`;
+    const below = `grid-row:${Math.max(...WORLDS_BY_NUMBER.map((w) => w.stages.length)) + 1}`;
     hud.showOverlay(
       `<p class="world">FLIGHT 1073</p><h2>THE MAP</h2>
-       <p class="sub">${WORLDS.map((w) => `WORLD ${w.id}: ${w.name}`).join(' · ')}</p>`,
+       <p class="sub">${WORLDS_BY_NUMBER.map((w) => `WORLD ${w.number}: ${w.name}`).join(' · ')}</p>`,
       [
         ...levels,
         ...(fromPause ? [{ label: 'RESUME', run: resume, focus: true, style: `grid-column:1;${below}` }] : []),
@@ -286,13 +290,13 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
     current = level;
     runAtStart = { ...run };
     const intro = isBoss(level)
-      ? `<p class="world">WORLD ${level.id} · PHASE ${level.phase}</p><h2>${level.name}</h2><p class="sub">${BOSS_GOALS[level.phase]}</p>`
+      ? `<p class="world">WORLD ${stageLabel(level.id)} · PHASE ${level.phase}</p><h2>${level.name}</h2><p class="sub">${BOSS_GOALS[level.phase]}</p>`
       : (level.theme ?? 'cabin') !== 'cabin'
-        ? `<p class="world">WORLD ${level.id}</p><h2>${level.name}</h2><p class="sub">${
+        ? `<p class="world">WORLD ${stageLabel(level.id)}</p><h2>${level.name}</h2><p class="sub">${
             level.intro ??
             (level.id === '7-1' ? 'The pool is choked with algae! Plunge its 3 clogged drains (GRAB) to open the gate.' : `${level.timer ? `TIME ${level.timer} · ` : ''}WASHINGTON, D.C.`)
           }</p>`
-        : `<p class="world">WORLD ${level.id}</p><h2>${level.name}</h2><p class="sub">ALT ${level.altitude.start.toLocaleString('en-US')} FT · BANK ${level.tilt[0]?.deg ?? 0}°</p>`;
+        : `<p class="world">WORLD ${stageLabel(level.id)}</p><h2>${level.name}</h2><p class="sub">ALT ${level.altitude.start.toLocaleString('en-US')} FT · BANK ${level.tilt[0]?.deg ?? 0}°</p>`;
     hud.showOverlay(intro, [], 'intro');
     window.clearTimeout(introTimer);
     introTimer = window.setTimeout(() => {
@@ -332,7 +336,8 @@ export function startGame(host: HTMLElement, opts: GameOptions): GameController 
   }
 
   function begin(): void {
-    // Returning players with more than the first level unlocked pick from the map; first-timers start at 3-1.
+    // Returning players with more than the first level unlocked pick from the map; first-timers start on the
+    // plane (World 1-1).
     if (!opts.level && progress.unlocked !== ORDER[0]) showMap();
     else playLevel(current);
   }

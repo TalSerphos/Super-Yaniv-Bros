@@ -20,9 +20,24 @@ Written at the end of the first long build session (2026-10-03 to 10-05). Read t
 | **6 The Cockpit** (boss Jacuzzam) | 6-1 Phase A, 6-2 Phase B, 6-3 Phase C (no 6-4 for now) | built, QA'd |
 | **7 The White House** | 7-1 Reflecting Pool, 7-2 Press Gaggle, 7-3 Paparazzi Row, 7-4 Oval Office (handshake, photo, end) | built, QA'd |
 
-The game runs in **story order**: a new player starts at 3-1. Unlocks follow `ORDER` in
-`src/game/levels/index.ts`, and saved progress (`localStorage syb.progress.v1`) is keyed by level id, so adding
-worlds never loses progress.
+**Player-facing numbers differ from the ids (since 2026-10-06, Tal's request).**
+
+| Shown to players | Internal world | Ids | When |
+|---|---|---|---|
+| World 1 | the plane, 5 | `5-x` | the story starts here, at 5-1 |
+| World 2 | the cockpit boss, 6 | `6-x` | |
+| World 3 | the White House, 7 | `7-x` | |
+| World 0 | DXB Airport, 3 | `3-x` | a prequel, opened by the first win (finishing 7-4) |
+
+- **Ids keep their internal digit**, because saves, `?level=` URLs, asset folders and tests use them. The HUD,
+  intro cards, map and world cards show `stageLabel(id)`: `5-1` shows as **1-1**, `7-1` as **3-1**, and the
+  airport's `3-1` as **0-1**. When Tal says "3-1", ask or check which one he means.
+- Unlocks follow `ORDER` in `src/game/levels/index.ts`: W5, W6, W7, then W3. Clearing 7-4 unlocks 3-1.
+  `stageAfter('3-4')` boards the plane again (5-1).
+- `migrateProgress` updates old saves:
+  - a save that only reached the airport restarts on the plane;
+  - a save that already won gets the airport.
+- Saved progress (`localStorage syb.progress.v1`) is keyed by level id, so adding worlds never loses progress.
 
 Also live:
 - the DOM title screen, with a "Coming Soon" page for 2P;

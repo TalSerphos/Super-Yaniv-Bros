@@ -52,4 +52,20 @@ export function recordClear(p: Progress, order: string[], id: string, score: num
   };
 }
 
+/**
+ * Bring a save from an older story order up to date (pure). The game used to start at the airport; it now
+ * starts on the plane and opens the airport after the first win:
+ * - a save that only reached the airport starts the story on the plane;
+ * - a save whose player already won keeps (or gains) the airport.
+ */
+export function migrateProgress(p: Progress, order: string[], bonusStart: string, finale: string): Progress {
+  const won = finale in p.best;
+  const at = order.indexOf(p.unlocked);
+  const bonusAt = order.indexOf(bonusStart);
+  if (at < 0) return { ...p, unlocked: order[0] };
+  if (!won && at >= bonusAt) return { ...p, unlocked: order[0] };
+  if (won && at < bonusAt) return { ...p, unlocked: bonusStart };
+  return p;
+}
+
 export const freshRun = (hearts: number): RunState => ({ hearts, power: 'small', nuts: 0, score: 0 });

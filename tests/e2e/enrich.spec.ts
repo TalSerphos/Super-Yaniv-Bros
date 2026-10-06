@@ -163,7 +163,7 @@ test.describe('impact effects and level art', () => {
     await page.keyboard.up('ArrowRight');
   });
 
-  test('the WORLD 3 COMPLETE card shows the pushback scene behind it', async ({ page, isMobile }) => {
+  test('the WORLD 0 COMPLETE card (the airport) shows the pushback scene behind it', async ({ page, isMobile }) => {
     test.skip(!!isMobile, 'keyboard-driven');
     await page.goto('./?level=3-4&god=1#play');
     await waitForLevel(page, '3-4');

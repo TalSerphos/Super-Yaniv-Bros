@@ -127,7 +127,7 @@ test.describe('World 3 mechanics', () => {
     await expect(page.getByText('But the cockpit is in another cabin!')).toBeVisible();
   });
 
-  test('clearing 3-4 boards the plane: TAKE YOUR SEAT starts World 5', async ({ page }) => {
+  test('clearing the airport (World 0) boards the plane: TAKE YOUR SEAT starts World 1-1', async ({ page }) => {
     test.setTimeout(60_000);
     await page.goto('./?level=3-4&god=1#play');
     await waitForLevel(page, '3-4');
@@ -139,6 +139,7 @@ test.describe('World 3 mechanics', () => {
     await page.keyboard.down('ArrowRight');
     await expect(page.getByRole('heading', { name: 'BOARDING COMPLETE!' })).toBeVisible({ timeout: 15_000 });
     await page.keyboard.up('ArrowRight');
+    await expect(page.getByText('WORLD 0 COMPLETE')).toBeVisible();
     await page.getByRole('button', { name: 'TAKE YOUR SEAT' }).click();
     await waitForLevelAny(page, '5-1');
   });

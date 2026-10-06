@@ -13,7 +13,7 @@ import { Lobbed, lobVelocity, type Enemy } from '../entities/enemies.ts';
 import { Effects } from '../entities/fx.ts';
 import { CargoHold } from '../entities/hold.ts';
 import { Player } from '../entities/player.ts';
-import type { BossData } from '../levels/index.ts';
+import { stageLabel, type BossData } from '../levels/index.ts';
 import { parseLevel, type ParsedLevel } from '../levels/loader.ts';
 import { Altitude } from '../systems/altitude.ts';
 import type { FxKind } from '../systems/fx.ts';
@@ -777,7 +777,7 @@ export class BossScene extends Phaser.Scene implements GameWorld {
       altLabel: this.c ? `TABUK IN ${this.c.clockText}` : undefined,
       bank: this.b ? Math.round(Math.max(0, -this.b.pitch)) : Math.round(this.tiltDeg),
       bankWarning: this.leanTilt > 0,
-      label: `${this.cfg.level.id}  ${this.cfg.level.name}`,
+      label: `${stageLabel(this.cfg.level.id)}  ${this.cfg.level.name}`,
       // After the final win the boss panel steps aside for the celebration.
       boss: this.finished && this.phase === 'C' ? undefined : this.bossHud(),
     });

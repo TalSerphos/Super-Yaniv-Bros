@@ -36,20 +36,21 @@ interface SybHooks {
 }
 const syb = () => (window as unknown as { __syb: SybHooks }).__syb;
 
-test('1 PLAYER starts the trip at 3-1 in Dubai: intro card, then a playable level with HUD', async ({ page }) => {
+test('1 PLAYER starts the story on the plane at World 1-1: intro card, then a playable level with HUD', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   await page.goto('./');
   await page.getByRole('button', { name: '1 PLAYER', exact: true }).click();
   await expect(page).toHaveURL(/#play$/);
-  await expect(page.getByText('SECURITY LINE').first()).toBeVisible();
-  await waitForLevel(page, '3-1');
+  await expect(page.getByText('WORLD 1-1').first()).toBeVisible();
+  await expect(page.getByText('THE SCREAM').first()).toBeVisible();
+  await waitForLevel(page, '5-1');
   const s = (await state(page))!;
-  expect(s.tilt).toBe(0); // on the ground
   expect(s.hearts).toBe(3);
   await expect(page.getByTestId('hud')).toBeVisible();
-  await expect(page.getByTestId('alt')).toHaveText(/^TIME \d+$/);
+  await expect(page.getByTestId('alt')).toHaveText(/^ALT [\d,]+ FT$/);
+  await expect(page.locator('.ghud-label')).toHaveText(/^1-1\s+THE SCREAM$/);
   await expect(page.locator('canvas')).toBeVisible();
   expect(errors).toEqual([]);
 });
@@ -108,13 +109,14 @@ for (const id of ['5-1', '5-2', '5-3', '5-4']) {
   });
 }
 
-test('returning players pick an unlocked level from the World 5 map', async ({ page }) => {
+test('returning players pick an unlocked level from the map (World 1 = the plane)', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('syb.progress.v1', JSON.stringify({ unlocked: '5-2', best: { '5-1': 1234 } })));
   await page.goto('./#play');
   await expect(page.getByRole('heading', { name: 'THE MAP' })).toBeVisible();
   await expect(page.getByRole('button', { name: '5-1 THE SCREAM · 001234' })).toBeEnabled();
-  await expect(page.getByRole('button', { name: '5-3 LOCKED' })).toBeDisabled();
-  await page.getByRole('button', { name: /^5-2 THE AISLE/ }).click();
+  await expect(page.getByRole('button', { name: '1-3 LOCKED' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: '0-1 LOCKED' })).toBeDisabled(); // the airport opens after a win
+  await page.getByRole('button', { name: /^1-2 THE AISLE/ }).click();
   await waitForLevel(page, '5-2');
   expect((await state(page))!.tilt).toBe(8);
 });

@@ -301,3 +301,16 @@ unspent. Contract: `docs/levels/enrich-assets.md`.
   server (`await import('/src/audio/music.ts')`) and you get a `.wav` to send for an ear check.
 - **Checking the render's pitch:** an FFT limited to the lead's register (560–1250 Hz) gets every note right.
   Naive autocorrelation over the full mix (bass, chords, octave double) gave octave and harmonic errors.
+
+## Grounded props and the new world order (2026-10-06)
+- **Anything that scrolls with the play layer must stand on the play floor.** Decor drawn 10 units above the
+  walkway, and paparazzi drawn 14 above it ("behind the rope line"), scrolled at 1.0 over a lawn that scrolls at
+  0.45. Tal saw them float. The rule:
+  - a prop either sits on the floor top (y = 320);
+  - or it belongs to a parallax layer and scrolls with it.
+  - `state().propFeet` and a W7 e2e test pin this.
+- **Renumbering worlds for players without renaming ids.** `World.number` and `stageLabel()` change everything
+  the player reads, while the internal ids, saves and URLs stay put.
+  - Making the airport a post-game world was just moving it to the end of `ORDER`: `recordClear` on 7-4 then
+    unlocks 3-1 by itself.
+  - Old saves need a pure `migrateProgress`, with unit tests.

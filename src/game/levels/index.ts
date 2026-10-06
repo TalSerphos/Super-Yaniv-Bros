@@ -1,6 +1,12 @@
 /**
- * Level registry, in story order: World 3 (DXB Airport), World 5 (the attack), World 6 (the three boss phases)
- * and World 7 (The White House). Worlds 1, 2 and 4 come later.
+ * Level registry, in story order. The game starts in the air:
+ * - World 1, the attack (internal world 5);
+ * - World 2, the three boss phases in the cockpit (internal 6);
+ * - World 3, The White House (internal 7);
+ * - then World 0, DXB Airport (internal 3): a prequel that opens once the game has been won once.
+ *
+ * Level ids keep their internal world digit ('5-1', '3-4'), because saves, URLs (?level=) and tests use them.
+ * Players see `stageLabel(id)` instead: '5-1' shows as 1-1, the airport's '3-2' as 0-2.
  */
 import type { LevelData } from './loader.ts';
 import l31 from './w3/3-1.json';
@@ -42,17 +48,27 @@ export const WORLD6: BossData[] = [
 export const WORLD7: LevelData[] = [l71, l72, l73, l74] as LevelData[];
 
 export interface World {
+  /** Internal number (the first digit of its level ids, its asset folder). */
   id: number;
+  /** The number players see. */
+  number: number;
   name: string;
   stages: Stage[];
 }
 
 export const WORLDS: World[] = [
-  { id: 3, name: 'DXB AIRPORT', stages: WORLD3 },
-  { id: 5, name: 'THE ATTACK', stages: WORLD5 },
-  { id: 6, name: 'THE COCKPIT', stages: WORLD6 },
-  { id: 7, name: 'THE WHITE HOUSE', stages: WORLD7 },
+  { id: 5, number: 1, name: 'THE ATTACK', stages: WORLD5 },
+  { id: 6, number: 2, name: 'THE COCKPIT', stages: WORLD6 },
+  { id: 7, number: 3, name: 'THE WHITE HOUSE', stages: WORLD7 },
+  { id: 3, number: 0, name: 'DXB AIRPORT', stages: WORLD3 },
 ];
+
+/** The last stage of the story; winning it for the first time opens the airport (World 0). */
+export const FINALE_ID = '7-4';
+/** The airport prequel's first stage (it unlocks right after the story, in `ORDER`). */
+export const BONUS_START_ID = '3-1';
+/** The airport ends by boarding Flight 1073: its last stage leads back to the start of the story. */
+const NEXT_AFTER: Record<string, string> = { '3-4': '5-1' };
 
 /** Every stage in play order (unlocking follows this). */
 export const STAGES: Stage[] = WORLDS.flatMap((w) => w.stages);
@@ -63,3 +79,17 @@ export function levelById(id: string): Stage | undefined {
 }
 
 export const worldOf = (id: string): World => WORLDS.find((w) => w.stages.some((s) => s.id === id))!;
+
+/** The label players see for a stage: its world's number and its place in that world ('5-1' → '1-1'). */
+export function stageLabel(id: string): string {
+  const w = worldOf(id);
+  return `${w.number}-${w.stages.findIndex((s) => s.id === id) + 1}`;
+}
+
+/** What plays after a stage: the next in story order, or the jump from the airport back onto the plane. */
+export function stageAfter(id: string): Stage | undefined {
+  return NEXT_AFTER[id] ? levelById(NEXT_AFTER[id]) : STAGES[ORDER.indexOf(id) + 1];
+}
+
+/** Worlds in the order players count them (0, 1, 2, 3): the map's columns. */
+export const WORLDS_BY_NUMBER: World[] = [...WORLDS].sort((a, b) => a.number - b.number);

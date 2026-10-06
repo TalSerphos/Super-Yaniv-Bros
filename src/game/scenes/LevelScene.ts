@@ -10,6 +10,7 @@ import { MaskVine } from '../entities/masks.ts';
 import { BillCannon, Mascot } from '../entities/w3.ts';
 import { Drain, Paparazzo, Reporter, algaeBlob } from '../entities/w7.ts';
 import { Player } from '../entities/player.ts';
+import { stageLabel } from '../levels/index.ts';
 import { BLOCK, EXIT, SEAT, floorTopOf, parseLevel, type LevelData, type ParsedLevel, type Point } from '../levels/loader.ts';
 import { Altitude } from '../systems/altitude.ts';
 import { DECOR, critterScatters, placeDecor } from '../systems/decor.ts';
@@ -118,8 +119,6 @@ const W7_SKY_RAISE = 105;
 const W7_PARK_DROP = 85;
 /** The foreground hedge's bottom edge, below the floor top (near the bottom of the view). */
 const HEDGE_BOTTOM = 100;
-/** Decor stands a little behind the walkway's front edge (on the lawn / the concourse floor), not in the lane. */
-const DECOR_BACK = 10;
 /** Decor is washed toward the background so the play layer always reads first. */
 const DECOR_TINT = { w7: 0xd9e4ee, w3: 0xe4e2ea };
 /** Haze over the airport backdrops (the sunset gates are dark and calm enough already). */
@@ -191,6 +190,8 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
   private hurtLog: { cause: string; x: number; y: number; t: number }[] = [];
   private effects!: Effects;
   private critters: Phaser.GameObjects.Sprite[] = [];
+  /** Background props (test hook: their feet must be on the play floor). */
+  private props: Phaser.GameObjects.Sprite[] = [];
   /** The goal pole before the exit (flagpole twin); `points` is set once it was touched. */
   private pole?: { sprite: Sprite | Phaser.GameObjects.Sprite; x: number; base: number; off: string; points?: number };
   /** Last step's feet height, to catch the moment Yaniv drops through the water surface (World 7 splash). */
@@ -307,6 +308,7 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     this.gateWall = undefined;
     this.pole = undefined;
     this.critters = [];
+    this.props = [];
     this.lastFlash = -9;
     this.lowTimeWarned = false;
   }
@@ -649,7 +651,8 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
   }
 
   /**
-   * Background decor on the floor behind the play layer (systems/decor.ts): sparse, washed toward the
+   * Background decor standing on the play floor (feet on the walkway, like Yaniv: anything raised above it scrolls
+   * with the play layer but floats over the slower lawn behind). Drawn behind the action (systems/decor.ts): sparse, washed toward the
    * background, clear of everything that matters to play. Its own random seed leaves the level's dice alone.
    */
   private createDecor(): void {
@@ -672,13 +675,14 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
     const sheet = `${world}.decor`;
     for (const spot of placeDecor(spans, avoid, DECOR[world], () => rng.frac())) {
       const sprite = this.add
-        .sprite(spot.x, this.floorTop - DECOR_BACK, sheet, frameIndex(sheet, spot.kind.frame))
+        .sprite(spot.x, this.floorTop, sheet, frameIndex(sheet, spot.kind.frame))
         .setOrigin(0.5, 1)
         .setScale(ART_SCALE)
         .setDepth(2)
         .setTint(DECOR_TINT[world])
         .setAlpha(0.92)
         .setFlipX(rng.frac() < 0.5);
+      this.props.push(sprite);
       if (spot.kind.critter) this.critters.push(sprite);
     }
   }
@@ -1316,7 +1320,7 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
       hideBank: this.ground,
       bank: Math.round(this.tiltDeg),
       bankWarning: !!upcomingTilt(this.cfg.level.tilt, this.progressX),
-      label: `${this.cfg.level.id}  ${this.cfg.level.name}`,
+      label: `${stageLabel(this.cfg.level.id)}  ${this.cfg.level.name}`,
     });
   }
 
@@ -1367,6 +1371,8 @@ export class LevelScene extends Phaser.Scene implements GameWorld {
         pole: this.pole ? { x: this.pole.x, base: this.pole.base, points: this.pole.points ?? null } : null,
         sliding: !!this.player.poleSlide,
         pose: this.player.extraPose,
+        // Feet (bottom y) of the background props and the paparazzi, which all stand on the walkway.
+        propFeet: [...this.props.filter((d) => d.active && !d.getData('gone')).map((d) => Math.round(d.y)), ...this.enemies.filter((e) => e.kind === 'paparazzi').map((e) => Math.round((e as Paparazzo).footY))],
         hurts: [...this.hurtLog],
         enemies: this.enemies.filter((e) => e.live).map((e) => ({ kind: e.kind, x: Math.round(e.x), y: Math.round(e.y) })),
         drains: this.drains.filter((d) => d.clogged).length,

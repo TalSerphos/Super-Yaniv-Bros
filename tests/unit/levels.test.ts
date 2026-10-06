@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ORDER, WORLD3, WORLD5, WORLD5_ORDER, WORLD7 } from '../../src/game/levels/index.ts';
+import { BONUS_START_ID, FINALE_ID, ORDER, WORLD3, WORLD5, WORLD5_ORDER, WORLD7, WORLDS_BY_NUMBER, stageAfter, stageLabel } from '../../src/game/levels/index.ts';
+import { migrateProgress, recordClear } from '../../src/game/systems/progress.ts';
 import { floorTopOf, parseLevel } from '../../src/game/levels/loader.ts';
 import { PHYS, TILE } from '../../src/game/config.ts';
 
@@ -7,9 +8,37 @@ import { PHYS, TILE } from '../../src/game/config.ts';
 const MAX_GAP = ((2 * PHYS.jumpVelocity) / PHYS.gravity) * PHYS.runSpeed * 0.85;
 
 describe('the story order', () => {
-  it('runs World 3 (DXB Airport), World 5, the three boss phases of World 6, then World 7', () => {
+  it('starts on the plane (World 1), then the cockpit boss (World 2), the White House (World 3), then the airport (World 0)', () => {
     expect(WORLD5_ORDER).toEqual(['5-1', '5-2', '5-3', '5-4']);
-    expect(ORDER).toEqual(['3-1', '3-2', '3-3', '3-4', '5-1', '5-2', '5-3', '5-4', '6-1', '6-2', '6-3', '7-1', '7-2', '7-3', '7-4']);
+    expect(ORDER).toEqual(['5-1', '5-2', '5-3', '5-4', '6-1', '6-2', '6-3', '7-1', '7-2', '7-3', '7-4', '3-1', '3-2', '3-3', '3-4']);
+    expect(WORLDS_BY_NUMBER.map((w) => [w.number, w.name])).toEqual([
+      [0, 'DXB AIRPORT'],
+      [1, 'THE ATTACK'],
+      [2, 'THE COCKPIT'],
+      [3, 'THE WHITE HOUSE'],
+    ]);
+  });
+
+  it('players see the new numbers: 5-1 is 1-1, the boss phases 2-x, 7-4 is 3-4, the airport 0-x', () => {
+    expect(['5-1', '5-4', '6-1', '6-3', '7-1', '7-4', '3-1', '3-4'].map(stageLabel)).toEqual(['1-1', '1-4', '2-1', '2-3', '3-1', '3-4', '0-1', '0-4']);
+  });
+
+  it('winning the story opens the airport, and the airport ends by boarding the plane again', () => {
+    const won = recordClear({ unlocked: FINALE_ID, best: {} }, ORDER, FINALE_ID, 1000);
+    expect(won.unlocked).toBe(BONUS_START_ID);
+    expect(stageAfter('3-4')?.id).toBe('5-1');
+    expect(stageAfter('6-3')?.id).toBe('7-1');
+    expect(stageAfter('3-1')?.id).toBe('3-2');
+  });
+
+  it('old saves (from when the trip started at the airport) are brought up to date', () => {
+    const m = (unlocked: string, best: Record<string, number> = {}) => migrateProgress({ unlocked, best }, ORDER, BONUS_START_ID, FINALE_ID).unlocked;
+    expect(m('3-3')).toBe('5-1'); // only reached the airport: start the story on the plane
+    expect(m('5-3')).toBe('5-3'); // mid-story: unchanged
+    expect(m('7-4')).toBe('7-4'); // at the finale, not won yet: airport still closed
+    expect(m('7-4', { '7-4': 900 })).toBe('3-1'); // already won: the airport opens
+    expect(m('3-2', { '7-4': 900 })).toBe('3-2'); // won and playing the airport: unchanged
+    expect(m('9-9')).toBe('5-1'); // unknown id: start fresh
   });
 });
 
